@@ -2,409 +2,514 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>卡神懶人記帳 — 信用卡攻略 × 秒記帳</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="description" content="零個資風險・結合台灣信用卡權益切換提醒與圓餅圖分析的極簡記帳 App" />
+  <title>卡神記帳 — 信用卡攻略 × 極簡記帳</title>
   <link rel="manifest" href="./manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
-      --background: #f1f5f9;
-      --foreground: #0f172a;
-      --card: #ffffff;
-      --border: #e2e8f0;
-      --primary: #2563eb;
-      --primary-foreground: #ffffff;
-      --secondary: #e2e8f0;
-      --secondary-foreground: #334155;
-      --muted-foreground: #64748b;
+      --bg-canvas: #F4F5F9;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F8FAFC;
+      --bg-pill: #F1F5F9;
+      --text-main: #111827;
+      --text-secondary: #4B5563;
+      --text-muted: #6B7280;
+      --border-hairline: #E5E7EB;
+      --accent: #2563EB;
+      --accent-soft: #EFF6FF;
+      --accent-text: #1D4ED8;
+      --success: #059669;
+      --success-soft: #ECFDF5;
+      --warn: #D97706;
+      --warn-soft: #FFFBEB;
+      --danger: #DC2626;
+      --danger-soft: #FEF2F2;
+      --card-shadow: 0 2px 14px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --background: #0b1120;
-        --foreground: #f8fafc;
-        --card: #1e293b;
-        --border: #334155;
-        --primary: #3b82f6;
-        --primary-foreground: #ffffff;
-        --secondary: #334155;
-        --secondary-foreground: #e2e8f0;
-        --muted-foreground: #94a3b8;
+        --bg-canvas: #0B0F19;
+        --bg-surface: #151C2C;
+        --bg-subtle: #1E293B;
+        --bg-pill: #1E293B;
+        --text-main: #F9FAFB;
+        --text-secondary: #D1D5DB;
+        --text-muted: #9CA3AF;
+        --border-hairline: #263145;
+        --accent: #3B82F6;
+        --accent-soft: rgba(59, 130, 246, 0.14);
+        --accent-text: #60A5FA;
+        --success: #10B981;
+        --success-soft: rgba(16, 185, 129, 0.14);
+        --warn: #F59E0B;
+        --warn-soft: rgba(245, 158, 11, 0.14);
+        --danger: #EF4444;
+        --danger-soft: rgba(239, 68, 68, 0.14);
+        --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
       }
     }
-    /* 明確的 4 級字體大小鑑別度 (Hero 大字 / 區塊中字 / 一般小字 / 輔助極小字) */
-    .f-hero-num  { font-size: 20px; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; }
-    .f-hero-card { font-size: 16px; font-weight: 800; line-height: 1.25; }
-    .f-title     { font-size: 13.5px; font-weight: 700; line-height: 1.3; }
-    .f-body      { font-size: 12px; font-weight: 500; line-height: 1.35; }
-    .f-small     { font-size: 11px; font-weight: 400; line-height: 1.35; }
-    .f-micro     { font-size: 10px; font-weight: 400; line-height: 1.3; }
+
+    body {
+      font-family: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+      letter-spacing: 0.01em;
+    }
+
+    .num-tabular {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .surface-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 20px;
+      box-shadow: var(--card-shadow);
+    }
+
+    /* 隱藏捲軸但保留滑動 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* 手機版底部安全距離 */
+    .pb-safe {
+      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Donut 圓餅圖動畫 */
+    .donut-segment {
+      transition: stroke-dasharray 0.35s ease, opacity 0.2s ease, stroke-width 0.2s ease;
+      cursor: pointer;
+    }
+    .donut-segment:hover {
+      opacity: 0.88;
+    }
   </style>
 </head>
-<body class="bg-[var(--background)] text-[var(--foreground)] antialiased p-2.5 sm:p-4">
-  <div class="max-w-md mx-auto space-y-3 pb-20">
+<body class="min-h-screen pb-safe lg:pb-12">
 
-    <!-- 頂部極簡狀態列 (小字收斂，不搶主視覺) -->
-    <div class="flex items-center justify-between bg-[var(--card)] border border-[var(--border)] rounded-xl px-3 py-2 shadow-sm">
-      <div class="flex items-center gap-2">
-        <span class="text-sm">💳</span>
+  <!-- ========================================================= -->
+  <!-- 頂部導覽列 (電腦版寬螢幕置頂列 / 手機版清爽標題列) -->
+  <!-- ========================================================= -->
+  <header class="sticky top-0 z-30 backdrop-blur-md bg-[var(--bg-surface)]/85 border-b border-[var(--border-hairline)]">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-[var(--accent)] text-white flex items-center justify-center text-lg shadow-sm">
+          💳
+        </div>
         <div>
-          <h1 class="f-title text-[var(--foreground)]">卡神懶人記帳</h1>
-          <p class="f-micro text-[var(--muted-foreground)]">零個資上雲・LocalStorage 私密儲存</p>
+          <h1 class="text-[16px] font-bold tracking-tight text-[var(--text-main)] leading-snug">卡神記帳</h1>
+          <p class="text-[12px] text-[var(--text-muted)] leading-none mt-0.5 hidden sm:block">信用卡回饋導航 × 極簡視覺記帳（資料僅存本機）</p>
         </div>
       </div>
-      <span id="currentMonthBadge" class="f-micro px-2 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]"></span>
-    </div>
 
-    <!-- ========================================================== -->
-    <!-- 置頂區塊：我現在在哪？輸入店家或點選情境，自動判斷刷哪張最好 -->
-    <!-- ========================================================== -->
-    <div class="bg-[var(--card)] border border-[var(--primary)] rounded-2xl p-3 shadow-sm space-y-2.5">
-      <div class="flex items-center justify-between">
-        <h2 class="f-title text-[var(--foreground)] flex items-center gap-1">
-          <span>📍</span> 我現在在哪？刷哪張回饋最好？
-        </h2>
-        <button onclick="openKeywordRuleModal()" class="f-micro underline text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-          ✏️ 管理關鍵字庫
+      <!-- 電腦版主選單 (lg 以上顯示) -->
+      <nav class="hidden lg:flex items-center gap-1.5 bg-[var(--bg-pill)] p-1 rounded-xl">
+        <button onclick="switchView('dashboard')" id="deskNav-dashboard" class="px-4 py-1.5 rounded-lg text-[13.5px] font-semibold transition-all">
+          ⚡ 記帳與刷卡導航
         </button>
-      </div>
+        <button onclick="switchView('analytics')" id="deskNav-analytics" class="px-4 py-1.5 rounded-lg text-[13.5px] font-semibold transition-all">
+          📊 圓餅圖報表與明細
+        </button>
+        <button onclick="switchView('cards')" id="deskNav-cards" class="px-4 py-1.5 rounded-lg text-[13.5px] font-semibold transition-all">
+          💳 我的卡包攻略 (6)
+        </button>
+      </nav>
 
-      <!-- 智慧搜尋框 -->
-      <div class="space-y-1.5">
-        <div class="relative flex items-center">
-          <input id="smartStoreInput" type="text"
-            placeholder="🔍 輸入地點自動判斷 (例: 唱歌、好樂迪、百貨餐廳、星巴克...)"
-            oninput="handleSmartSearchInput()"
-            class="w-full pl-2.5 pr-12 py-1.5 rounded-xl bg-[var(--background)] border border-[var(--border)] f-body text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]" />
-          <button id="clearSearchBtn" onclick="clearSmartSearch()" class="hidden absolute right-1.5 f-micro px-1.5 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">
-            清除
+      <div class="flex items-center gap-2.5">
+        <span id="currentMonthBadge" class="text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] num-tabular"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================= -->
+  <!-- 主內容容器：手機單欄舒適留白 / 電腦 max-w-6xl 雙欄黃金比例 -->
+  <!-- ========================================================= -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 lg:pt-8">
+
+    <!-- 電腦版頂部 3 格總覽指標條 (lg 以上顯示，像麻布記帳/MOZE 儀表板) -->
+    <section id="desktopKpiStrip" class="hidden lg:grid grid-cols-3 gap-5 mb-7"></section>
+
+    <!-- ======================================================= -->
+    <!-- VIEW 1: 首頁儀表板 (電腦版左 7 右 5 雙欄並排；手機版專注於查卡+秒記) -->
+    <!-- ======================================================= -->
+    <div id="view-dashboard" class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+
+      <!-- 左欄 (7 cols on Desktop)：置頂刷卡查詢 + 2秒記帳 -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- 模組 A：我現在在哪？刷哪張最好？ -->
+        <section class="surface-card p-5 sm:p-6 space-y-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Smart Card Finder</span>
+              <h2 class="text-[18px] font-bold text-[var(--text-main)] mt-0.5">📍 我現在在哪？刷哪張最好？</h2>
+            </div>
+            <button onclick="openKeywordRuleModal()" class="text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
+              管理關鍵字
+            </button>
+          </div>
+
+          <!-- 搜尋框與快速情境膠囊 -->
+          <div class="space-y-3">
+            <div class="relative flex items-center">
+              <span class="absolute left-3.5 text-[var(--text-muted)] text-sm">🔍</span>
+              <input id="smartStoreInput" type="text"
+                placeholder="輸入店名或活動自動判斷（例：好樂迪唱歌、百貨餐廳、星巴克...）"
+                oninput="handleSmartSearchInput()"
+                class="w-full pl-10 pr-16 py-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors" />
+              <button id="clearSearchBtn" onclick="clearSmartSearch()" class="hidden absolute right-3 text-[12px] font-medium px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">
+                清除
+              </button>
+            </div>
+
+            <!-- 常問情境快點列 -->
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
+              <span class="text-[12.5px] text-[var(--text-muted)] shrink-0">常問情境：</span>
+              <button onclick="quickSearchKeyword('唱歌 KTV')" class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors">🎤 唱歌/好樂迪</button>
+              <button onclick="quickSearchKeyword('一般餐廳')" class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors">🍲 一般餐廳</button>
+              <button onclick="quickSearchKeyword('百貨餐廳')" class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors">🏬 百貨內餐廳</button>
+              <button onclick="quickSearchKeyword('飯店餐廳')" class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors">🏨 飯店餐廳</button>
+              <button onclick="quickSearchKeyword('手搖飲/咖啡')" class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors">🧋 飲料/咖啡</button>
+            </div>
+
+            <!-- 店家支援支付篩選 -->
+            <div class="flex items-center gap-2 flex-wrap pt-1">
+              <span class="text-[12.5px] text-[var(--text-muted)]">現場支付限制：</span>
+              <div class="inline-flex bg-[var(--bg-pill)] p-0.5 rounded-lg">
+                <button onclick="setStoreLinePayFilter('any')" id="lpFilter-any" class="px-2.5 py-1 rounded-md text-[12px] font-medium transition-all">不限</button>
+                <button onclick="setStoreLinePayFilter('no_lp')" id="lpFilter-no_lp" class="px-2.5 py-1 rounded-md text-[12px] font-medium transition-all">僅刷卡 / Apple Pay</button>
+                <button onclick="setStoreLinePayFilter('has_lp')" id="lpFilter-has_lp" class="px-2.5 py-1 rounded-md text-[12px] font-medium transition-all">支援 LINE Pay</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 關鍵字避坑診斷提示 -->
+          <div id="smartKeywordDiagnosis" class="hidden"></div>
+
+          <!-- 地點分類膠囊列 -->
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[12.5px] font-medium text-[var(--text-muted)]">選擇消費分類</span>
+              <button onclick="openSceneModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline">+ 新增 / 編輯分類</button>
+            </div>
+            <div id="topSceneButtons" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- 推薦卡片結果區 (MOZE 極簡留白風格：首選清晰大卡 + 次選優雅分隔列表) -->
+          <div id="sceneRecommendationBox" class="pt-1 space-y-3"></div>
+        </section>
+
+        <!-- 模組 B：⚡ 2 秒快速記帳 -->
+        <section id="quickRecordCard" class="surface-card p-5 sm:p-6 space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Quick Entry</span>
+              <h3 class="text-[18px] font-bold text-[var(--text-main)] mt-0.5">⚡ 快速記一筆</h3>
+            </div>
+            <span class="text-[12.5px] text-[var(--text-muted)]">自動對應權益與回饋試算</span>
+          </div>
+
+          <!-- 金額大字輸入區 (仿 MOZE 記帳首頁視覺焦點) -->
+          <div class="bg-[var(--bg-subtle)] rounded-2xl p-4 sm:p-5 border border-[var(--border-hairline)]">
+            <div class="flex items-baseline justify-between gap-4">
+              <span class="text-[13px] font-medium text-[var(--text-muted)] shrink-0">消費金額</span>
+              <div class="flex items-baseline justify-end flex-1">
+                <span class="text-[20px] font-semibold text-[var(--text-muted)] mr-1.5">NT$</span>
+                <input id="expenseAmount" type="number" inputmode="numeric" placeholder="0"
+                  oninput="updateSmartAdvisory()"
+                  class="w-full max-w-[200px] text-right text-[32px] font-extrabold num-tabular bg-transparent text-[var(--text-main)] placeholder:text-[var(--text-muted)]/40 focus:outline-none" />
+              </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-[var(--border-hairline)] flex items-center gap-3">
+              <span class="text-[13px] text-[var(--text-muted)] shrink-0">備註說明</span>
+              <input id="expenseNote" type="text" placeholder="選填，例如：假日聚餐、好樂迪、全家咖啡..."
+                class="w-full bg-transparent text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none text-right" />
+            </div>
+          </div>
+
+          <!-- 1. 消費分類選擇 -->
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label class="text-[13px] font-semibold text-[var(--text-secondary)]">消費地點 / 類別</label>
+              <button onclick="openSceneModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline">編輯 / 新增</button>
+            </div>
+            <div id="recordScenePills" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- 2. 支付方式選擇 -->
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label class="text-[13px] font-semibold text-[var(--text-secondary)]">支付工具</label>
+              <button onclick="openPayMethodManageModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline">新增 / 編輯支付工具</button>
+            </div>
+            <div id="payMethodButtons" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
+          </div>
+
+          <!-- 3. 綁定信用卡選擇 (非現金時展開) -->
+          <div id="cardSelectorSection" class="space-y-2.5 pt-1">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <label id="cardSelectorLabel" class="text-[13px] font-semibold text-[var(--text-secondary)]">本次扣款信用卡</label>
+              <div class="flex items-center gap-3 text-[12.5px]">
+                <button onclick="setCurrentAsPayDefault()" class="font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">⭐ 設為此支付預設</button>
+                <button onclick="openEditCardModal(selectedCardId)" class="font-medium text-[var(--accent-text)] hover:underline">編輯此卡</button>
+                <button onclick="openEditCardModal(null)" class="font-medium text-[var(--accent-text)] hover:underline">+ 新增卡片</button>
+              </div>
+            </div>
+            <div id="recordCardPills" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- 動態權益提醒與預估回饋面板 -->
+          <div id="smartAdvisoryPanel"></div>
+
+          <!-- 確認記帳主按鈕 -->
+          <button onclick="submitExpense()"
+            class="w-full py-3.5 rounded-xl text-[15px] font-semibold bg-[var(--accent)] text-white shadow-sm hover:opacity-95 active:scale-[0.99] transition-all">
+            儲存這筆紀錄
           </button>
-        </div>
+        </section>
 
-        <!-- 熱門迷思情境快選 (極小字標籤) -->
-        <div class="flex items-center gap-1 flex-wrap">
-          <span class="f-micro text-[var(--muted-foreground)]">快查：</span>
-          <button onclick="quickSearchKeyword('唱歌 KTV')" class="f-micro px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-[var(--primary)]">🎤 唱歌/好樂迪</button>
-          <button onclick="quickSearchKeyword('一般餐廳')" class="f-micro px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-[var(--primary)]">🍲 一般餐廳</button>
-          <button onclick="quickSearchKeyword('百貨餐廳')" class="f-micro px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-[var(--primary)]">🏬 百貨餐廳</button>
-          <button onclick="quickSearchKeyword('飯店餐廳')" class="f-micro px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-[var(--primary)]">🏨 飯店餐廳</button>
-          <button onclick="quickSearchKeyword('手搖飲/咖啡')" class="f-micro px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-[var(--primary)]">🧋 飲料/小店</button>
-        </div>
-
-        <!-- 現場支付條件篩選器 -->
-        <div class="flex items-center gap-1">
-          <span class="f-micro text-[var(--muted-foreground)] shrink-0">現場支援：</span>
-          <button onclick="setStoreLinePayFilter('any')" id="lpFilter-any" class="f-micro px-1.5 py-0.5 rounded border transition-all">不確定/全列</button>
-          <button onclick="setStoreLinePayFilter('no_lp')" id="lpFilter-no_lp" class="f-micro px-1.5 py-0.5 rounded border transition-all">💳 僅刷卡/ApplePay</button>
-          <button onclick="setStoreLinePayFilter('has_lp')" id="lpFilter-has_lp" class="f-micro px-1.5 py-0.5 rounded border transition-all">💚 可刷 LINE Pay</button>
-        </div>
       </div>
 
-      <!-- 智慧關鍵字診斷橫幅 -->
-      <div id="smartKeywordDiagnosis" class="hidden"></div>
+      <!-- 右欄 (5 cols on Desktop)：在電腦版常駐顯示「圓餅圖分析 + 最近帳單明細」！ -->
+      <aside id="desktopRightColumn" class="hidden lg:block lg:col-span-5 space-y-6 sticky top-24">
+        <div id="desktopDonutMount"></div>
+        <div id="desktopRecentMount"></div>
+      </aside>
 
-      <!-- 常用地點快選按鈕列 -->
-      <div class="space-y-1">
-        <div class="flex items-center justify-between">
-          <span class="f-micro text-[var(--muted-foreground)]">點選地點分類：</span>
-          <button onclick="openSceneModal()" class="f-micro text-[var(--muted-foreground)] hover:text-[var(--foreground)] underline">+ 新增/編輯地點</button>
-        </div>
-        <div id="topSceneButtons" class="grid grid-cols-4 gap-1"></div>
-      </div>
-
-      <!-- 最佳刷卡推薦結果 (首選大卡 vs 次選小列，強弱對比鮮明) -->
-      <div id="sceneRecommendationBox" class="space-y-1.5 pt-0.5"></div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 主功能切換 Tabs -->
-    <!-- ========================================== -->
-    <div class="grid grid-cols-3 gap-1 bg-[var(--card)] border border-[var(--border)] p-1 rounded-xl">
-      <button onclick="switchTab('record')" id="tabBtn-record" class="py-1.5 px-2 rounded-lg f-body transition-all">
-        ⚡ 2秒記一筆
-      </button>
-      <button onclick="switchTab('cards')" id="tabBtn-cards" class="py-1.5 px-2 rounded-lg f-body transition-all">
-        💳 卡包與攻略
-      </button>
-      <button onclick="switchTab('history')" id="tabBtn-history" class="py-1.5 px-2 rounded-lg f-body transition-all">
-        📊 帳單與備份
-      </button>
-    </div>
+    <!-- ======================================================= -->
+    <!-- VIEW 2: 📊 圓餅圖報表與帳單明細 (手機點擊底部「統計明細」或電腦切至報表時顯示) -->
+    <!-- ======================================================= -->
+    <div id="view-analytics" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        <!-- 左側：互動圓餅圖與各卡帳單彙總 -->
+        <div class="lg:col-span-5 space-y-6">
+          <div id="analyticsDonutMount"></div>
 
-    <!-- ========================================== -->
-    <!-- TAB 1: ⚡ 2 秒記一筆 -->
-    <!-- ========================================== -->
-    <div id="tab-record" class="space-y-3">
-      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 shadow-sm space-y-3">
-        <div class="flex items-center justify-between border-b border-[var(--border)] pb-1.5">
-          <h3 class="f-title text-[var(--foreground)]">⚡ 2 秒記一筆</h3>
-          <span class="f-micro text-[var(--muted-foreground)]">所有選項皆可隨時 +新增 / ✏️編輯</span>
-        </div>
-
-        <!-- 步驟 1：消費地點/類別 -->
-        <div class="space-y-1">
-          <div class="flex items-center justify-between">
-            <label class="f-small font-semibold text-[var(--foreground)]">1. 消費地點 / 類別</label>
-            <button onclick="openSceneModal()" class="f-micro text-[var(--muted-foreground)] hover:text-[var(--foreground)] underline">✏️ 編輯/新增地點</button>
+          <!-- 各信用卡本期累計帳單小計 -->
+          <div class="surface-card p-5 sm:p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-[16px] font-bold text-[var(--text-main)]">💳 各卡本月累計消費</h3>
+              <span class="text-[12.5px] text-[var(--text-muted)]">核對電子帳單用</span>
+            </div>
+            <div id="perCardSpendSummary" class="divide-y divide-[var(--border-hairline)]"></div>
           </div>
-          <div id="recordScenePills" class="flex flex-wrap gap-1"></div>
         </div>
 
-        <!-- 步驟 2：支付方式快捷鍵 -->
-        <div class="space-y-1">
-          <div class="flex items-center justify-between">
-            <label class="f-small font-semibold text-[var(--foreground)]">2. 支付方式</label>
-            <button onclick="openPayMethodManageModal()" class="f-micro text-[var(--muted-foreground)] hover:text-[var(--foreground)] underline">✏️ 新增/編輯支付 & 預設卡</button>
+        <!-- 右側：完整消費明細與資料備份 -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="surface-card p-5 sm:p-6 space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h3 class="text-[16px] font-bold text-[var(--text-main)]">🧾 消費紀錄明細</h3>
+                <p id="txFilterHint" class="text-[12.5px] text-[var(--text-muted)] mt-0.5">點選左側圓餅圖區塊可快速篩選</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="clearChartFilterBtn" onclick="clearChartSliceFilter()" class="hidden text-[12.5px] font-medium px-2.5 py-1 rounded-lg bg-[var(--accent-soft)] text-[var(--accent-text)]">
+                  顯示全部 ✕
+                </button>
+                <select id="historyFilterCard" onchange="handleDropdownFilterChange()" class="text-[13px] px-3 py-1.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-main)] focus:outline-none">
+                  <option value="all">全部帳戶</option>
+                </select>
+              </div>
+            </div>
+            <div id="fullTransactionsList" class="divide-y divide-[var(--border-hairline)]"></div>
           </div>
-          <div id="payMethodButtons" class="grid grid-cols-2 gap-1.5"></div>
-        </div>
 
-        <!-- 步驟 2.5：彈性切換本次刷哪張卡 -->
-        <div id="cardSelectorSection" class="space-y-1.5 bg-[var(--background)] p-2.5 rounded-xl border border-[var(--border)]">
-          <div class="flex items-center justify-between flex-wrap gap-1">
-            <span id="cardSelectorLabel" class="f-small font-semibold text-[var(--foreground)]">💳 本次使用卡片：</span>
-            <div class="flex items-center gap-1">
-              <button onclick="setCurrentAsPayDefault()" class="f-micro px-1.5 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:opacity-80">
-                ⭐ 設為預設
+          <!-- 備份與還原 -->
+          <div class="surface-card p-5 sm:p-6 space-y-3">
+            <h3 class="text-[15px] font-bold text-[var(--text-main)]">🛡️ 本機資料備份與還原</h3>
+            <p class="text-[13px] text-[var(--text-muted)] leading-relaxed">
+              採用零個資外洩架構，帳務資料僅儲存在你目前裝置的瀏覽器中。更換手機或跨電腦同步時，可匯出 JSON 檔案備份。
+            </p>
+            <div class="flex flex-wrap gap-2.5 pt-1">
+              <button onclick="exportBackupJSON()" class="text-[13px] font-semibold px-4 py-2 rounded-xl bg-[var(--bg-pill)] text-[var(--text-main)] hover:opacity-85">
+                📥 匯出備份檔 (.json)
               </button>
-              <button onclick="openEditCardModal(selectedCardId)" class="f-micro px-1.5 py-0.5 rounded border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-                ✏️ 編輯此卡
-              </button>
-              <button onclick="openEditCardModal(null)" class="f-micro px-1.5 py-0.5 rounded border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-                + 新增卡
+              <label class="text-[13px] font-semibold px-4 py-2 rounded-xl bg-[var(--bg-pill)] text-[var(--text-main)] hover:opacity-85 cursor-pointer">
+                📤 匯入還原
+                <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
+              </label>
+              <button onclick="resetToDefaultData()" class="text-[13px] font-medium px-4 py-2 rounded-xl border border-[var(--border-hairline)] text-[var(--text-muted)] hover:text-[var(--danger)]">
+                重置為預設範本
               </button>
             </div>
           </div>
-          <div id="recordCardPills" class="flex flex-wrap gap-1"></div>
         </div>
-
-        <!-- 步驟 3：輸入金額 (大字) 與備註 (小字) -->
-        <div class="grid grid-cols-5 gap-2">
-          <div class="col-span-3">
-            <label class="f-small font-semibold text-[var(--foreground)] block mb-0.5">3. 消費金額 (NT$)</label>
-            <input id="expenseAmount" type="number" inputmode="numeric" placeholder="0"
-              oninput="updateSmartAdvisory()"
-              class="w-full px-3 py-1.5 f-hero-num rounded-xl bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:border-[var(--primary)]" />
-          </div>
-          <div class="col-span-2">
-            <label class="f-micro text-[var(--muted-foreground)] block mb-1">備註 / 店名 (選填)</label>
-            <input id="expenseNote" type="text" placeholder="例: 好樂迪/晚餐"
-              class="w-full px-2.5 py-2 f-small rounded-xl bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:border-[var(--primary)]" />
-          </div>
-        </div>
-
-        <!-- 動態智慧提醒面板 -->
-        <div id="smartAdvisoryPanel"></div>
-
-        <!-- 送出記帳按鈕 -->
-        <button onclick="submitExpense()"
-          class="w-full py-2.5 rounded-xl f-title bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm hover:opacity-90 active:scale-[0.99] transition-all">
-          ✅ 確認記帳
-        </button>
-      </div>
-
-      <!-- 最近 3 筆快速預覽 -->
-      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 shadow-sm space-y-1.5">
-        <div class="flex items-center justify-between">
-          <h4 class="f-small font-semibold text-[var(--muted-foreground)]">🕒 最近記帳紀錄</h4>
-          <button onclick="switchTab('history')" class="f-micro text-[var(--muted-foreground)] underline">全部明細</button>
-        </div>
-        <div id="recentTransactionsList" class="space-y-1.5"></div>
       </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- TAB 2: 💳 卡包與攻略 -->
-    <!-- ========================================== -->
-    <div id="tab-cards" class="hidden space-y-2.5">
-      <div class="flex items-center justify-between bg-[var(--card)] border border-[var(--border)] rounded-2xl px-3 py-2">
+    <!-- ======================================================= -->
+    <!-- VIEW 3: 💳 我的卡包攻略 (電腦版雙欄/三欄優雅卡片牆；手機版清晰清單) -->
+    <!-- ======================================================= -->
+    <div id="view-cards" class="hidden space-y-6">
+      <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h3 class="f-title text-[var(--foreground)]">💳 我的信用卡攻略 & 週期</h3>
-          <p class="f-micro text-[var(--muted-foreground)]">勾選「本月已領券/登錄」後，當月即不再跳出提醒</p>
+          <h2 class="text-[20px] font-bold text-[var(--text-main)]">💳 我的信用卡包與權益週期</h2>
+          <p class="text-[13.5px] text-[var(--text-muted)] mt-0.5">管理結帳日、繳費日、每月領券免打擾勾選與回饋上限</p>
         </div>
-        <button onclick="openEditCardModal(null)" class="f-small font-semibold px-2.5 py-1 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)]">
-          + 新增卡片
+        <button onclick="openEditCardModal(null)" class="text-[13.5px] font-semibold px-4 py-2.5 rounded-xl bg-[var(--accent)] text-white shadow-sm hover:opacity-90">
+          + 新增信用卡
         </button>
       </div>
-      <div id="cardsContainer" class="space-y-2.5"></div>
+      <div id="cardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- TAB 3: 📊 帳單與備份 -->
-    <!-- ========================================== -->
-    <div id="tab-history" class="hidden space-y-3">
-      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 space-y-2.5">
-        <h3 class="f-title text-[var(--foreground)]">📊 本月消費與預估回饋統計</h3>
-        <div id="monthlySummaryStats" class="grid grid-cols-3 gap-1.5"></div>
-        <div id="perCardSpendSummary" class="space-y-1 pt-2 border-t border-[var(--border)]"></div>
-      </div>
+  </main>
 
-      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 space-y-2">
-        <div class="flex items-center justify-between">
-          <h3 class="f-title text-[var(--foreground)]">🧾 消費明細</h3>
-          <select id="historyFilterCard" onchange="renderHistoryTab()" class="f-small px-2 py-1 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]">
-            <option value="all">全部卡片 / 現金</option>
-          </select>
-        </div>
-        <div id="fullTransactionsList" class="space-y-1.5"></div>
-      </div>
-
-      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 space-y-2">
-        <h3 class="f-title text-[var(--foreground)]">🛡️ 方案 A 資料備份與還原</h3>
-        <p class="f-micro text-[var(--muted-foreground)]">
-          所有資料僅保存在你的手機瀏覽器裡。可隨時匯出 JSON 備份或還原。
-        </p>
-        <div class="flex flex-wrap gap-1.5">
-          <button onclick="exportBackupJSON()" class="f-small font-semibold px-2.5 py-1.5 rounded-xl bg-[var(--secondary)] text-[var(--secondary-foreground)]">
-            📥 匯出 JSON 備份
-          </button>
-          <label class="f-small font-semibold px-2.5 py-1.5 rounded-xl bg-[var(--secondary)] text-[var(--secondary-foreground)] cursor-pointer">
-            📤 匯入 JSON 還原
-            <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
-          </label>
-          <button onclick="resetToDefaultData()" class="f-micro px-2.5 py-1.5 rounded-xl border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-            🔄 重置預設範本
-          </button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- MODAL 1: 新增 / 編輯 / 刪除「支付方式」與預設綁定卡 -->
-  <div id="payMethodModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl max-w-md w-full p-3.5 space-y-2.5 shadow-xl max-h-[88vh] overflow-y-auto">
-      <div class="flex items-center justify-between">
-        <h3 class="f-title text-[var(--foreground)]">⚙️ 新增 / 編輯支付方式 & 預設卡片</h3>
-        <button onclick="closePayMethodManageModal()" class="f-micro px-2 py-1 rounded bg-[var(--secondary)]">關閉</button>
-      </div>
-      <p class="f-micro text-[var(--muted-foreground)]">
-        隨時新增常用支付工具（例：街口支付、全支付、台新 Pay），並指定預設綁定卡。
-      </p>
-
-      <div class="p-2.5 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-1.5">
-        <div class="f-small font-semibold text-[var(--foreground)]">➕ 新增支付方式</div>
-        <div class="grid grid-cols-4 gap-1.5">
-          <input id="newPayIcon" type="text" value="📱" placeholder="圖示" class="col-span-1 px-2 py-1 f-small rounded-lg bg-[var(--card)] border border-[var(--border)]" />
-          <input id="newPayName" type="text" placeholder="名稱 (例: 街口支付 / 全支付)" class="col-span-3 px-2 py-1 f-small rounded-lg bg-[var(--card)] border border-[var(--border)]" />
-        </div>
-        <div class="flex items-center gap-1.5">
-          <select id="newPayDefaultCard" class="flex-1 px-2 py-1 f-small rounded-lg bg-[var(--card)] border border-[var(--border)]"></select>
-          <button onclick="addNewPayMethod()" class="px-2.5 py-1 rounded-lg f-small font-semibold bg-[var(--primary)] text-[var(--primary-foreground)]">
-            + 新增
-          </button>
-        </div>
-      </div>
-
-      <div id="payMethodManageList" class="space-y-1.5"></div>
-
-      <button onclick="savePayMethodChanges()" class="w-full py-2 rounded-xl f-body font-bold bg-[var(--primary)] text-[var(--primary-foreground)]">
-        💾 儲存變更
+  <!-- ========================================================= -->
+  <!-- 手機版專屬：底部懸浮 App 導覽列 (仿 iOS MOZE / 簡單記帳 底部 Tab Bar) -->
+  <!-- ========================================================= -->
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 backdrop-blur-lg bg-[var(--bg-surface)]/92 border-t border-[var(--border-hairline)] px-4 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
+    <div class="max-w-md mx-auto grid grid-cols-3 gap-2">
+      <button onclick="switchView('dashboard')" id="mobNav-dashboard" class="flex flex-col items-center justify-center py-1 rounded-xl transition-colors">
+        <span class="text-[18px] leading-none">⚡</span>
+        <span class="text-[11.5px] font-semibold mt-1">查卡快記</span>
+      </button>
+      <button onclick="switchView('analytics')" id="mobNav-analytics" class="flex flex-col items-center justify-center py-1 rounded-xl transition-colors">
+        <span class="text-[18px] leading-none">📊</span>
+        <span class="text-[11.5px] font-semibold mt-1">圓餅圖帳單</span>
+      </button>
+      <button onclick="switchView('cards')" id="mobNav-cards" class="flex flex-col items-center justify-center py-1 rounded-xl transition-colors">
+        <span class="text-[18px] leading-none">💳</span>
+        <span class="text-[11.5px] font-semibold mt-1">卡包攻略</span>
       </button>
     </div>
-  </div>
+  </nav>
 
-  <!-- MODAL 2: 新增 / 編輯 / 刪除「消費地點與分類」 -->
-  <div id="sceneModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl max-w-md w-full p-3.5 space-y-2.5 shadow-xl max-h-[88vh] overflow-y-auto">
+  <!-- ========================================================= -->
+  <!-- MODALS (新增/編輯支付、地點分類、關鍵字庫、信用卡攻略) -->
+  <!-- ========================================================= -->
+
+  <!-- MODAL 1: 支付工具管理 -->
+  <div id="payMethodModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="surface-card max-w-md w-full p-6 space-y-4 max-h-[88vh] overflow-y-auto">
       <div class="flex items-center justify-between">
-        <h3 class="f-title text-[var(--foreground)]">📍 新增 / 編輯消費地點分類</h3>
-        <button onclick="closeSceneModal()" class="f-micro px-2 py-1 rounded bg-[var(--secondary)]">關閉</button>
+        <h3 class="text-[16px] font-bold text-[var(--text-main)]">⚙️ 管理支付工具 & 預設綁定卡</h3>
+        <button onclick="closePayMethodManageModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">關閉</button>
       </div>
-      <div class="flex gap-1.5">
-        <input id="newSceneIcon" type="text" placeholder="圖示" value="🛍️" class="w-12 px-2 py-1 f-small rounded-lg bg-[var(--background)] border border-[var(--border)]" />
-        <input id="newSceneName" type="text" placeholder="新地點名稱 (例: 全聯 / 網購)" class="flex-1 px-2 py-1 f-small rounded-lg bg-[var(--background)] border border-[var(--border)]" />
-        <button onclick="addCustomScene()" class="px-2.5 py-1 rounded-lg f-small font-semibold bg-[var(--primary)] text-[var(--primary-foreground)]">+ 新增</button>
+      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
+        <div class="text-[13px] font-semibold text-[var(--text-main)]">➕ 新增支付工具</div>
+        <div class="grid grid-cols-4 gap-2">
+          <input id="newPayIcon" type="text" value="📱" placeholder="圖示" class="col-span-1 px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+          <input id="newPayName" type="text" placeholder="例：街口支付 / 全支付" class="col-span-3 px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="newPayDefaultCard" class="flex-1 px-3 py-2 text-[13.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]"></select>
+          <button onclick="addNewPayMethod()" class="px-4 py-2 rounded-xl text-[13.5px] font-semibold bg-[var(--accent)] text-white">+ 新增</button>
+        </div>
       </div>
-      <div id="sceneManageList" class="space-y-1.5"></div>
-      <button onclick="saveSceneEdits()" class="w-full py-2 rounded-xl f-body font-bold bg-[var(--primary)] text-[var(--primary-foreground)]">
-        💾 儲存地點變更
-      </button>
+      <div id="payMethodManageList" class="space-y-2.5"></div>
+      <button onclick="savePayMethodChanges()" class="w-full py-3 rounded-xl text-[14px] font-semibold bg-[var(--accent)] text-white">儲存變更</button>
     </div>
   </div>
 
-  <!-- MODAL 3: 管理「店家/情境關鍵字智慧判斷庫」 -->
-  <div id="keywordRuleModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl max-w-md w-full p-3.5 space-y-2.5 shadow-xl max-h-[88vh] overflow-y-auto">
+  <!-- MODAL 2: 消費地點分類管理 -->
+  <div id="sceneModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="surface-card max-w-md w-full p-6 space-y-4 max-h-[88vh] overflow-y-auto">
       <div class="flex items-center justify-between">
-        <h3 class="f-title text-[var(--foreground)]">🔍 管理「店家/地段關鍵字」智慧判斷庫</h3>
-        <button onclick="closeKeywordRuleModal()" class="f-micro px-2 py-1 rounded bg-[var(--secondary)]">關閉</button>
+        <h3 class="text-[16px] font-bold text-[var(--text-main)]">📍 新增 / 編輯消費分類</h3>
+        <button onclick="closeSceneModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">關閉</button>
       </div>
-      <div class="p-2.5 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-1.5">
-        <div class="f-small font-semibold">➕ 新增店家關鍵字規則</div>
-        <input id="newKwWords" type="text" placeholder="關鍵字 (逗號分隔，例: 享溫馨,星聚點,唱歌)" class="w-full px-2 py-1 f-small rounded-lg bg-[var(--card)] border border-[var(--border)]" />
-        <div class="grid grid-cols-2 gap-1.5">
-          <select id="newKwScene" class="px-2 py-1 f-small rounded-lg bg-[var(--card)] border border-[var(--border)]"></select>
-          <select id="newKwLinePay" class="px-2 py-1 f-small rounded-lg bg-[var(--card)] border border-[var(--border)]">
-            <option value="any">支付不限 (依現場)</option>
-            <option value="no_lp">通常不支援 LINE Pay (僅刷卡)</option>
+      <div class="flex gap-2">
+        <input id="newSceneIcon" type="text" value="🛍️" class="w-14 px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-center" />
+        <input id="newSceneName" type="text" placeholder="新分類名稱（例：全聯 / 網購）" class="flex-1 px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
+        <button onclick="addCustomScene()" class="px-4 py-2 rounded-xl text-[13.5px] font-semibold bg-[var(--accent)] text-white">+ 新增</button>
+      </div>
+      <div id="sceneManageList" class="space-y-2"></div>
+      <button onclick="saveSceneEdits()" class="w-full py-3 rounded-xl text-[14px] font-semibold bg-[var(--accent)] text-white">儲存分類變更</button>
+    </div>
+  </div>
+
+  <!-- MODAL 3: 店家關鍵字智慧庫 -->
+  <div id="keywordRuleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="surface-card max-w-lg w-full p-6 space-y-4 max-h-[88vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="text-[16px] font-bold text-[var(--text-main)]">🔍 管理店家關鍵字判斷庫</h3>
+        <button onclick="closeKeywordRuleModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">關閉</button>
+      </div>
+      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-2.5">
+        <div class="text-[13px] font-semibold">➕ 新增愛店關鍵字規則</div>
+        <input id="newKwWords" type="text" placeholder="關鍵字（逗號分隔，例：享溫馨, 星聚點）" class="w-full px-3 py-2 text-[13.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+        <div class="grid grid-cols-2 gap-2">
+          <select id="newKwScene" class="px-3 py-2 text-[13px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]"></select>
+          <select id="newKwLinePay" class="px-3 py-2 text-[13px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]">
+            <option value="any">支付不限</option>
+            <option value="no_lp">僅能刷卡 / Apple Pay</option>
             <option value="has_lp">支援 LINE Pay 優先</option>
           </select>
         </div>
-        <input id="newKwTip" type="text" placeholder="避坑/刷卡提醒" class="w-full px-2 py-1 f-small rounded-lg bg-[var(--card)] border border-[var(--border)]" />
-        <button onclick="addKeywordRule()" class="w-full py-1.5 rounded-lg f-small font-semibold bg-[var(--primary)] text-[var(--primary-foreground)]">+ 新增關鍵字規則</button>
+        <input id="newKwTip" type="text" placeholder="刷卡避坑提醒文字" class="w-full px-3 py-2 text-[13.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+        <button onclick="addKeywordRule()" class="w-full py-2 rounded-xl text-[13.5px] font-semibold bg-[var(--accent)] text-white">+ 新增規則</button>
       </div>
-      <div id="keywordRuleList" class="space-y-1.5"></div>
+      <div id="keywordRuleList" class="space-y-2.5"></div>
     </div>
   </div>
 
-  <!-- MODAL 4: 編輯 / 新增信用卡與各場景回饋攻略 -->
-  <div id="cardEditModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl max-w-md w-full p-3.5 space-y-2.5 shadow-xl max-h-[90vh] overflow-y-auto">
+  <!-- MODAL 4: 編輯 / 新增信用卡攻略 -->
+  <div id="cardEditModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="surface-card max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
-        <h3 id="cardEditModalTitle" class="f-title text-[var(--foreground)]">✏️ 編輯信用卡攻略</h3>
-        <button onclick="closeEditCardModal()" class="f-micro px-2 py-1 rounded bg-[var(--secondary)]">關閉</button>
+        <h3 id="cardEditModalTitle" class="text-[16px] font-bold text-[var(--text-main)]">✏️ 編輯信用卡攻略</h3>
+        <button onclick="closeEditCardModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">關閉</button>
       </div>
       <input type="hidden" id="editCardId" />
-      <div class="grid grid-cols-2 gap-1.5">
+      <div class="grid grid-cols-2 gap-3">
         <div class="col-span-2">
-          <label class="f-micro text-[var(--muted-foreground)]">卡片名稱（不填卡號，零個資風險）</label>
-          <input id="editCardName" type="text" placeholder="例: 國泰 CUBE 卡" class="w-full px-2 py-1 f-body rounded-lg bg-[var(--background)] border border-[var(--border)]" />
+          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">卡片名稱（不填卡號，保護個資）</label>
+          <input id="editCardName" type="text" class="w-full px-3 py-2 text-[14px] font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
         </div>
         <div>
-          <label class="f-micro text-[var(--muted-foreground)]">每月結帳日 (1~31號)</label>
-          <input id="editCardStatementDay" type="number" min="1" max="31" class="w-full px-2 py-1 f-small rounded-lg bg-[var(--background)] border border-[var(--border)]" />
+          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">每月結帳日 (1~31)</label>
+          <input id="editCardStatementDay" type="number" min="1" max="31" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
         </div>
         <div>
-          <label class="f-micro text-[var(--muted-foreground)]">每月繳費截止日 (1~31號)</label>
-          <input id="editCardDueDay" type="number" min="1" max="31" class="w-full px-2 py-1 f-small rounded-lg bg-[var(--background)] border border-[var(--border)]" />
+          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">每月繳費截止日 (1~31)</label>
+          <input id="editCardDueDay" type="number" min="1" max="31" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
         </div>
         <div>
-          <label class="f-micro text-[var(--muted-foreground)]">每月加碼刷卡上限 (0=無上限)</label>
-          <input id="editCardCap" type="number" min="0" placeholder="例: 15000" class="w-full px-2 py-1 f-small rounded-lg bg-[var(--background)] border border-[var(--border)]" />
+          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">每月加碼刷卡上限 (0=無上限)</label>
+          <input id="editCardCap" type="number" min="0" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
         </div>
         <div>
-          <label class="f-micro text-[var(--muted-foreground)]">支援支付 ID (逗號分隔)</label>
-          <input id="editCardPayments" type="text" placeholder="linepay,applepay,card" class="w-full px-2 py-1 f-small rounded-lg bg-[var(--background)] border border-[var(--border)]" />
+          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">支援支付 ID (逗號分隔)</label>
+          <input id="editCardPayments" type="text" placeholder="linepay,applepay,card" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
         </div>
       </div>
 
-      <div class="p-2 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-1">
-        <label class="flex items-center gap-1.5 f-small font-semibold cursor-pointer">
-          <input id="editCardNeedTask" type="checkbox" class="rounded" />
-          <span>此卡有「每月需領券 / 需登錄」任務（勾選完成後當月不跳提醒）</span>
+      <div class="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-2">
+        <label class="flex items-center gap-2 text-[13.5px] font-semibold cursor-pointer">
+          <input id="editCardNeedTask" type="checkbox" class="rounded w-4 h-4" />
+          <span>每月需領券 / 登錄提醒（勾選完成後當月不再跳出）</span>
         </label>
-        <input id="editCardTaskText" type="text" placeholder="提醒文字，例: Richart Life App 領券" class="w-full px-2 py-1 f-small rounded-lg bg-[var(--card)] border border-[var(--border)]" />
+        <input id="editCardTaskText" type="text" placeholder="提醒文字，例：Richart Life App 領加碼券" class="w-full px-3 py-2 text-[13px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
       </div>
 
       <div>
-        <label class="f-micro text-[var(--muted-foreground)]">攻略備註 / 逾期繳費處理注意事項</label>
-        <textarea id="editCardNote" rows="2" class="w-full px-2 py-1 f-small rounded-lg bg-[var(--background)] border border-[var(--border)]"></textarea>
+        <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">刷卡注意事項 & 逾期客服備註</label>
+        <textarea id="editCardNote" rows="2" class="w-full px-3 py-2 text-[13px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]"></textarea>
       </div>
 
-      <div class="space-y-1.5">
-        <label class="f-small font-semibold text-[var(--foreground)]">🎯 各消費地點回饋率 (%) & 需切換權益</label>
-        <div id="editCardSceneRules" class="space-y-1.5"></div>
+      <div class="space-y-2.5">
+        <label class="text-[13.5px] font-bold text-[var(--text-main)]">🎯 各消費分類回饋率 (%) 與權益名稱</label>
+        <div id="editCardSceneRules" class="space-y-2.5"></div>
       </div>
 
-      <div class="flex gap-2 pt-1">
-        <button onclick="saveCardEdit()" class="flex-1 py-2 rounded-xl f-body font-bold bg-[var(--primary)] text-[var(--primary-foreground)]">
-          💾 儲存卡片攻略
-        </button>
-        <button id="deleteCardBtn" onclick="deleteCardFromModal()" class="px-3 py-2 rounded-xl f-small bg-[var(--secondary)] text-[var(--secondary-foreground)]">
-          🗑️ 刪除
-        </button>
+      <div class="flex gap-2.5 pt-2">
+        <button onclick="saveCardEdit()" class="flex-1 py-3 rounded-xl text-[14px] font-semibold bg-[var(--accent)] text-white">儲存卡片設定</button>
+        <button id="deleteCardBtn" onclick="deleteCardFromModal()" class="px-4 py-3 rounded-xl text-[13.5px] font-medium bg-[var(--danger-soft)] text-[var(--danger)]">刪除</button>
       </div>
     </div>
   </div>
@@ -417,6 +522,8 @@
     }
 
     const STORAGE_KEY = 'LAZY_CARD_TRACKER_V2';
+    const CHART_COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#06B6D4', '#64748B'];
+
     const now = new Date();
     const CURRENT_MONTH = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     document.getElementById('currentMonthBadge').textContent = `${CURRENT_MONTH} 帳期`;
@@ -426,7 +533,7 @@
       { id: 'cosmed', icon: '💄', name: '康是美/藥妝' },
       { id: 'dining', icon: '🍽️', name: '餐廳吃飯' },
       { id: 'ktv', icon: '🎤', name: '唱歌/娛樂' },
-      { id: 'mrt', icon: '🚇', name: '搭捷運/交通' },
+      { id: 'mrt', icon: '🚇', name: '捷運/交通' },
       { id: 'abroad', icon: '✈️', name: '出國旅遊' },
       { id: 'general', icon: '🛍️', name: '一般/其他' }
     ];
@@ -437,16 +544,16 @@
         keywords: ['唱歌', 'ktv', '好樂迪', '錢櫃', '星聚點', '享溫馨', 'singgo', '夜唱'],
         sceneId: 'ktv',
         linePayMode: 'no_lp',
-        title: '🎤 唱歌 / KTV（錢櫃、好樂迪等）避坑指南',
-        tip: '⚠️ 錢櫃、好樂迪「不屬於」國泰 CUBE 常態【樂饗購】！除非當月壽星切【慶生月(10%)】或 CUBE App 有領到 KTV 限時券，否則刷 CUBE 僅 0.3%！👉 可刷 LINE Pay (如享溫馨) 首選【永豐 DAWAY 4.5%】；錢櫃/好樂迪僅能刷卡時請刷【星展 eco (1.2% 保底)】！'
+        title: '🎤 唱歌 / KTV（錢櫃、好樂迪）避坑提醒',
+        tip: '錢櫃、好樂迪「不屬於」國泰 CUBE 常態【樂饗購】（除非當月壽星切慶生月 10% 或有領限時 KTV 券，否則僅 0.3%）。若可刷 LINE Pay (如享溫馨) 首選永豐 DAWAY 4.5%；錢櫃/好樂迪僅能刷卡時，請刷【星展 eco 1.2%】保底最高！'
       },
       {
         id: 'kw-general-dining',
         keywords: ['一般餐廳', '餐廳', '吃飯', '聚餐', '火鍋', '燒肉', '居酒屋', '早午餐', '海底撈', '壽司郎', '藏壽司', '王品', '鼎泰豐', '麥當勞', '肯德基'],
         sceneId: 'dining',
         linePayMode: 'any',
-        title: '🍽️ 一般餐廳 / 聚餐判斷法則',
-        tip: '① 不能刷 LINE Pay (刷實體卡/Apple Pay)：首選【國泰 CUBE】切【樂饗購】3% 無上限！\n② 可刷 LINE Pay：刷【永豐 DAWAY (4.5%)】或【台新 @GoGo (切 Pay著刷+領券 3.8%)】！'
+        title: '🍽️ 一般餐廳判斷口訣：先看能不能刷 LINE Pay',
+        tip: '• 僅能刷卡 / Apple Pay：無腦刷【國泰 CUBE】切【樂饗購】享 3% 無上限。\n• 可刷 LINE Pay：刷【永豐 DAWAY (4.5%)】或【台新 @GoGo (3.8% 需領券)】回饋更高！'
       },
       {
         id: 'kw-dept-dining',
@@ -454,7 +561,7 @@
         sceneId: 'dining',
         linePayMode: 'no_lp',
         title: '🏬 百貨公司內餐廳 / 美食街',
-        tip: '💡 【國泰 CUBE】的【樂饗購 (3% 無上限)】同時涵蓋「國內餐飲」＋「各大百貨」！在百貨吃飯用 Apple Pay / 實體卡刷 CUBE 最穩！'
+        tip: '國泰 CUBE 的【樂饗購 (3% 無上限)】同時涵蓋國內餐飲與各大主力百貨，不怕帳單掛在百貨名下，用 Apple Pay 或實體卡刷 CUBE 最穩！'
       },
       {
         id: 'kw-hotel-dining',
@@ -462,7 +569,7 @@
         sceneId: 'dining',
         linePayMode: 'no_lp',
         title: '🏨 飯店內餐廳 / Buffet 吃到飽',
-        tip: '⚠️ 飯店餐廳有時掛在「飯店住宿」！刷【國泰 CUBE】若掛餐廳切【樂饗購 (3%)】、掛飯店切【趣旅行 (3%)】（當晚 23:59 前看通知切換即可）。'
+        tip: '飯店附設餐廳有時請款掛在「飯店住宿」。刷國泰 CUBE 時看當下推播店名：掛餐廳切【樂饗購 3%】、掛飯店切【趣旅行 3%】（當晚 23:59 前切換皆有效）。'
       },
       {
         id: 'kw-drink-cafe',
@@ -470,7 +577,7 @@
         sceneId: 'dining',
         linePayMode: 'has_lp',
         title: '🧋 手搖飲 / 咖啡廳 / 街邊小店',
-        tip: '支援 LINE Pay 直接用【永豐 DAWAY (4.5%)】或【台新 @GoGo (3.8%)】；星巴克等僅刷卡店刷【國泰 CUBE (切樂饗購 3%)】。'
+        tip: '支援 LINE Pay 直接用【永豐 DAWAY (4.5%)】或【台新 @GoGo (3.8%)】；星巴克等僅刷卡店請刷【國泰 CUBE (切樂饗購 3%)】。'
       },
       {
         id: 'kw-cosmed-drug',
@@ -478,7 +585,7 @@
         sceneId: 'cosmed',
         linePayMode: 'any',
         title: '💄 康是美 / 藥妝店',
-        tip: '康是美/屈臣氏用 Apple Pay 或實體卡刷【國泰 CUBE (切樂饗購 3% 無上限)】（切記勿綁 LINE Pay）；若用 LINE Pay 則選【永豐 DAWAY】或【台新 @GoGo】。'
+        tip: '康是美/屈臣氏用 Apple Pay 或實體卡刷【國泰 CUBE (切樂饗購 3% 無上限)】（切記勿綁 LINE Pay）；若用 LINE Pay 結帳則選永豐 DAWAY 或台新 @GoGo。'
       },
       {
         id: 'kw-taxi-uber',
@@ -486,87 +593,87 @@
         sceneId: 'mrt',
         linePayMode: 'no_lp',
         title: '🚕 叫車 (Uber / 大車隊) / 高鐵 / 交通',
-        tip: '搭捷運刷【星展 eco】；搭高鐵、Uber、台灣大車隊刷【國泰 CUBE】切【趣旅行】享 3% 無上限！'
+        tip: '日常搭捷運刷【星展 eco】；搭高鐵、Uber、台灣大車隊刷【國泰 CUBE】切【趣旅行】享 3% 無上限！'
       }
     ];
 
     const DEFAULT_PAY_METHODS = [
       { id: 'linepay', icon: '💚', name: 'LINE Pay', defaultCardId: 'sinopac-daway' },
       { id: 'applepay', icon: '🍎', name: 'Apple Pay', defaultCardId: 'cathay-cube' },
-      { id: 'card', icon: '💳', name: '實體卡/刷卡', defaultCardId: 'cathay-cube' },
-      { id: 'cash', icon: '💵', name: '現金 Cash', defaultCardId: 'CASH' }
+      { id: 'card', icon: '💳', name: '實體刷卡', defaultCardId: 'cathay-cube' },
+      { id: 'cash', icon: '💵', name: '現金', defaultCardId: 'CASH' }
     ];
 
     const DEFAULT_CARDS = [
       {
         id: 'cathay-cube',
-        name: '國泰 CUBE 卡',
+        name: '國泰 CUBE',
         statementDay: 5,
         dueDay: 22,
         monthlySpendCap: 0,
         supportedPayments: ['applepay', 'card', 'linepay'],
         requireMonthlyTask: false,
-        monthlyTaskDesc: '季加碼或唱歌/特定通路可至 CUBE App 領優惠券',
+        monthlyTaskDesc: '季加碼或特定通路可至 CUBE App 領優惠券',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: '⚠️ CUBE 綁 LINE Pay 不享 3% 加碼（請用 Apple Pay 或實體卡）！每晚 23:59 前切好當天權益即可。逾期 1~3 天可打客服 02-2383-1000 補繳申請免違約金。',
+        overdueNote: '注意：CUBE 綁 LINE Pay 不享 3% 加碼（請用 Apple Pay 或實體卡）。每晚 23:59 前切換當天權益即可。客服：02-2383-1000。',
         sceneRules: {
-          dining:  { rate: 3.0, switchTier: '樂饗購', recPay: 'Apple Pay / 實體卡', note: '國內餐廳/百貨餐廳 3% 無上限 (勿綁 LINE Pay)' },
-          cosmed:  { rate: 3.0, switchTier: '樂饗購', recPay: 'Apple Pay / 實體卡', note: '康是美/屈臣氏 3% 無上限 (勿綁 LINE Pay)' },
-          abroad:  { rate: 3.0, switchTier: '趣旅行', recPay: 'Apple Pay / 實體卡', note: '海外實體/機票/訂房 3% 無上限！大額首選' },
-          ktv:     { rate: 0.3, switchTier: '⚠️常態不支援(除非壽星切慶生月10%或領KTV券)', recPay: '有領券/壽星才刷', note: '錢櫃/好樂迪非樂饗購常態通路！沒券刷僅 0.3%，建議改刷星展 eco (1.2%)' },
-          mrt:     { rate: 3.0, switchTier: '趣旅行', recPay: 'Apple Pay / 實體卡', note: '高鐵/Uber/大車隊切【趣旅行】3%' },
-          cvs:     { rate: 0.3, switchTier: '不推薦超商', recPay: '改刷永豐/台新', note: '超商建議改刷永豐 DAWAY 或台新 @GoGo' },
-          general: { rate: 0.3, switchTier: '一般消費', recPay: 'Apple Pay / 實體卡', note: '非指定通路僅 0.3%，未知通路建議刷星展 eco 1.2%' }
+          dining:  { rate: 3.0, switchTier: '樂饗購', recPay: 'Apple Pay / 實體卡', note: '國內餐廳與百貨餐廳 3% 無上限（勿綁 LINE Pay）' },
+          cosmed:  { rate: 3.0, switchTier: '樂饗購', recPay: 'Apple Pay / 實體卡', note: '康是美/屈臣氏 3% 無上限（勿綁 LINE Pay）' },
+          abroad:  { rate: 3.0, switchTier: '趣旅行', recPay: 'Apple Pay / 實體卡', note: '海外實體、機票、訂房 3% 無上限，大額首選' },
+          ktv:     { rate: 0.3, switchTier: '常態不支援 (壽星切慶生月10%)', recPay: '有領券或壽星才刷', note: '錢櫃/好樂迪非樂饗購常態通路，無券建議改刷星展 eco 1.2%' },
+          mrt:     { rate: 3.0, switchTier: '趣旅行', recPay: 'Apple Pay / 實體卡', note: '高鐵、Uber、大車隊切【趣旅行】享 3%' },
+          cvs:     { rate: 0.3, switchTier: '不推薦超商', recPay: '改刷永豐 / 台新', note: '超商建議改刷永豐 DAWAY 或台新 @GoGo' },
+          general: { rate: 0.3, switchTier: '一般消費', recPay: 'Apple Pay / 實體卡', note: '非指定通路僅 0.3%' }
         }
       },
       {
         id: 'taishin-gogo',
-        name: '台新 @GoGo 卡',
+        name: '台新 @GoGo',
         statementDay: 12,
         dueDay: 27,
         monthlySpendCap: 16666,
         supportedPayments: ['linepay', 'applepay', 'card'],
         requireMonthlyTask: true,
-        monthlyTaskDesc: '每月需至 Richart Life App 領「LINE Pay / Pay著刷」加碼券',
+        monthlyTaskDesc: '每月需至 Richart Life App 領取「LINE Pay / Pay著刷」加碼券',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: '需設 Richart 自動扣繳！Richart Life App 可切換「Pay著刷 / 玩旅刷」（每天限切 1 次）。客服：02-2655-3355。',
+        overdueNote: '需設定 Richart 帳戶自動扣繳。Richart Life App 可切換「Pay著刷 / 玩旅刷」（每日限切 1 次）。客服：02-2655-3355。',
         sceneRules: {
-          cvs:     { rate: 3.8, switchTier: 'Pay著刷 (需領券)', recPay: '綁 LINE Pay', note: '7-11 / 全家綁 LINE Pay 搭配領券最高 3.8%' },
+          cvs:     { rate: 3.8, switchTier: 'Pay著刷 (需領券)', recPay: '綁 LINE Pay', note: '7-11 與全家綁 LINE Pay 搭配領券最高 3.8%' },
           abroad:  { rate: 3.3, switchTier: '玩旅刷', recPay: '實體卡 / Apple Pay', note: '切換【玩旅刷】海外消費最高 3.3%' },
-          dining:  { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay餐廳)', recPay: '綁 LINE Pay', note: '餐廳若支援 LINE Pay 且已領券適用' },
-          cosmed:  { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay)', recPay: '綁 LINE Pay', note: '綁 LINE Pay 結帳且有領券適用' },
-          ktv:     { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay之KTV)', recPay: '綁 LINE Pay', note: 'KTV 若支援 LINE Pay 可刷' },
-          mrt:     { rate: 1.0, switchTier: '一般', recPay: '實體卡', note: '捷運建議刷星展 eco' },
-          general: { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay)', recPay: '綁 LINE Pay', note: '可刷 LINE Pay 的店家適用' }
+          dining:  { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay)', recPay: '綁 LINE Pay', note: '餐廳支援 LINE Pay 且已領券適用' },
+          cosmed:  { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay)', recPay: '綁 LINE Pay', note: '綁 LINE Pay 結帳且已領券適用' },
+          ktv:     { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay)', recPay: '綁 LINE Pay', note: '支援 LINE Pay 之 KTV 適用' },
+          mrt:     { rate: 1.0, switchTier: '一般消費', recPay: '實體卡', note: '捷運建議刷星展 eco' },
+          general: { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay)', recPay: '綁 LINE Pay', note: '支援 LINE Pay 店家適用' }
         }
       },
       {
         id: 'sinopac-daway',
-        name: '永豐 DAWAY 卡',
+        name: '永豐 DAWAY',
         statementDay: 15,
         dueDay: 30,
         monthlySpendCap: 10000,
         supportedPayments: ['linepay', 'applepay', 'card'],
         requireMonthlyTask: false,
-        monthlyTaskDesc: '確認已設定永豐自動扣繳 + 電子帳單',
+        monthlyTaskDesc: '確認已設定永豐自動扣繳與電子帳單',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: 'LINE Pay 無腦主力卡！全家可綁永豐 LINE Pay，但 7-11 不支援永豐（7-11 請改選台新 @GoGo）。客服：02-2528-7776。',
+        overdueNote: 'LINE Pay 主力卡！全家可用永豐 LINE Pay，但 7-11 不支援永豐（7-11 請改選台新 @GoGo）。客服：02-2528-7776。',
         sceneRules: {
-          cvs:     { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay (全家適用)', note: '全家綁 LINE Pay 首選！7-11 請改用台新 @GoGo' },
-          dining:  { rate: 4.5, switchTier: '免切權益 (限LINE Pay餐廳)', recPay: '綁 LINE Pay', note: '餐廳/飲料店能刷 LINE Pay 就是首選！' },
-          cosmed:  { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '綁 LINE Pay 結帳享高回饋' },
-          ktv:     { rate: 4.5, switchTier: '免切權益 (限LINE Pay之KTV)', recPay: '綁 LINE Pay', note: '享溫馨等可刷 LINE Pay 之 KTV 首選' },
-          abroad:  { rate: 2.5, switchTier: '免切權益', recPay: '海外實體', note: '海外基本 2.5%' },
+          cvs:     { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay (全家)', note: '全家首選！7-11 不支援永豐 LINE Pay，7-11 請改刷台新 @GoGo' },
+          dining:  { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '支援 LINE Pay 的餐廳與手搖飲首選' },
+          cosmed:  { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '支援 LINE Pay 時享高回饋' },
+          ktv:     { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '享溫馨等可刷 LINE Pay 之 KTV 首選' },
+          abroad:  { rate: 2.5, switchTier: '免切權益', recPay: '海外實體', note: '海外基本 2.5% 無上限' },
           mrt:     { rate: 0.5, switchTier: '免切權益', recPay: '不推薦', note: '捷運請刷星展 eco' },
-          general: { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '能刷 LINE Pay 的未知小店無腦刷' }
+          general: { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '能刷 LINE Pay 的小店無腦首選' }
         }
       },
       {
         id: 'ctbc-linepay',
-        name: '中信 LINE Pay 卡',
+        name: '中信 LINE Pay',
         statementDay: 18,
         dueDay: 3,
         monthlySpendCap: 0,
@@ -575,10 +682,10 @@
         monthlyTaskDesc: '指定加碼通路有時需登錄',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: '7-11 支援中信卡綁 LINE Pay！國內一般消費 1% 無上限備用卡。客服：0800-024-365。',
+        overdueNote: '7-11 支援中信綁 LINE Pay，國內一般消費 1% 無上限備用卡。客服：0800-024-365。',
         sceneRules: {
-          cvs:     { rate: 1.0, switchTier: '免切權益', recPay: '綁 LINE Pay (7-11可刷)', note: '7-11 可刷，備用卡' },
-          mrt:     { rate: 1.0, switchTier: '免切權益', recPay: '感應搭捷運', note: '備用捷運卡' },
+          cvs:     { rate: 1.0, switchTier: '免切權益', recPay: '綁 LINE Pay (7-11可)', note: '7-11 可刷備用卡' },
+          mrt:     { rate: 1.0, switchTier: '免切權益', recPay: '感應搭捷運', note: '備用交通卡' },
           abroad:  { rate: 2.8, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '海外實體 2.8% 無上限' },
           dining:  { rate: 1.0, switchTier: '免切權益', recPay: 'LINE Pay / 實體卡', note: '國內一般 1%' },
           cosmed:  { rate: 1.0, switchTier: '免切權益', recPay: 'LINE Pay', note: '國內一般 1%' },
@@ -588,24 +695,24 @@
       },
       {
         id: 'dbs-eco',
-        name: '星展 eco 永續卡',
+        name: '星展 eco 永續',
         statementDay: 20,
         dueDay: 5,
         monthlySpendCap: 15000,
         supportedPayments: ['applepay', 'card'],
         requireMonthlyTask: false,
-        monthlyTaskDesc: '海外 5% 免登錄！',
+        monthlyTaskDesc: '海外 5% 免登錄',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: '✈️ 日韓泰新歐美實體 5% 免登錄（每期刷滿 $15,000 封頂）。國內一般消費 1.2% 無上限，去錢櫃/好樂迪唱歌或未知店家不能刷 LINE Pay 時拿這張保底最高！客服：02-6612-9889。',
+        overdueNote: '日韓泰新歐美實體刷卡 5% 免登錄（每期刷滿 $15,000 封頂）。國內一般消費 1.2% 無上限，去錢櫃/好樂迪或未知通路不能刷 LINE Pay 時保底最優！客服：02-6612-9889。',
         sceneRules: {
-          mrt:     { rate: 2.0, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '目前你的捷運主力卡！' },
-          abroad:  { rate: 5.0, switchTier: '免切權益・免登錄', recPay: '海外實體卡 / Apple Pay', note: '🔥 日韓泰新歐美實體 5% 免登錄（每期上限刷 $15,000）' },
-          ktv:     { rate: 1.2, switchTier: '免切權益 (國內保底王)', recPay: '實體卡 / Apple Pay', note: '🔥 錢櫃/好樂迪不能刷 LINE Pay 且無 CUBE 券時，刷這張 1.2% 比 CUBE (0.3%) 高 4 倍！' },
+          mrt:     { rate: 2.0, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '日常捷運主力卡' },
+          abroad:  { rate: 5.0, switchTier: '免切權益・免登錄', recPay: '海外實體卡 / Apple Pay', note: '日韓泰新歐美實體 5% 免登錄（每期上限刷 $15,000）' },
+          ktv:     { rate: 1.2, switchTier: '免切權益 (國內保底)', recPay: '實體卡 / Apple Pay', note: '錢櫃/好樂迪不能刷 LINE Pay 且無 CUBE 券時，刷這張 1.2% 保底最優' },
           dining:  { rate: 1.2, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '國內一般 1.2% 無上限' },
           cosmed:  { rate: 1.2, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '國內一般 1.2%' },
           cvs:     { rate: 1.0, switchTier: '免切權益', recPay: '不推薦', note: '超商建議用 LINE Pay 卡' },
-          general: { rate: 1.2, switchTier: '免切權益 (未知通路保底首選)', recPay: '實體卡 / Apple Pay', note: '🔥 不確定分類又不能刷 LINE Pay 的店家，刷這張保底 1.2% 最安全！' }
+          general: { rate: 1.2, switchTier: '免切權益 (未知通路保底)', recPay: '實體卡 / Apple Pay', note: '不確定分類又不能刷 LINE Pay 時，保底 1.2% 最穩' }
         }
       },
       {
@@ -616,29 +723,31 @@
         monthlySpendCap: 33333,
         supportedPayments: ['applepay', 'card'],
         requireMonthlyTask: true,
-        monthlyTaskDesc: '✈️ 日韓泰最高 6%（其中 3% 加碼需搶登錄；Apple Pay 儲值西瓜卡也需登錄）',
+        monthlyTaskDesc: '日韓泰最高 6%（其中 3% 加碼需至富邦官網搶登錄；儲值 Suica 亦需登錄）',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: '✈️ 日韓泰旅遊王牌！基本日韓泰 3% 無上限免登錄，有登錄再 +3% = 6%。富邦客服：02-8751-6665。',
+        overdueNote: '日韓泰旅遊王牌！基本日韓泰 3% 無上限免登錄，有登錄再 +3% = 6%。客服：02-8751-6665。',
         sceneRules: {
-          abroad:  { rate: 6.0, switchTier: '免切權益 (需登錄6%/未登錄3%)', recPay: '日韓泰實體 / Suica西瓜卡', note: '🔥 日韓泰實體最高 6%！Apple Pay 儲值日本 Suica 最高 10%' },
+          abroad:  { rate: 6.0, switchTier: '免切權益 (登錄6%/未登3%)', recPay: '日韓泰實體 / Suica', note: '日韓泰實體最高 6%，Apple Pay 儲值日本 Suica 最高 10%' },
           dining:  { rate: 1.0, switchTier: '免切權益', recPay: '實體卡', note: '國內一般 1%' },
           cosmed:  { rate: 1.0, switchTier: '免切權益', recPay: '實體卡', note: '國內一般 1%' },
           ktv:     { rate: 1.0, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '國內一般 1%' },
           cvs:     { rate: 1.0, switchTier: '免切權益', recPay: '不推薦', note: '國內超商請用永豐/台新' },
-          mrt:     { rate: 1.0, switchTier: '免切權益', recPay: '日本 Suica 儲值', note: '日本搭車神卡；台灣捷運刷星展 eco' },
+          mrt:     { rate: 1.0, switchTier: '免切權益', recPay: '日本 Suica 儲值', note: '日本搭地鐵神卡；台灣捷運刷星展 eco' },
           general: { rate: 1.0, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '國內一般 1%' }
         }
       }
     ];
 
     let appData = loadData();
-    let currentTab = 'record';
+    let currentView = 'dashboard'; // 'dashboard' | 'analytics' | 'cards'
     let selectedTopScene = 'dining';
     let selectedRecordScene = 'dining';
     let selectedPayMethod = 'applepay';
     let selectedCardId = 'cathay-cube';
     let storeLinePayFilter = 'any';
+    let donutDimension = 'scene'; // 'scene' | 'card' | 'pay'
+    let activeSliceFilter = null; // { dimension, key, label }
 
     function loadData() {
       try {
@@ -659,27 +768,51 @@
         transactions: [
           {
             id: 'demo-1',
-            date: `${CURRENT_MONTH}-03`,
+            date: `${CURRENT_MONTH}-02`,
             sceneId: 'dining',
             payMethodId: 'applepay',
             cardId: 'cathay-cube',
-            amount: 850,
-            reward: 26,
+            amount: 1280,
+            reward: 38,
             rate: 3.0,
             switchTier: '樂饗購',
-            note: '假日餐廳聚餐'
+            note: '週末餐廳聚餐'
           },
           {
             id: 'demo-2',
+            date: `${CURRENT_MONTH}-03`,
+            sceneId: 'cosmed',
+            payMethodId: 'applepay',
+            cardId: 'cathay-cube',
+            amount: 640,
+            reward: 19,
+            rate: 3.0,
+            switchTier: '樂饗購',
+            note: '康是美補貨'
+          },
+          {
+            id: 'demo-3',
             date: `${CURRENT_MONTH}-04`,
             sceneId: 'cvs',
             payMethodId: 'linepay',
             cardId: 'sinopac-daway',
-            amount: 125,
-            reward: 6,
+            amount: 165,
+            reward: 7,
             rate: 4.5,
             switchTier: '免切權益 (限LINE Pay)',
-            note: '全家買咖啡'
+            note: '全家咖啡與早餐'
+          },
+          {
+            id: 'demo-4',
+            date: `${CURRENT_MONTH}-05`,
+            sceneId: 'mrt',
+            payMethodId: 'applepay',
+            cardId: 'dbs-eco',
+            amount: 320,
+            reward: 6,
+            rate: 2.0,
+            switchTier: '免切權益',
+            note: '捷運通勤'
           }
         ]
       };
@@ -705,39 +838,314 @@
       return appData.cards.find(c => c.id === id);
     }
 
-    function switchTab(tab) {
-      currentTab = tab;
-      ['record', 'cards', 'history'].forEach(t => {
-        const el = document.getElementById(`tab-${t}`);
-        const btn = document.getElementById(`tabBtn-${t}`);
-        if (t === tab) {
-          el.classList.remove('hidden');
-          btn.className = 'py-1.5 px-2 rounded-lg f-body font-bold transition-all bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm';
+    // 切換主視圖 (同時支援電腦版頂部導覽與手機版底部 App Tab Bar)
+    function switchView(view) {
+      currentView = view;
+      ['dashboard', 'analytics', 'cards'].forEach(v => {
+        const viewEl = document.getElementById(`view-${v}`);
+        const deskBtn = document.getElementById(`deskNav-${v}`);
+        const mobBtn = document.getElementById(`mobNav-${v}`);
+
+        if (v === view) {
+          viewEl.classList.remove('hidden');
+          if (deskBtn) deskBtn.className = 'px-4 py-1.5 rounded-lg text-[13.5px] font-semibold bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs transition-all';
+          if (mobBtn) mobBtn.className = 'flex flex-col items-center justify-center py-1 rounded-xl text-[var(--accent)] transition-colors';
         } else {
-          el.classList.add('hidden');
-          btn.className = 'py-1.5 px-2 rounded-lg f-small transition-all text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
+          viewEl.classList.add('hidden');
+          if (deskBtn) deskBtn.className = 'px-4 py-1.5 rounded-lg text-[13.5px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all';
+          if (mobBtn) mobBtn.className = 'flex flex-col items-center justify-center py-1 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors';
         }
       });
-      if (tab === 'cards') renderCardsTab();
-      if (tab === 'history') renderHistoryTab();
+
+      renderAll();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    function renderAll() {
+      renderDesktopKpiStrip();
+      renderTopSceneAdvisor();
+      renderRecordSection();
+      renderDonutCharts();
+      renderDesktopRecentCard();
+      if (currentView === 'analytics') renderAnalyticsView();
+      if (currentView === 'cards') renderCardsView();
+    }
+
+    // ==========================================================
+    // 電腦版頂部 3 格 KPI 指標卡
+    // ==========================================================
+    function renderDesktopKpiStrip() {
+      const monthTxs = appData.transactions.filter(t => t.date.startsWith(CURRENT_MONTH));
+      const cardSpend = monthTxs.filter(t => t.cardId !== 'CASH').reduce((s, t) => s + Number(t.amount || 0), 0);
+      const cashSpend = monthTxs.filter(t => t.cardId === 'CASH').reduce((s, t) => s + Number(t.amount || 0), 0);
+      const totalSpend = cardSpend + cashSpend;
+      const totalReward = monthTxs.reduce((s, t) => s + Number(t.reward || 0), 0);
+
+      const pendingTasks = appData.cards.filter(c => c.requireMonthlyTask && !(c.monthlyTaskDone && c.monthlyTaskDone[CURRENT_MONTH])).length;
+
+      document.getElementById('desktopKpiStrip').innerHTML = `
+        <div class="surface-card px-6 py-4 flex items-center justify-between">
+          <div>
+            <div class="text-[13px] font-medium text-[var(--text-muted)]">本月總支出（含刷卡與現金）</div>
+            <div class="text-[26px] font-extrabold num-tabular text-[var(--text-main)] mt-1">NT$ ${totalSpend.toLocaleString()}</div>
+          </div>
+          <div class="text-right text-[12.5px] text-[var(--text-muted)] space-y-0.5 num-tabular">
+            <div>刷卡待繳 $${cardSpend.toLocaleString()}</div>
+            <div>現金支出 $${cashSpend.toLocaleString()}</div>
+          </div>
+        </div>
+
+        <div class="surface-card px-6 py-4 flex items-center justify-between">
+          <div>
+            <div class="text-[13px] font-medium text-[var(--text-muted)]">本月預估累積回饋</div>
+            <div class="text-[26px] font-extrabold num-tabular text-[var(--success)] mt-1">+ ${totalReward.toLocaleString()} <span class="text-[14px] font-semibold">點/元</span></div>
+          </div>
+          <span class="px-3 py-1 rounded-full text-[12.5px] font-semibold bg-[var(--success-soft)] text-[var(--success)]">自動試算</span>
+        </div>
+
+        <div class="surface-card px-6 py-4 flex items-center justify-between cursor-pointer hover:border-[var(--accent)] transition-colors" onclick="switchView('cards')">
+          <div>
+            <div class="text-[13px] font-medium text-[var(--text-muted)]">卡包與每月領券狀態</div>
+            <div class="text-[18px] font-bold text-[var(--text-main)] mt-1.5">
+              管理 ${appData.cards.length} 張卡 ${pendingTasks > 0 ? `<span class="text-[13px] font-semibold text-[var(--warn)] ml-1">・${pendingTasks} 張待領券</span>` : `<span class="text-[13px] font-semibold text-[var(--success)] ml-1">・全數已領妥</span>`}
+            </div>
+          </div>
+          <span class="text-[var(--text-muted)] text-lg">→</span>
+        </div>
+      `;
+    }
+
+    // ==========================================================
+    // 📊 互動式 SVG 甜甜圈圓餅圖 (MOZE 美學風格：大留白、圓心總計、百分比排行)
+    // ==========================================================
+    function setDonutDimension(dim) {
+      donutDimension = dim;
+      activeSliceFilter = null;
+      renderDonutCharts();
+      if (currentView === 'analytics') renderAnalyticsView();
+    }
+
+    function clickDonutSlice(dim, key, label) {
+      if (activeSliceFilter && activeSliceFilter.key === key && activeSliceFilter.dimension === dim) {
+        activeSliceFilter = null;
+      } else {
+        activeSliceFilter = { dimension: dim, key, label };
+      }
+      if (currentView !== 'analytics' && window.innerWidth < 1024) {
+        switchView('analytics');
+        return;
+      }
+      renderDonutCharts();
+      renderDesktopRecentCard();
+      if (currentView === 'analytics') renderAnalyticsView();
+    }
+
+    function clearChartSliceFilter() {
+      activeSliceFilter = null;
+      renderDonutCharts();
+      renderDesktopRecentCard();
+      if (currentView === 'analytics') renderAnalyticsView();
+    }
+
+    function buildDonutCardHTML() {
+      const monthTxs = appData.transactions.filter(t => t.date.startsWith(CURRENT_MONTH));
+      const totalSpend = monthTxs.reduce((s, t) => s + Number(t.amount || 0), 0);
+      const totalReward = monthTxs.reduce((s, t) => s + Number(t.reward || 0), 0);
+
+      // 彙總分組數據
+      const map = {};
+      monthTxs.forEach(tx => {
+        let key = '';
+        let label = '';
+        let icon = '';
+        if (donutDimension === 'scene') {
+          const sc = getSceneById(tx.sceneId);
+          key = tx.sceneId;
+          icon = sc ? sc.icon : '🛍️';
+          label = sc ? sc.name : '其他';
+        } else if (donutDimension === 'card') {
+          key = tx.cardId;
+          if (tx.cardId === 'CASH') {
+            icon = '💵';
+            label = '現金支出';
+          } else {
+            const c = getCardById(tx.cardId);
+            icon = '💳';
+            label = c ? c.name : '其他卡片';
+          }
+        } else {
+          const pm = appData.payMethods.find(p => p.id === tx.payMethodId);
+          key = tx.payMethodId;
+          icon = pm ? pm.icon : '📱';
+          label = pm ? pm.name : '其他支付';
+        }
+        if (!map[key]) map[key] = { key, icon, label, amount: 0, count: 0 };
+        map[key].amount += Number(tx.amount || 0);
+        map[key].count += 1;
+      });
+
+      const items = Object.values(map).sort((a, b) => b.amount - a.amount);
+
+      // 產生 SVG Donut 圓弧 (r = 68, circumference = 2 * pi * 68 ≈ 427.26)
+      const radius = 68;
+      const circumference = 2 * Math.PI * radius;
+      let cumulativePercent = 0;
+
+      const svgSegments = totalSpend > 0 ? items.map((item, idx) => {
+        const pct = item.amount / totalSpend;
+        const dash = Math.max(0, pct * circumference - (items.length > 1 ? 3 : 0));
+        const gap = circumference - dash;
+        const offset = -cumulativePercent * circumference;
+        cumulativePercent += pct;
+        const color = CHART_COLORS[idx % CHART_COLORS.length];
+        const isSelected = activeSliceFilter && activeSliceFilter.key === item.key;
+        const dimOpacity = activeSliceFilter && !isSelected ? '0.35' : '1';
+        const strokeW = isSelected ? '24' : '20';
+
+        return `
+          <circle
+            class="donut-segment"
+            cx="96" cy="96" r="${radius}"
+            fill="transparent"
+            stroke="${color}"
+            stroke-width="${strokeW}"
+            stroke-dasharray="${dash} ${gap}"
+            stroke-dashoffset="${offset}"
+            stroke-linecap="butt"
+            style="opacity: ${dimOpacity}"
+            onclick="clickDonutSlice('${donutDimension}', '${item.key}', '${item.label}')"
+          />
+        `;
+      }).join('') : `
+        <circle cx="96" cy="96" r="${radius}" fill="transparent" stroke="var(--border-hairline)" stroke-width="18" />
+      `;
+
+      const centerTitle = activeSliceFilter ? activeSliceFilter.label : '本月總支出';
+      const centerAmount = activeSliceFilter
+        ? (items.find(i => i.key === activeSliceFilter.key)?.amount || 0)
+        : totalSpend;
+
+      return `
+        <section class="surface-card p-5 sm:p-6 space-y-5">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Analytics</span>
+              <h3 class="text-[17px] font-bold text-[var(--text-main)] mt-0.5">📊 支出比例分析</h3>
+            </div>
+            <!-- 維度切換器 -->
+            <div class="inline-flex bg-[var(--bg-pill)] p-0.5 rounded-xl">
+              <button onclick="setDonutDimension('scene')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'scene' ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs' : 'text-[var(--text-muted)]'}">依類別</button>
+              <button onclick="setDonutDimension('card')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'card' ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs' : 'text-[var(--text-muted)]'}">依卡片</button>
+              <button onclick="setDonutDimension('pay')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'pay' ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs' : 'text-[var(--text-muted)]'}">依支付</button>
+            </div>
+          </div>
+
+          <!-- 圓餅圖視覺核心 -->
+          <div class="flex flex-col items-center justify-center py-2">
+            <div class="relative w-48 h-48 flex items-center justify-center">
+              <svg viewBox="0 0 192 192" class="w-48 h-48 -rotate-90">
+                <circle cx="96" cy="96" r="${radius}" fill="transparent" stroke="var(--bg-pill)" stroke-width="20" />
+                ${svgSegments}
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pointer-events-none">
+                <span class="text-[12px] font-medium text-[var(--text-muted)] truncate max-w-[110px]">${centerTitle}</span>
+                <span class="text-[22px] font-extrabold num-tabular text-[var(--text-main)] mt-0.5">$${centerAmount.toLocaleString()}</span>
+                <span class="text-[11.5px] font-semibold text-[var(--success)] mt-0.5 num-tabular">回饋 +$${totalReward.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 圖例與百分比進度排行 (仿 MOZE 報表清單) -->
+          <div class="space-y-3 pt-1">
+            ${items.length === 0 ? `
+              <p class="text-center text-[13.5px] text-[var(--text-muted)] py-4">本月尚無消費紀錄，記一筆後即自動繪製圓餅圖</p>
+            ` : items.map((item, idx) => {
+              const pct = totalSpend > 0 ? ((item.amount / totalSpend) * 100).toFixed(1) : '0.0';
+              const color = CHART_COLORS[idx % CHART_COLORS.length];
+              const isSelected = activeSliceFilter && activeSliceFilter.key === item.key;
+              return `
+                <div onclick="clickDonutSlice('${donutDimension}', '${item.key}', '${item.label}')"
+                  class="group p-2.5 -mx-2.5 rounded-xl cursor-pointer transition-colors ${isSelected ? 'bg-[var(--accent-soft)]' : 'hover:bg-[var(--bg-subtle)]'}">
+                  <div class="flex items-center justify-between text-[13.5px]">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${color}"></span>
+                      <span class="font-medium text-[var(--text-main)] truncate">${item.icon} ${item.label}</span>
+                      <span class="text-[12px] text-[var(--text-muted)] num-tabular">${pct}%</span>
+                    </div>
+                    <span class="font-semibold num-tabular text-[var(--text-main)]">$${item.amount.toLocaleString()}</span>
+                  </div>
+                  <div class="w-full h-1.5 rounded-full bg-[var(--bg-pill)] overflow-hidden mt-2">
+                    <div class="h-full rounded-full transition-all duration-500" style="width: ${pct}%; background-color: ${color}"></div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      `;
+    }
+
+    function renderDonutCharts() {
+      const html = buildDonutCardHTML();
+      const deskMount = document.getElementById('desktopDonutMount');
+      const anaMount = document.getElementById('analyticsDonutMount');
+      if (deskMount) deskMount.innerHTML = html;
+      if (anaMount) anaMount.innerHTML = html;
+    }
+
+    // 電腦版右欄下方的近期紀錄卡
+    function renderDesktopRecentCard() {
+      const mount = document.getElementById('desktopRecentMount');
+      if (!mount) return;
+
+      let list = appData.transactions;
+      if (activeSliceFilter) {
+        list = list.filter(t => {
+          if (activeSliceFilter.dimension === 'scene') return t.sceneId === activeSliceFilter.key;
+          if (activeSliceFilter.dimension === 'card') return t.cardId === activeSliceFilter.key;
+          return t.payMethodId === activeSliceFilter.key;
+        });
+      }
+      const recent = list.slice(0, 5);
+
+      mount.innerHTML = `
+        <section class="surface-card p-5 sm:p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-[16px] font-bold text-[var(--text-main)]">
+              🕒 ${activeSliceFilter ? `篩選：${activeSliceFilter.label}` : '近期記帳明細'}
+            </h3>
+            <div class="flex items-center gap-2">
+              ${activeSliceFilter ? `<button onclick="clearChartSliceFilter()" class="text-[12px] font-medium text-[var(--accent-text)]">清除篩選</button>` : ''}
+              <button onclick="switchView('analytics')" class="text-[13px] font-medium text-[var(--accent-text)] hover:underline">查看全部 →</button>
+            </div>
+          </div>
+          <div class="divide-y divide-[var(--border-hairline)]">
+            ${recent.length === 0
+              ? `<p class="text-[13.5px] text-[var(--text-muted)] py-4 text-center">尚無紀錄</p>`
+              : recent.map(tx => formatTransactionRow(tx)).join('')}
+          </div>
+        </section>
+      `;
+    }
+
+    // ==========================================================
+    // 📍 置頂刷卡推薦與智慧關鍵字判斷
+    // ==========================================================
     function setStoreLinePayFilter(mode) {
       storeLinePayFilter = mode;
       ['any', 'no_lp', 'has_lp'].forEach(m => {
         const btn = document.getElementById(`lpFilter-${m}`);
         if (m === mode) {
-          btn.className = 'f-micro px-2 py-0.5 rounded border font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]';
+          btn.className = 'px-2.5 py-1 rounded-md text-[12px] font-semibold bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs transition-all';
         } else {
-          btn.className = 'f-micro px-2 py-0.5 rounded border bg-[var(--background)] text-[var(--muted-foreground)] border-[var(--border)]';
+          btn.className = 'px-2.5 py-1 rounded-md text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all';
         }
       });
       renderTopSceneAdvisor();
     }
 
     function quickSearchKeyword(text) {
-      const input = document.getElementById('smartStoreInput');
-      input.value = text;
+      document.getElementById('smartStoreInput').value = text;
       handleSmartSearchInput();
     }
 
@@ -776,20 +1184,20 @@
         }
         diagBox.classList.remove('hidden');
         diagBox.innerHTML = `
-          <div class="p-2.5 rounded-xl bg-[var(--background)] border-l-4 border-[var(--primary)] space-y-1">
-            <div class="f-body font-bold text-[var(--foreground)]">${matched.title}</div>
-            <p class="f-small text-[var(--muted-foreground)] whitespace-pre-line">${matched.tip}</p>
+          <div class="p-4 rounded-2xl bg-[var(--accent-soft)] space-y-1.5">
+            <div class="text-[14px] font-bold text-[var(--accent-text)]">${matched.title}</div>
+            <p class="text-[13px] text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">${matched.tip}</p>
           </div>
         `;
       } else {
         diagBox.classList.remove('hidden');
         diagBox.innerHTML = `
-          <div class="p-2.5 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-1">
-            <div class="f-body font-bold text-[var(--foreground)]">💡 未知店家「${q}」3 秒判斷口訣：</div>
-            <p class="f-small text-[var(--muted-foreground)]">
-              1️⃣ <strong>能刷 LINE Pay</strong> ➔ 刷 <strong>永豐 DAWAY (4.5%)</strong> 或 <strong>台新 @GoGo (3.8%)</strong><br/>
-              2️⃣ <strong>不能刷 LINE Pay，屬餐飲/百貨/藥妝</strong> ➔ 刷 <strong>國泰 CUBE (切樂饗購 3%)</strong><br/>
-              3️⃣ <strong>不能刷 LINE Pay，屬娛樂/KTV/未知分類</strong> ➔ 刷 <strong>星展 eco (1.2% 無腦保底)</strong>
+          <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-1.5">
+            <div class="text-[14px] font-bold text-[var(--text-main)]">💡 未知店家「${q}」判斷口訣</div>
+            <p class="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+              1. 現場可刷 LINE Pay ➔ 刷 <strong>永豐 DAWAY (4.5%)</strong> 或 <strong>台新 @GoGo (3.8%)</strong><br/>
+              2. 僅能刷卡且屬餐廳/百貨/藥妝 ➔ 刷 <strong>國泰 CUBE (切樂饗購 3%)</strong><br/>
+              3. 僅能刷卡且屬娛樂/唱歌/未知分類 ➔ 刷 <strong>星展 eco (1.2% 保底無上限)</strong>
             </p>
           </div>
         `;
@@ -799,25 +1207,21 @@
       renderRecordSection();
     }
 
-    // 置頂場景推薦：首選卡用大字 Hero Card，第 2、3 名用緊湊小字單行呈現，大小字對比極度鮮明！
     function renderTopSceneAdvisor() {
       const btnContainer = document.getElementById('topSceneButtons');
       btnContainer.innerHTML = appData.scenes.map(s => {
         const active = s.id === selectedTopScene;
         return `
           <button onclick="selectTopScene('${s.id}')"
-            class="flex items-center justify-center gap-0.5 py-1.5 px-1.5 rounded-xl border transition-all ${
+            class="px-3.5 py-2 rounded-xl text-[13.5px] transition-all ${
               active
-                ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] f-body font-bold shadow-sm'
-                : 'bg-[var(--background)] text-[var(--muted-foreground)] border-[var(--border)] f-small hover:text-[var(--foreground)]'
+                ? 'bg-[var(--accent)] text-white font-semibold shadow-xs'
+                : 'bg-[var(--bg-pill)] text-[var(--text-secondary)] font-medium hover:text-[var(--text-main)]'
             }">
-            <span>${s.icon}</span>
-            <span class="truncate">${s.name}</span>
+            ${s.icon} ${s.name}
           </button>
         `;
       }).join('');
-
-      const scene = getSceneById(selectedTopScene);
 
       const ranked = appData.cards.map(card => {
         const rawRule = (card.sceneRules && card.sceneRules[selectedTopScene]) || {
@@ -833,7 +1237,7 @@
         let filterNotice = '';
         if (storeLinePayFilter === 'no_lp' && isLinePayOnlyCard) {
           effectiveRate = card.id === 'sinopac-daway' ? 0.5 : 1.0;
-          filterNotice = '(現場無LINE Pay僅一般回饋)';
+          filterNotice = '（現場無 LINE Pay 時僅一般回饋）';
         }
 
         const spent = getCardMonthlySpend(card.id);
@@ -846,74 +1250,87 @@
       const first = ranked[0];
       const runnersUp = ranked.slice(1, 3);
       const recBox = document.getElementById('sceneRecommendationBox');
-
       if (!first) return;
+
       const firstNeedTask = first.card.requireMonthlyTask && !first.taskDone;
       const firstCapPercent = first.cap > 0 ? Math.min(100, Math.round((first.spent / first.cap) * 100)) : 0;
 
       recBox.innerHTML = `
-        <!-- 🥇 首選大卡：大字凸顯卡名與 % 數，輔助小字收斂 -->
-        <div class="p-3 rounded-xl border-2 border-[var(--primary)] bg-[var(--background)] shadow-sm space-y-1.5">
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="f-micro font-bold px-1.5 py-0.5 rounded bg-[var(--primary)] text-[var(--primary-foreground)]">
-                🥇 首選推薦
+        <!-- 首選推薦卡片：大留白、清晰焦點數字、無雜亂邊框 -->
+        <div class="p-5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3.5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <span class="inline-block text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)] mb-1.5">
+                🥇 首選最高回饋
               </span>
-              <span class="f-hero-card text-[var(--foreground)]">${first.card.name}</span>
-              <span class="f-hero-num text-[var(--primary)]">${first.effectiveRate}%</span>
+              <div class="flex items-baseline gap-2.5 flex-wrap">
+                <h4 class="text-[20px] font-bold text-[var(--text-main)]">${first.card.name}</h4>
+                <span class="text-[26px] font-extrabold num-tabular text-[var(--accent)]">${first.effectiveRate}%</span>
+              </div>
             </div>
             <button onclick="applyRecommendationToRecord('${selectedTopScene}', '${first.card.id}', '${first.rule.recPay}')"
-              class="shrink-0 f-small font-semibold px-2.5 py-1 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90">
-              ⚡ 帶入記帳
+              class="shrink-0 px-3.5 py-2 rounded-xl text-[13px] font-semibold bg-[var(--accent)] text-white shadow-xs hover:opacity-90 transition-opacity">
+              帶入記帳 ↓
             </button>
           </div>
 
-          <div class="flex flex-wrap gap-x-3 gap-y-0.5 f-small text-[var(--muted-foreground)]">
-            <span>支付方式：<strong class="text-[var(--foreground)] font-semibold">${first.rule.recPay}</strong></span>
-            <span>切換權益：<strong class="text-[var(--foreground)] font-semibold">${first.rule.switchTier}</strong></span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-[var(--border-hairline)] text-[13.5px]">
+            <div>
+              <span class="text-[var(--text-muted)]">建議支付：</span>
+              <strong class="font-semibold text-[var(--text-main)]">${first.rule.recPay}</strong>
+            </div>
+            <div>
+              <span class="text-[var(--text-muted)]">權益切換：</span>
+              <strong class="font-semibold text-[var(--text-main)]">${first.rule.switchTier}</strong>
+            </div>
           </div>
 
           ${(first.rule.note || first.filterNotice) ? `
-            <p class="f-micro text-[var(--muted-foreground)]">💡 ${first.rule.note} ${first.filterNotice}</p>
+            <p class="text-[13px] text-[var(--text-muted)] leading-relaxed">${first.rule.note} ${first.filterNotice}</p>
           ` : ''}
 
           ${first.cap > 0 ? `
-            <div class="f-micro text-[var(--muted-foreground)] flex items-center justify-between">
-              <span>額度進度：已刷 $${first.spent.toLocaleString()} / 上限 $${first.cap.toLocaleString()} (${firstCapPercent}%)</span>
-              ${first.isOverCap ? `<span class="font-bold text-red-500">⚠️ 已滿額請改刷次選</span>` : ''}
+            <div class="space-y-1.5 pt-1">
+              <div class="flex items-center justify-between text-[12.5px] text-[var(--text-muted)] num-tabular">
+                <span>本月加碼額度進度</span>
+                <span>$${first.spent.toLocaleString()} / $${first.cap.toLocaleString()} (${firstCapPercent}%)</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full bg-[var(--bg-pill)] overflow-hidden">
+                <div class="h-full rounded-full bg-[var(--accent)]" style="width: ${firstCapPercent}%"></div>
+              </div>
             </div>
           ` : ''}
 
           ${first.card.requireMonthlyTask ? (
             firstNeedTask ? `
-              <div class="p-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 flex items-center justify-between gap-2">
-                <span class="f-micro text-[var(--foreground)]">🎟️ ${first.card.monthlyTaskDesc}</span>
+              <div class="p-3 rounded-xl bg-[var(--warn-soft)] flex items-center justify-between gap-3">
+                <span class="text-[13px] text-[var(--warn)] font-medium">🎟️ ${first.card.monthlyTaskDesc}</span>
                 <button onclick="toggleCardMonthlyTask('${first.card.id}')"
-                  class="shrink-0 f-micro font-semibold px-2 py-0.5 rounded bg-[var(--primary)] text-[var(--primary-foreground)]">
-                  ⬜ 勾選已領
+                  class="shrink-0 text-[12.5px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs">
+                  勾選本月已領
                 </button>
               </div>
             ` : `
-              <div class="flex items-center justify-between f-micro text-[var(--muted-foreground)]">
-                <span>✅ 本月已領券/登錄</span>
-                <button onclick="toggleCardMonthlyTask('${first.card.id}')" class="underline">重設</button>
+              <div class="flex items-center justify-between text-[12.5px] text-[var(--text-muted)]">
+                <span class="text-[var(--success)] font-medium">✓ 本月已完成領券 / 登錄</span>
+                <button onclick="toggleCardMonthlyTask('${first.card.id}')" class="hover:underline">重設</button>
               </div>
             `
           ) : ''}
         </div>
 
-        <!-- 🥈🥉 次選與備用：緊湊小字列表，與首選形成明顯大小字區分 -->
-        <div class="space-y-1">
+        <!-- 次選與備用：清爽分隔列 -->
+        <div class="divide-y divide-[var(--border-hairline)] px-1">
           ${runnersUp.map((item, idx) => `
-            <div class="px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] flex items-center justify-between gap-2">
-              <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
-                <span class="f-micro text-[var(--muted-foreground)]">${idx === 0 ? '🥈 次選' : '🥉 備用'}</span>
-                <span class="f-body font-bold text-[var(--foreground)]">${item.card.name}</span>
-                <span class="f-small font-bold px-1.5 py-0.2 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">${item.effectiveRate}%</span>
-                <span class="f-micro text-[var(--muted-foreground)] truncate">・${item.rule.recPay} (${item.rule.switchTier})</span>
+            <div class="py-2.5 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5 min-w-0 flex-wrap">
+                <span class="text-[12px] font-medium text-[var(--text-muted)] w-11 shrink-0">${idx === 0 ? '次選' : '備用'}</span>
+                <span class="text-[14.5px] font-semibold text-[var(--text-main)]">${item.card.name}</span>
+                <span class="text-[13.5px] font-bold num-tabular text-[var(--accent-text)]">${item.effectiveRate}%</span>
+                <span class="text-[12.5px] text-[var(--text-muted)] truncate">・${item.rule.recPay}（${item.rule.switchTier}）</span>
               </div>
               <button onclick="applyRecommendationToRecord('${selectedTopScene}', '${item.card.id}', '${item.rule.recPay}')"
-                class="shrink-0 f-micro px-2 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:opacity-80">
+                class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
                 選用
               </button>
             </div>
@@ -944,9 +1361,12 @@
       if (q && !document.getElementById('expenseNote').value) {
         document.getElementById('expenseNote').value = q;
       }
-      switchTab('record');
       renderRecordSection();
-      document.getElementById('expenseAmount').focus();
+      const quickEl = document.getElementById('quickRecordCard');
+      if (quickEl && window.innerWidth < 1024) {
+        quickEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      setTimeout(() => document.getElementById('expenseAmount').focus(), 250);
     }
 
     function toggleCardMonthlyTask(cardId) {
@@ -955,54 +1375,57 @@
       if (!card.monthlyTaskDone) card.monthlyTaskDone = {};
       card.monthlyTaskDone[CURRENT_MONTH] = !card.monthlyTaskDone[CURRENT_MONTH];
       saveData();
-      renderTopSceneAdvisor();
-      renderRecordSection();
-      if (currentTab === 'cards') renderCardsTab();
+      renderAll();
     }
 
+    // ==========================================================
+    // ⚡ 快速記帳區渲染
+    // ==========================================================
     function renderRecordSection() {
+      // 1. 地點膠囊
       const sceneContainer = document.getElementById('recordScenePills');
       sceneContainer.innerHTML = appData.scenes.map(s => {
         const active = s.id === selectedRecordScene;
         return `
           <button onclick="selectRecordScene('${s.id}')"
-            class="px-2 py-1 rounded-lg border transition-all ${
+            class="px-3.5 py-1.5 rounded-xl text-[13.5px] transition-all ${
               active
-                ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] f-body font-bold shadow-sm'
-                : 'bg-[var(--background)] text-[var(--muted-foreground)] border-[var(--border)] f-small hover:text-[var(--foreground)]'
+                ? 'bg-[var(--text-main)] text-[var(--bg-surface)] font-semibold'
+                : 'bg-[var(--bg-pill)] text-[var(--text-secondary)] font-medium hover:text-[var(--text-main)]'
             }">
             ${s.icon} ${s.name}
           </button>
         `;
       }).join('') + `
         <button onclick="openSceneModal()"
-          class="px-2 py-1 rounded-lg border border-dashed border-[var(--border)] f-micro text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-          + 新增/編輯
+          class="px-3 py-1.5 rounded-xl border border-dashed border-[var(--border-hairline)] text-[13px] text-[var(--text-muted)] hover:text-[var(--text-main)]">
+          + 新增
         </button>
       `;
 
+      // 2. 支付工具卡片按鈕
       const payContainer = document.getElementById('payMethodButtons');
       payContainer.innerHTML = appData.payMethods.map(pm => {
         const active = pm.id === selectedPayMethod;
         const isCash = pm.id === 'cash' || pm.defaultCardId === 'CASH';
         const defCard = isCash ? null : getCardById(pm.defaultCardId);
-        const subText = isCash ? '不計入信用卡帳單' : `預設: ${defCard ? defCard.name : '點下方選卡'}`;
+        const subText = isCash ? '免對帳單' : (defCard ? defCard.name : '選擇卡片');
         return `
           <button onclick="selectPayMethod('${pm.id}')"
-            class="p-2 rounded-xl border text-left transition-all ${
+            class="p-3 rounded-2xl text-left transition-all border ${
               active
-                ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] shadow-sm'
-                : 'bg-[var(--background)] text-[var(--foreground)] border-[var(--border)]'
+                ? 'bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent-text)]'
+                : 'bg-[var(--bg-subtle)] border-[var(--border-hairline)] text-[var(--text-main)] hover:bg-[var(--bg-pill)]'
             }">
-            <div class="f-body ${active ? 'font-bold' : 'font-semibold'} flex items-center justify-between">
+            <div class="text-[14px] font-semibold flex items-center justify-between">
               <span>${pm.icon} ${pm.name}</span>
-              ${active ? '<span class="f-micro">✔</span>' : ''}
             </div>
-            <div class="f-micro ${active ? 'opacity-85' : 'text-[var(--muted-foreground)]'} truncate mt-0.5">${subText}</div>
+            <div class="text-[12px] text-[var(--text-muted)] truncate mt-1">${subText}</div>
           </button>
         `;
       }).join('');
 
+      // 3. 信用卡膠囊
       const cardSection = document.getElementById('cardSelectorSection');
       const currentPm = appData.payMethods.find(p => p.id === selectedPayMethod);
       const isCashPay = !currentPm || currentPm.id === 'cash' || currentPm.defaultCardId === 'CASH';
@@ -1011,8 +1434,7 @@
         cardSection.classList.add('hidden');
       } else {
         cardSection.classList.remove('hidden');
-        document.getElementById('cardSelectorLabel').textContent =
-          `💳 本次【${currentPm.name}】刷哪張卡？`;
+        document.getElementById('cardSelectorLabel').textContent = `本次【${currentPm.name}】扣款卡片`;
 
         const cardPills = document.getElementById('recordCardPills');
         cardPills.innerHTML = appData.cards.map(c => {
@@ -1021,21 +1443,20 @@
           const rule = (c.sceneRules && c.sceneRules[selectedRecordScene]) || { rate: 0.5 };
           return `
             <button onclick="selectRecordCard('${c.id}')"
-              class="px-2 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+              class="px-3.5 py-2 rounded-xl text-[13.5px] transition-all flex items-center gap-1.5 ${
                 active
-                  ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] f-body font-bold shadow-sm'
-                  : 'bg-[var(--card)] text-[var(--muted-foreground)] border-[var(--border)] f-small hover:text-[var(--foreground)]'
+                  ? 'bg-[var(--accent)] text-white font-semibold shadow-xs'
+                  : 'bg-[var(--bg-pill)] text-[var(--text-secondary)] font-medium hover:text-[var(--text-main)]'
               }">
               <span>${c.name}</span>
-              <span class="f-micro opacity-80">${rule.rate}%</span>
-              ${isDef ? '<span class="f-micro" title="此支付預設卡">⭐</span>' : ''}
+              <span class="text-[12px] num-tabular ${active ? 'text-white/85' : 'text-[var(--text-muted)]'}">${rule.rate}%</span>
+              ${isDef ? '<span class="text-[11px]" title="預設卡">⭐</span>' : ''}
             </button>
           `;
         }).join('');
       }
 
       updateSmartAdvisory();
-      renderRecentTransactions();
     }
 
     function selectRecordScene(sceneId) {
@@ -1077,8 +1498,8 @@
 
       if (isCashPay) {
         panel.innerHTML = `
-          <div class="p-2 rounded-xl bg-[var(--background)] border border-[var(--border)] f-small text-[var(--muted-foreground)]">
-            💵 現金支出：記入本月總開銷（不計入信用卡帳單）。
+          <div class="px-4 py-3 rounded-2xl bg-[var(--bg-subtle)] text-[13px] text-[var(--text-muted)]">
+            💵 現金支出將計入圓餅圖總開銷，不列入信用卡待繳帳單。
           </div>
         `;
         return;
@@ -1115,61 +1536,52 @@
       });
 
       panel.innerHTML = `
-        <div class="p-2.5 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-1.5">
-          <div class="flex items-center justify-between flex-wrap gap-1">
-            <div class="flex items-center gap-1.5">
-              <span class="f-title text-[var(--foreground)]">${card.name}</span>
-              <span class="f-body font-bold px-1.5 py-0.5 rounded bg-[var(--primary)] text-[var(--primary-foreground)]">${rule.rate}%</span>
+        <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="text-[14px] text-[var(--text-secondary)]">
+              應切權益：<strong class="font-bold text-[var(--text-main)]">${rule.switchTier}</strong>
+              <span class="ml-2 text-[13px] font-semibold text-[var(--accent-text)] num-tabular">(${rule.rate}%)</span>
             </div>
-            <div>
+            <div class="num-tabular">
               ${amount > 0
-                ? `<span class="f-hero-card text-[var(--primary)]">💰 預估回饋 +$${estReward}</span>`
-                : '<span class="f-micro text-[var(--muted-foreground)]">輸入金額自動算回饋</span>'}
+                ? `<span class="text-[15px] font-bold text-[var(--success)]">預估回饋 +$${estReward}</span>`
+                : `<span class="text-[12.5px] text-[var(--text-muted)]">輸入金額自動試算回饋</span>`}
             </div>
           </div>
-
-          <div class="px-2 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] flex items-center justify-between">
-            <span class="f-small text-[var(--muted-foreground)]">
-              🔄 應切權益：<strong class="f-body font-bold text-[var(--foreground)]">${rule.switchTier}</strong>
-            </span>
-            <span class="f-micro text-[var(--muted-foreground)]">${rule.recPay}</span>
-          </div>
-
-          ${rule.note ? `<div class="f-micro text-[var(--muted-foreground)]">📌 ${rule.note}</div>` : ''}
 
           ${isCubeLinePayWarning ? `
-            <div class="p-1.5 rounded-lg border border-red-500/40 bg-red-500/10 f-small font-semibold text-red-500">
-              ⚠️ 國泰 CUBE 綁 LINE Pay 無 3% 加碼！請改選 Apple Pay/實體卡，或將 LINE Pay 換成永豐 DAWAY / 台新 @GoGo。
+            <div class="p-3 rounded-xl bg-[var(--danger-soft)] text-[13px] font-medium text-[var(--danger)]">
+              ⚠️ 國泰 CUBE 綁 LINE Pay 不享 3% 加碼！請改選 Apple Pay / 實體刷卡，或將卡片換成永豐 DAWAY。
             </div>
           ` : ''}
 
           ${isDawayCvsHint ? `
-            <div class="p-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 f-micro text-[var(--foreground)]">
-              💡 全家可刷永豐 DAWAY；若在 <strong>7-11</strong> 請點上方改選「台新 @GoGo」！
+            <div class="p-3 rounded-xl bg-[var(--warn-soft)] text-[13px] text-[var(--warn)]">
+              💡 全家可用永豐 DAWAY；若在 <strong>7-11</strong> 請改選「台新 @GoGo」。
             </div>
           ` : ''}
 
           ${needTaskRemind ? `
-            <div class="p-2 rounded-lg border border-amber-500/50 bg-amber-500/10 space-y-1">
-              <div class="f-small font-semibold text-[var(--foreground)]">🎟️ ${card.monthlyTaskDesc}</div>
-              <label class="flex items-center gap-1.5 f-micro text-[var(--muted-foreground)] cursor-pointer">
+            <div class="p-3 rounded-xl bg-[var(--warn-soft)] space-y-1.5">
+              <div class="text-[13px] font-semibold text-[var(--warn)]">🎟️ ${card.monthlyTaskDesc}</div>
+              <label class="flex items-center gap-2 text-[12.5px] text-[var(--text-secondary)] cursor-pointer">
                 <input type="checkbox" onchange="toggleCardMonthlyTask('${card.id}')" class="rounded" />
-                <span>我本月已領券/登錄（勾選後本月不再跳提醒）</span>
+                <span>本月已完成領券 / 登錄（勾選後不再提醒）</span>
               </label>
             </div>
           ` : ''}
 
           ${cap > 0 ? `
-            <div class="f-micro text-[var(--muted-foreground)] flex items-center justify-between pt-1 border-t border-[var(--border)]">
+            <div class="flex items-center justify-between text-[12.5px] text-[var(--text-muted)] pt-2 border-t border-[var(--border-hairline)] num-tabular">
               <span>本月已刷 $${spent.toLocaleString()} / 上限 $${cap.toLocaleString()}</span>
-              ${afterSpend > cap ? `<span class="font-semibold text-red-500">⚠️ 此筆將超額</span>` : `<span>尚餘 $${(cap - afterSpend).toLocaleString()}</span>`}
+              ${afterSpend > cap ? `<span class="font-semibold text-[var(--danger)]">⚠️ 此筆將超過加碼上限</span>` : `<span>尚餘額度 $${(cap - afterSpend).toLocaleString()}</span>`}
             </div>
           ` : ''}
 
           ${bestCard.id !== card.id ? `
-            <div class="f-micro text-[var(--muted-foreground)] flex items-center justify-between pt-1 border-t border-[var(--border)]">
-              <span>💡 【${scene.name}】最高回饋是 <strong class="text-[var(--foreground)]">${bestCard.name} (${bestRate}%)</strong></span>
-              <button onclick="selectRecordCard('${bestCard.id}')" class="underline font-semibold text-[var(--foreground)]">改刷這張</button>
+            <div class="flex items-center justify-between text-[12.5px] text-[var(--text-muted)] pt-2 border-t border-[var(--border-hairline)]">
+              <span>💡 在「${scene.name}」刷 <strong class="text-[var(--text-main)]">${bestCard.name} (${bestRate}%)</strong> 回饋更高</span>
+              <button onclick="selectRecordCard('${bestCard.id}')" class="font-semibold text-[var(--accent-text)] hover:underline">改用此卡</button>
             </div>
           ` : ''}
         </div>
@@ -1210,43 +1622,36 @@
 
       amountInput.value = '';
       noteInput.value = '';
-      renderTopSceneAdvisor();
-      renderRecordSection();
+      renderAll();
     }
 
-    function renderRecentTransactions() {
-      const list = document.getElementById('recentTransactionsList');
-      const recent = appData.transactions.slice(0, 3);
-      if (recent.length === 0) {
-        list.innerHTML = `<p class="f-micro text-[var(--muted-foreground)]">尚無記帳紀錄。</p>`;
-        return;
-      }
-      list.innerHTML = recent.map(tx => formatTransactionRow(tx)).join('');
-    }
-
+    // 優雅的交易明細列 (仿 Apple Wallet / MOZE：左側圓形圖示、中間標題與副標、右側對齊等寬金額)
     function formatTransactionRow(tx) {
       const scene = getSceneById(tx.sceneId);
       const pm = appData.payMethods.find(p => p.id === tx.payMethodId);
       const card = tx.cardId === 'CASH' ? { name: '現金' } : (getCardById(tx.cardId) || { name: '其他卡' });
+      const titleText = tx.note ? tx.note : (scene ? scene.name : '一般消費');
+
       return `
-        <div class="flex items-center justify-between px-2.5 py-2 rounded-xl bg-[var(--background)] border border-[var(--border)]">
-          <div class="space-y-0.5">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="f-body font-bold text-[var(--foreground)]">${scene ? scene.icon + ' ' + scene.name : ''}</span>
-              <span class="f-micro px-1.5 py-0.2 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">
-                ${pm ? pm.icon + ' ' + pm.name : ''} ・ ${card.name}
-              </span>
+        <div class="py-3.5 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-2xl bg-[var(--bg-pill)] flex items-center justify-center text-[18px] shrink-0">
+              ${scene ? scene.icon : '🛍️'}
             </div>
-            <div class="f-micro text-[var(--muted-foreground)]">
-              ${tx.date} ${tx.note ? `・ ${tx.note}` : ''} ${tx.switchTier && tx.switchTier !== '-' ? `・ ${tx.switchTier}` : ''}
+            <div class="min-w-0">
+              <div class="text-[14.5px] font-semibold text-[var(--text-main)] truncate">${titleText}</div>
+              <div class="text-[12.5px] text-[var(--text-muted)] truncate mt-0.5">
+                ${tx.date.slice(5)} ・ ${pm ? pm.name : ''} (${card.name})
+              </div>
             </div>
           </div>
-          <div class="flex items-center gap-2">
-            <div class="text-right">
-              <div class="f-hero-card text-[var(--foreground)]">$${Number(tx.amount).toLocaleString()}</div>
-              ${tx.reward > 0 ? `<div class="f-micro text-[var(--muted-foreground)]">+${tx.reward} (${tx.rate}%)</div>` : ''}
+
+          <div class="flex items-center gap-3 shrink-0">
+            <div class="text-right num-tabular">
+              <div class="text-[15.5px] font-bold text-[var(--text-main)]">$${Number(tx.amount).toLocaleString()}</div>
+              ${tx.reward > 0 ? `<div class="text-[12px] font-medium text-[var(--success)]">+${tx.reward} (${tx.rate}%)</div>` : ''}
             </div>
-            <button onclick="deleteTransaction('${tx.id}')" class="f-micro px-1 py-0.5 rounded hover:bg-[var(--secondary)] text-[var(--muted-foreground)]">✕</button>
+            <button onclick="deleteTransaction('${tx.id}')" class="text-[13px] text-[var(--text-muted)] hover:text-[var(--danger)] p-1" title="刪除">✕</button>
           </div>
         </div>
       `;
@@ -1255,12 +1660,71 @@
     function deleteTransaction(txId) {
       appData.transactions = appData.transactions.filter(t => t.id !== txId);
       saveData();
-      renderTopSceneAdvisor();
-      renderRecordSection();
-      if (currentTab === 'history') renderHistoryTab();
+      renderAll();
     }
 
-    function renderCardsTab() {
+    // ==========================================================
+    // VIEW 2: 報表與完整明細頁渲染
+    // ==========================================================
+    function handleDropdownFilterChange() {
+      activeSliceFilter = null;
+      renderDonutCharts();
+      renderAnalyticsView();
+    }
+
+    function renderAnalyticsView() {
+      document.getElementById('perCardSpendSummary').innerHTML = appData.cards.map(c => {
+        const spent = getCardMonthlySpend(c.id);
+        return `
+          <div class="py-3 flex items-center justify-between text-[14px]">
+            <div>
+              <span class="font-semibold text-[var(--text-main)]">${c.name}</span>
+              <span class="text-[12.5px] text-[var(--text-muted)] ml-2">每月 ${c.statementDay} 號結帳 / ${c.dueDay} 號繳費</span>
+            </div>
+            <span class="font-bold num-tabular text-[var(--text-main)]">$${spent.toLocaleString()}</span>
+          </div>
+        `;
+      }).join('');
+
+      const filterSelect = document.getElementById('historyFilterCard');
+      const currentFilter = filterSelect.value || 'all';
+      filterSelect.innerHTML = `
+        <option value="all">全部帳戶</option>
+        <option value="CASH">💵 現金支出</option>
+        ${appData.cards.map(c => `<option value="${c.id}">💳 ${c.name}</option>`).join('')}
+      `;
+      filterSelect.value = currentFilter;
+
+      const clearSliceBtn = document.getElementById('clearChartFilterBtn');
+      const hintEl = document.getElementById('txFilterHint');
+
+      let filtered = appData.transactions;
+      if (activeSliceFilter) {
+        clearSliceBtn.classList.remove('hidden');
+        hintEl.textContent = `目前篩選：${activeSliceFilter.label}`;
+        filtered = filtered.filter(t => {
+          if (activeSliceFilter.dimension === 'scene') return t.sceneId === activeSliceFilter.key;
+          if (activeSliceFilter.dimension === 'card') return t.cardId === activeSliceFilter.key;
+          return t.payMethodId === activeSliceFilter.key;
+        });
+      } else {
+        clearSliceBtn.classList.add('hidden');
+        hintEl.textContent = '點選圓餅圖色塊或圖例可快速篩選特定分類';
+        if (currentFilter !== 'all') {
+          filtered = filtered.filter(t => t.cardId === currentFilter);
+        }
+      }
+
+      const listEl = document.getElementById('fullTransactionsList');
+      listEl.innerHTML = filtered.length === 0
+        ? `<p class="text-[14px] text-[var(--text-muted)] py-8 text-center">沒有符合條件的消費紀錄</p>`
+        : filtered.map(tx => formatTransactionRow(tx)).join('');
+    }
+
+    // ==========================================================
+    // VIEW 3: 卡包與週期攻略頁 (優雅卡片牆)
+    // ==========================================================
+    function renderCardsView() {
       const container = document.getElementById('cardsContainer');
       const todayDay = new Date().getDate();
 
@@ -1275,68 +1739,74 @@
         if (daysToDue < 0) daysToDue += 30;
 
         return `
-          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 shadow-sm space-y-2">
-            <div class="flex items-start justify-between gap-2">
-              <div>
-                <h4 class="f-hero-card text-[var(--foreground)] flex items-center gap-1.5">
-                  <span>💳 ${card.name}</span>
-                  ${daysToDue <= 5 && !isPaid ? `<span class="f-micro px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-500 font-semibold">⏰ ${daysToDue}天後繳費</span>` : ''}
-                </h4>
-                <p class="f-micro text-[var(--muted-foreground)]">
-                  結帳：每月 <strong>${card.statementDay}</strong> 號 ・ 繳費截止：每月 <strong>${card.dueDay}</strong> 號
-                </p>
-              </div>
-              <div class="flex items-center gap-1">
-                <label class="flex items-center gap-1 f-micro px-2 py-1 rounded-lg bg-[var(--secondary)] text-[var(--secondary-foreground)] cursor-pointer">
-                  <input type="checkbox" ${isPaid ? 'checked' : ''} onchange="toggleCardPaid('${card.id}')" class="rounded" />
-                  <span>${isPaid ? '已繳費' : '標記已繳'}</span>
-                </label>
-                <button onclick="openEditCardModal('${card.id}')" class="f-micro px-2 py-1 rounded-lg border border-[var(--border)] hover:bg-[var(--secondary)]">
-                  ✏️ 編輯
-                </button>
-              </div>
-            </div>
-
-            <div class="p-2 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-1">
-              <div class="flex items-center justify-between">
-                <span class="f-body font-bold text-[var(--foreground)]">本月累計：$${spent.toLocaleString()}</span>
-                <span class="f-micro text-[var(--muted-foreground)]">
-                  ${cap > 0 ? `加碼上限 $${cap.toLocaleString()} (${capPercent}%)` : '主力權益無上限'}
-                </span>
-              </div>
-              ${cap > 0 ? `
-                <div class="w-full h-1.5 rounded-full bg-[var(--secondary)] overflow-hidden">
-                  <div class="h-full bg-[var(--primary)]" style="width: ${capPercent}%"></div>
-                </div>
-              ` : ''}
-            </div>
-
-            ${card.requireMonthlyTask ? `
-              <div class="p-1.5 rounded-xl border ${taskDone ? 'border-[var(--border)] bg-[var(--background)]' : 'border-amber-500/50 bg-amber-500/10'}">
-                <label class="flex items-center gap-1.5 f-small cursor-pointer">
-                  <input type="checkbox" ${taskDone ? 'checked' : ''} onchange="toggleCardMonthlyTask('${card.id}')" class="rounded" />
-                  <span>${taskDone ? '✅ 本月已完成領券/登錄（不跳提醒）' : `🎟️ 待辦：${card.monthlyTaskDesc}`}</span>
-                </label>
-              </div>
-            ` : ''}
-
-            <div class="grid grid-cols-2 gap-1">
-              ${appData.scenes.map(s => {
-                const r = (card.sceneRules && card.sceneRules[s.id]) || { rate: 0.5, switchTier: '一般' };
-                return `
-                  <div class="px-2 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)]">
-                    <div class="flex items-center justify-between">
-                      <span class="f-small text-[var(--foreground)]">${s.icon} ${s.name}</span>
-                      <span class="f-body font-bold text-[var(--primary)]">${r.rate}%</span>
-                    </div>
-                    <div class="f-micro text-[var(--muted-foreground)] truncate">🔄 ${r.switchTier}</div>
+          <div class="surface-card p-6 space-y-5 flex flex-col justify-between">
+            <div class="space-y-4">
+              <!-- 卡片頂部資訊 -->
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h4 class="text-[18px] font-bold text-[var(--text-main)]">${card.name}</h4>
+                    ${daysToDue <= 5 && !isPaid ? `<span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--danger-soft)] text-[var(--danger)]">${daysToDue} 天後截止</span>` : ''}
                   </div>
-                `;
-              }).join('')}
+                  <p class="text-[13px] text-[var(--text-muted)] mt-1 num-tabular">
+                    每月 ${card.statementDay} 號結帳 ・ ${card.dueDay} 號繳款截止
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button onclick="toggleCardPaid('${card.id}')"
+                    class="text-[12.5px] font-semibold px-3 py-1.5 rounded-xl transition-colors ${isPaid ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--bg-pill)] text-[var(--text-secondary)]'}">
+                    ${isPaid ? '✓ 本期已繳' : '標記已繳'}
+                  </button>
+                  <button onclick="openEditCardModal('${card.id}')" class="text-[13px] font-medium px-3 py-1.5 rounded-xl border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
+                    編輯
+                  </button>
+                </div>
+              </div>
+
+              <!-- 累計消費與上限進度 -->
+              <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] space-y-2">
+                <div class="flex items-baseline justify-between num-tabular">
+                  <span class="text-[13px] text-[var(--text-muted)]">本月累計消費</span>
+                  <span class="text-[20px] font-extrabold text-[var(--text-main)]">$${spent.toLocaleString()}</span>
+                </div>
+                ${cap > 0 ? `
+                  <div class="w-full h-1.5 rounded-full bg-[var(--bg-pill)] overflow-hidden">
+                    <div class="h-full rounded-full bg-[var(--accent)]" style="width: ${capPercent}%"></div>
+                  </div>
+                  <div class="text-[12px] text-[var(--text-muted)] text-right num-tabular">加碼上限 $${cap.toLocaleString()} (${capPercent}%)</div>
+                ` : `<div class="text-[12px] text-[var(--text-muted)] text-right">主力指定權益無上限</div>`}
+              </div>
+
+              <!-- 領券任務免打擾勾選 -->
+              ${card.requireMonthlyTask ? `
+                <label class="flex items-start gap-2.5 p-3.5 rounded-2xl cursor-pointer transition-colors ${taskDone ? 'bg-[var(--bg-subtle)] text-[var(--text-muted)]' : 'bg-[var(--warn-soft)] text-[var(--warn)]'}">
+                  <input type="checkbox" ${taskDone ? 'checked' : ''} onchange="toggleCardMonthlyTask('${card.id}')" class="rounded mt-1 w-4 h-4 shrink-0" />
+                  <span class="text-[13px] font-medium leading-relaxed">
+                    ${taskDone ? '✓ 本月已完成領券 / 登錄任務（當月不再跳出提醒）' : card.monthlyTaskDesc}
+                  </span>
+                </label>
+              ` : ''}
+
+              <!-- 各場景回饋精簡清單 -->
+              <div class="divide-y divide-[var(--border-hairline)]">
+                ${appData.scenes.map(s => {
+                  const r = (card.sceneRules && card.sceneRules[s.id]) || { rate: 0.5, switchTier: '一般' };
+                  return `
+                    <div class="py-2 flex items-center justify-between text-[13.5px]">
+                      <span class="text-[var(--text-secondary)]">${s.icon} ${s.name}</span>
+                      <div class="text-right">
+                        <span class="font-bold num-tabular text-[var(--text-main)]">${r.rate}%</span>
+                        <span class="text-[12px] text-[var(--text-muted)] ml-1.5">${r.switchTier}</span>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
             </div>
 
-            <div class="f-micro text-[var(--muted-foreground)] bg-[var(--background)] p-2 rounded-xl border border-[var(--border)]">
-              <strong class="text-[var(--foreground)]">📌 攻略與逾期注意：</strong>${card.overdueNote || '無特別備註'}
+            <!-- 底部備註 -->
+            <div class="pt-3 border-t border-[var(--border-hairline)] text-[12.5px] text-[var(--text-muted)] leading-relaxed">
+              ${card.overdueNote || ''}
             </div>
           </div>
         `;
@@ -1349,87 +1819,35 @@
       if (!card.paidMonths) card.paidMonths = {};
       card.paidMonths[CURRENT_MONTH] = !card.paidMonths[CURRENT_MONTH];
       saveData();
-      renderCardsTab();
+      renderCardsView();
     }
 
-    function renderHistoryTab() {
-      const monthTxs = appData.transactions.filter(t => t.date.startsWith(CURRENT_MONTH));
-      const cardSpend = monthTxs.filter(t => t.cardId !== 'CASH').reduce((s, t) => s + Number(t.amount || 0), 0);
-      const cashSpend = monthTxs.filter(t => t.cardId === 'CASH').reduce((s, t) => s + Number(t.amount || 0), 0);
-      const totalReward = monthTxs.reduce((s, t) => s + Number(t.reward || 0), 0);
-
-      document.getElementById('monthlySummaryStats').innerHTML = `
-        <div class="p-2 rounded-xl bg-[var(--background)] border border-[var(--border)]">
-          <div class="f-micro text-[var(--muted-foreground)]">信用卡待繳</div>
-          <div class="f-hero-card text-[var(--foreground)] mt-0.5">$${cardSpend.toLocaleString()}</div>
-        </div>
-        <div class="p-2 rounded-xl bg-[var(--background)] border border-[var(--border)]">
-          <div class="f-micro text-[var(--muted-foreground)]">現金支出</div>
-          <div class="f-hero-card text-[var(--foreground)] mt-0.5">$${cashSpend.toLocaleString()}</div>
-        </div>
-        <div class="p-2 rounded-xl bg-[var(--background)] border border-[var(--border)]">
-          <div class="f-micro text-[var(--muted-foreground)]">預估回饋</div>
-          <div class="f-hero-card text-[var(--primary)] mt-0.5">+${totalReward.toLocaleString()}</div>
-        </div>
-      `;
-
-      document.getElementById('perCardSpendSummary').innerHTML = appData.cards.map(c => {
-        const spent = getCardMonthlySpend(c.id);
-        return `
-          <div class="flex items-center justify-between f-small">
-            <span>💳 ${c.name} <span class="f-micro text-[var(--muted-foreground)]">(${c.statementDay}號結帳/${c.dueDay}號繳)</span></span>
-            <span class="f-body font-bold">$${spent.toLocaleString()}</span>
-          </div>
-        `;
-      }).join('');
-
-      const filterSelect = document.getElementById('historyFilterCard');
-      const currentFilter = filterSelect.value || 'all';
-      filterSelect.innerHTML = `
-        <option value="all">全部卡片 / 現金</option>
-        <option value="CASH">💵 僅看現金</option>
-        ${appData.cards.map(c => `<option value="${c.id}">💳 ${c.name}</option>`).join('')}
-      `;
-      filterSelect.value = currentFilter;
-
-      const filtered = currentFilter === 'all'
-        ? appData.transactions
-        : appData.transactions.filter(t => t.cardId === currentFilter);
-
-      const listEl = document.getElementById('fullTransactionsList');
-      if (filtered.length === 0) {
-        listEl.innerHTML = `<p class="f-micro text-[var(--muted-foreground)]">無符合條件的明細。</p>`;
-      } else {
-        listEl.innerHTML = filtered.map(tx => formatTransactionRow(tx)).join('');
-      }
-    }
-
+    // ==========================================================
+    // MODALS 邏輯 (支付方式 / 地點分類 / 關鍵字 / 卡片攻略)
+    // ==========================================================
     function openPayMethodManageModal() {
       const defSelect = document.getElementById('newPayDefaultCard');
       defSelect.innerHTML = `
-        ${appData.cards.map(c => `<option value="${c.id}">預設綁定：${c.name}</option>`).join('')}
-        <option value="CASH">不綁卡 (視同現金/轉帳)</option>
+        ${appData.cards.map(c => `<option value="${c.id}">預設：${c.name}</option>`).join('')}
+        <option value="CASH">不綁卡 (現金/轉帳)</option>
       `;
       renderPayMethodManageList();
       document.getElementById('payMethodModal').classList.remove('hidden');
     }
-
     function closePayMethodManageModal() {
       document.getElementById('payMethodModal').classList.add('hidden');
     }
-
     function renderPayMethodManageList() {
-      const container = document.getElementById('payMethodManageList');
-      container.innerHTML = appData.payMethods.map(pm => `
-        <div class="p-2 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-1">
-          <div class="flex items-center gap-1.5">
-            <input id="editPmIcon-${pm.id}" type="text" value="${pm.icon}" class="w-10 px-1.5 py-1 f-small rounded bg-[var(--card)] border border-[var(--border)]" />
-            <input id="editPmName-${pm.id}" type="text" value="${pm.name}" class="flex-1 px-2 py-1 f-small rounded bg-[var(--card)] border border-[var(--border)]" />
-            ${appData.payMethods.length > 1 ? `<button onclick="deletePayMethod('${pm.id}')" class="f-micro text-red-500 px-1">刪除</button>` : ''}
+      document.getElementById('payMethodManageList').innerHTML = appData.payMethods.map(pm => `
+        <div class="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-2">
+          <div class="flex items-center gap-2">
+            <input id="editPmIcon-${pm.id}" type="text" value="${pm.icon}" class="w-12 px-2 py-1.5 text-[14px] text-center rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+            <input id="editPmName-${pm.id}" type="text" value="${pm.name}" class="flex-1 px-3 py-1.5 text-[14px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+            ${appData.payMethods.length > 1 ? `<button onclick="deletePayMethod('${pm.id}')" class="text-[13px] text-[var(--danger)] px-2">刪除</button>` : ''}
           </div>
-          <div class="flex items-center gap-1.5">
-            <span class="f-micro text-[var(--muted-foreground)]">預設綁定：</span>
-            <select id="editPmCard-${pm.id}" class="flex-1 px-2 py-1 f-small rounded bg-[var(--card)] border border-[var(--border)]">
+          <div class="flex items-center gap-2 text-[13px]">
+            <span class="text-[var(--text-muted)]">預設卡片：</span>
+            <select id="editPmCard-${pm.id}" class="flex-1 px-2.5 py-1.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]">
               ${appData.cards.map(c => `<option value="${c.id}" ${pm.defaultCardId === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
               <option value="CASH" ${pm.defaultCardId === 'CASH' || pm.id === 'cash' ? 'selected' : ''}>現金 / 不計入信用卡</option>
             </select>
@@ -1437,29 +1855,25 @@
         </div>
       `).join('');
     }
-
     function addNewPayMethod() {
       const icon = document.getElementById('newPayIcon').value.trim() || '📱';
       const name = document.getElementById('newPayName').value.trim();
       const defaultCardId = document.getElementById('newPayDefaultCard').value;
       if (!name) return;
-      const id = 'pm-' + Date.now();
-      appData.payMethods.push({ id, icon, name, defaultCardId });
+      appData.payMethods.push({ id: 'pm-' + Date.now(), icon, name, defaultCardId });
       document.getElementById('newPayName').value = '';
       saveData();
       renderPayMethodManageList();
-      renderRecordSection();
+      renderAll();
     }
-
     function deletePayMethod(pmId) {
       if (appData.payMethods.length <= 1) return;
       appData.payMethods = appData.payMethods.filter(p => p.id !== pmId);
       if (selectedPayMethod === pmId) selectedPayMethod = appData.payMethods[0].id;
       saveData();
       renderPayMethodManageList();
-      renderRecordSection();
+      renderAll();
     }
-
     function savePayMethodChanges() {
       appData.payMethods.forEach(pm => {
         const ic = document.getElementById(`editPmIcon-${pm.id}`);
@@ -1472,12 +1886,10 @@
         }
       });
       const curPm = appData.payMethods.find(p => p.id === selectedPayMethod);
-      if (curPm && curPm.defaultCardId !== 'CASH') {
-        selectedCardId = curPm.defaultCardId;
-      }
+      if (curPm && curPm.defaultCardId !== 'CASH') selectedCardId = curPm.defaultCardId;
       saveData();
       closePayMethodManageModal();
-      renderRecordSection();
+      renderAll();
     }
 
     function openSceneModal() {
@@ -1488,12 +1900,11 @@
       document.getElementById('sceneModal').classList.add('hidden');
     }
     function renderSceneManageList() {
-      const list = document.getElementById('sceneManageList');
-      list.innerHTML = appData.scenes.map(s => `
-        <div class="flex items-center gap-1.5 p-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)]">
-          <input id="editScIcon-${s.id}" type="text" value="${s.icon}" class="w-10 px-1.5 py-1 f-small rounded bg-[var(--card)] border border-[var(--border)]" />
-          <input id="editScName-${s.id}" type="text" value="${s.name}" class="flex-1 px-2 py-1 f-small rounded bg-[var(--card)] border border-[var(--border)]" />
-          ${appData.scenes.length > 2 ? `<button onclick="removeScene('${s.id}')" class="f-micro text-red-500 px-1.5">刪除</button>` : ''}
+      document.getElementById('sceneManageList').innerHTML = appData.scenes.map(s => `
+        <div class="flex items-center gap-2 p-2 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]">
+          <input id="editScIcon-${s.id}" type="text" value="${s.icon}" class="w-12 px-2 py-1.5 text-[14px] text-center rounded-lg bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+          <input id="editScName-${s.id}" type="text" value="${s.name}" class="flex-1 px-3 py-1.5 text-[14px] rounded-lg bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+          ${appData.scenes.length > 2 ? `<button onclick="removeScene('${s.id}')" class="text-[13px] text-[var(--danger)] px-2">刪除</button>` : ''}
         </div>
       `).join('');
     }
@@ -1510,8 +1921,7 @@
       document.getElementById('newSceneName').value = '';
       saveData();
       renderSceneManageList();
-      renderTopSceneAdvisor();
-      renderRecordSection();
+      renderAll();
     }
     function saveSceneEdits() {
       appData.scenes.forEach(s => {
@@ -1524,8 +1934,7 @@
       });
       saveData();
       closeSceneModal();
-      renderTopSceneAdvisor();
-      renderRecordSection();
+      renderAll();
     }
     function removeScene(sceneId) {
       if (appData.scenes.length <= 2) return;
@@ -1534,13 +1943,11 @@
       if (selectedRecordScene === sceneId) selectedRecordScene = appData.scenes[0].id;
       saveData();
       renderSceneManageList();
-      renderTopSceneAdvisor();
-      renderRecordSection();
+      renderAll();
     }
 
     function openKeywordRuleModal() {
-      const sel = document.getElementById('newKwScene');
-      sel.innerHTML = appData.scenes.map(s => `<option value="${s.id}">歸類至：${s.icon} ${s.name}</option>`).join('');
+      document.getElementById('newKwScene').innerHTML = appData.scenes.map(s => `<option value="${s.id}">歸類：${s.icon} ${s.name}</option>`).join('');
       renderKeywordRuleList();
       document.getElementById('keywordRuleModal').classList.remove('hidden');
     }
@@ -1548,19 +1955,16 @@
       document.getElementById('keywordRuleModal').classList.add('hidden');
     }
     function renderKeywordRuleList() {
-      const list = document.getElementById('keywordRuleList');
-      list.innerHTML = (appData.keywordRules || []).map(r => {
+      document.getElementById('keywordRuleList').innerHTML = (appData.keywordRules || []).map(r => {
         const sc = getSceneById(r.sceneId);
         return `
-          <div class="p-2 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-0.5">
+          <div class="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-1">
             <div class="flex items-center justify-between">
-              <span class="f-body font-bold text-[var(--foreground)]">${r.title}</span>
-              <button onclick="deleteKeywordRule('${r.id}')" class="f-micro text-red-500">刪除</button>
+              <span class="text-[14px] font-bold text-[var(--text-main)]">${r.title}</span>
+              <button onclick="deleteKeywordRule('${r.id}')" class="text-[12.5px] text-[var(--danger)]">刪除</button>
             </div>
-            <div class="f-micro text-[var(--muted-foreground)]">
-              關鍵字：<strong>${r.keywords.join(', ')}</strong> ➔ 對應【${sc ? sc.name : ''}】
-            </div>
-            <div class="f-micro text-[var(--muted-foreground)]">${r.tip}</div>
+            <div class="text-[12.5px] text-[var(--text-muted)]">關鍵字：${r.keywords.join('、')} ➔ ${sc ? sc.name : ''}</div>
+            <div class="text-[13px] text-[var(--text-secondary)] pt-0.5">${r.tip}</div>
           </div>
         `;
       }).join('');
@@ -1578,7 +1982,7 @@
         keywords: words,
         sceneId,
         linePayMode,
-        title: `${sc ? sc.icon : '📍'} ${words[0]} 刷卡判斷`,
+        title: `${sc ? sc.icon : '📍'} ${words[0]} 刷卡提醒`,
         tip: tip || `自動對應至【${sc ? sc.name : ''}】最佳回饋卡片。`
       });
       document.getElementById('newKwWords').value = '';
@@ -1609,7 +2013,7 @@
         sceneRules: {}
       } : getCardById(cardId);
 
-      document.getElementById('cardEditModalTitle').textContent = isNew ? '➕ 新增信用卡與攻略' : `✏️ 編輯【${card.name}】攻略`;
+      document.getElementById('cardEditModalTitle').textContent = isNew ? '➕ 新增信用卡' : `✏️ 編輯【${card.name}】`;
       document.getElementById('editCardId').value = card.id;
       document.getElementById('editCardName').value = card.name;
       document.getElementById('editCardStatementDay').value = card.statementDay;
@@ -1621,27 +2025,26 @@
       document.getElementById('editCardNote').value = card.overdueNote || '';
       document.getElementById('deleteCardBtn').style.display = isNew ? 'none' : 'block';
 
-      const rulesContainer = document.getElementById('editCardSceneRules');
-      rulesContainer.innerHTML = appData.scenes.map(s => {
-        const r = (card.sceneRules && card.sceneRules[s.id]) || { rate: 1.0, switchTier: '免切權益', recPay: '實體卡/行動支付', note: '' };
+      document.getElementById('editCardSceneRules').innerHTML = appData.scenes.map(s => {
+        const r = (card.sceneRules && card.sceneRules[s.id]) || { rate: 1.0, switchTier: '免切權益', recPay: '實體卡', note: '' };
         return `
-          <div class="p-2 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-1">
-            <div class="f-small font-semibold">${s.icon} ${s.name}</div>
-            <div class="grid grid-cols-3 gap-1">
+          <div class="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-2">
+            <div class="text-[13.5px] font-semibold">${s.icon} ${s.name}</div>
+            <div class="grid grid-cols-3 gap-2">
               <div>
-                <label class="f-micro text-[var(--muted-foreground)]">回饋率 (%)</label>
-                <input id="ruleRate-${s.id}" type="number" step="0.1" value="${r.rate}" class="w-full px-1.5 py-1 f-small rounded bg-[var(--card)] border border-[var(--border)]" />
+                <label class="text-[12px] text-[var(--text-muted)]">回饋 (%)</label>
+                <input id="ruleRate-${s.id}" type="number" step="0.1" value="${r.rate}" class="w-full px-2.5 py-1.5 text-[13.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
               </div>
               <div>
-                <label class="f-micro text-[var(--muted-foreground)]">需切換權益</label>
-                <input id="ruleTier-${s.id}" type="text" value="${r.switchTier || ''}" class="w-full px-1.5 py-1 f-small rounded bg-[var(--card)] border border-[var(--border)]" />
+                <label class="text-[12px] text-[var(--text-muted)]">切換權益</label>
+                <input id="ruleTier-${s.id}" type="text" value="${r.switchTier || ''}" class="w-full px-2.5 py-1.5 text-[13.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
               </div>
               <div>
-                <label class="f-micro text-[var(--muted-foreground)]">推薦支付</label>
-                <input id="rulePay-${s.id}" type="text" value="${r.recPay || ''}" class="w-full px-1.5 py-1 f-small rounded bg-[var(--card)] border border-[var(--border)]" />
+                <label class="text-[12px] text-[var(--text-muted)]">建議支付</label>
+                <input id="rulePay-${s.id}" type="text" value="${r.recPay || ''}" class="w-full px-2.5 py-1.5 text-[13.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
               </div>
             </div>
-            <input id="ruleNote-${s.id}" type="text" value="${r.note || ''}" placeholder="補充說明 (選填)" class="w-full px-1.5 py-1 f-small rounded bg-[var(--card)] border border-[var(--border)]" />
+            <input id="ruleNote-${s.id}" type="text" value="${r.note || ''}" placeholder="補充說明 (選填)" class="w-full px-2.5 py-1.5 text-[13px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
           </div>
         `;
       }).join('');
@@ -1659,8 +2062,7 @@
       if (!name) return;
 
       let existing = getCardById(id);
-      const isNew = !existing;
-      if (isNew) {
+      if (!existing) {
         existing = { id, monthlyTaskDone: {}, paidMonths: {}, sceneRules: {} };
         appData.cards.push(existing);
       }
@@ -1687,9 +2089,7 @@
       selectedCardId = existing.id;
       saveData();
       closeEditCardModal();
-      renderTopSceneAdvisor();
-      renderRecordSection();
-      if (currentTab === 'cards') renderCardsTab();
+      renderAll();
     }
 
     function deleteCardFromModal() {
@@ -1699,9 +2099,7 @@
       if (selectedCardId === id) selectedCardId = appData.cards[0].id;
       saveData();
       closeEditCardModal();
-      renderTopSceneAdvisor();
-      renderRecordSection();
-      if (currentTab === 'cards') renderCardsTab();
+      renderAll();
     }
 
     function exportBackupJSON() {
@@ -1724,9 +2122,7 @@
           if (imported.cards && imported.scenes) {
             appData = imported;
             saveData();
-            renderTopSceneAdvisor();
-            renderRecordSection();
-            renderHistoryTab();
+            renderAll();
           }
         } catch (err) {}
       };
@@ -1736,16 +2132,14 @@
     function resetToDefaultData() {
       localStorage.removeItem(STORAGE_KEY);
       appData = loadData();
-      renderTopSceneAdvisor();
-      renderRecordSection();
-      renderHistoryTab();
-      switchTab('record');
+      activeSliceFilter = null;
+      renderAll();
+      switchView('dashboard');
     }
 
+    // 啟動初始化
     setStoreLinePayFilter('any');
-    switchTab('record');
-    renderTopSceneAdvisor();
-    renderRecordSection();
+    switchView('dashboard');
   </script>
 </body>
 </html>
