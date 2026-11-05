@@ -119,29 +119,40 @@
           ⚡ 記帳與刷卡導航
         </button>
         <button onclick="switchView('analytics')" id="deskNav-analytics" class="px-4 py-1.5 rounded-lg text-[13.5px] font-semibold transition-all">
-          📊 圓餅圖報表與明細
+          📊 圓餅圖與歷史帳單
         </button>
         <button onclick="switchView('cards')" id="deskNav-cards" class="px-4 py-1.5 rounded-lg text-[13.5px] font-semibold transition-all">
           💳 我的卡包攻略 (6)
         </button>
       </nav>
 
-      <div class="flex items-center gap-2.5">
-        <span id="currentMonthBadge" class="text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] num-tabular"></span>
+      <!-- 全域帳單月份切換器 (可隨時切換查看前幾個月歷史帳單與圓餅圖) -->
+      <div class="flex items-center gap-1.5">
+        <button id="backToCurrentMonthBtn" onclick="resetToRealCurrentMonth()" class="hidden text-[12px] font-semibold px-2.5 py-1 rounded-lg bg-[var(--accent)] text-white shadow-xs transition-all">
+          回本月
+        </button>
+        <div class="inline-flex items-center bg-[var(--bg-pill)] rounded-xl p-0.5 border border-[var(--border-hairline)]">
+          <button onclick="stepViewMonth(-1)" class="px-2 py-1 rounded-lg text-[12.5px] font-bold text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors" title="上個月">◀</button>
+          <select id="headerMonthSelect" onchange="setViewMonth(this.value)" class="bg-transparent text-[13px] font-semibold text-[var(--text-main)] px-1.5 py-1 focus:outline-none num-tabular cursor-pointer"></select>
+          <button onclick="stepViewMonth(1)" class="px-2 py-1 rounded-lg text-[12.5px] font-bold text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors" title="下個月">▶</button>
+        </div>
       </div>
     </div>
   </header>
+
+  <!-- 記帳成功提示 Toast -->
+  <div id="saveToast" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[var(--accent)] text-white text-[13.5px] font-semibold shadow-lg flex items-center gap-2.5"></div>
 
   <!-- ========================================================= -->
   <!-- 主內容容器：手機單欄舒適留白 / 電腦 max-w-6xl 雙欄黃金比例 -->
   <!-- ========================================================= -->
   <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 lg:pt-8">
 
-    <!-- 電腦版頂部 3 格總覽指標條 (lg 以上顯示，像麻布記帳/MOZE 儀表板) -->
+    <!-- 電腦版頂部 3 格總覽指標條 (lg 以上顯示，連動所選月份) -->
     <section id="desktopKpiStrip" class="hidden lg:grid grid-cols-3 gap-5 mb-7"></section>
 
     <!-- ======================================================= -->
-    <!-- VIEW 1: 首頁儀表板 (電腦版左 7 右 5 雙欄並排；手機版專注於查卡+秒記) -->
+    <!-- VIEW 1: 首頁儀表板 (電腦版左 7 右 5 雙欄並排；手機版上下串聯直看圓餅圖！) -->
     <!-- ======================================================= -->
     <div id="view-dashboard" class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
 
@@ -160,36 +171,31 @@
             </button>
           </div>
 
-          <!-- 搜尋框與快速情境膠囊 -->
+          <!-- 搜尋框與「快查」藍色高亮膠囊列 -->
           <div class="space-y-3">
             <div class="relative flex items-center">
               <span class="absolute left-3.5 text-[var(--text-muted)] text-sm">🔍</span>
               <input id="smartStoreInput" type="text"
-                placeholder="輸入店名或活動自動判斷（例：好樂迪唱歌、百貨餐廳、星巴克...）"
-                oninput="handleSmartSearchInput()"
+                placeholder="輸入店名或點下方快查（例：好樂迪唱歌、百貨餐廳、星巴克...）"
+                oninput="handleSmartSearchInput(true)"
                 class="w-full pl-10 pr-16 py-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors" />
               <button id="clearSearchBtn" onclick="clearSmartSearch()" class="hidden absolute right-3 text-[12px] font-medium px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">
                 清除
               </button>
             </div>
 
-            <!-- 常問情境快點列 -->
-            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
-              <span class="text-[12.5px] text-[var(--text-muted)] shrink-0">常問情境：</span>
-              <button onclick="quickSearchKeyword('唱歌 KTV')" class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors">🎤 唱歌/好樂迪</button>
-              <button onclick="quickSearchKeyword('一般餐廳')" class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors">🍲 一般餐廳</button>
-              <button onclick="quickSearchKeyword('百貨餐廳')" class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors">🏬 百貨內餐廳</button>
-              <button onclick="quickSearchKeyword('飯店餐廳')" class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors">🏨 飯店餐廳</button>
-              <button onclick="quickSearchKeyword('手搖飲/咖啡')" class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors">🧋 飲料/咖啡</button>
+            <!-- 快查快點列 (點選後會變藍色高亮！再點一次可取消) -->
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-2 flex-wrap" id="quickSearchChipsRow"></div>
             </div>
 
-            <!-- 店家支援支付篩選 -->
+            <!-- 店家支援支付篩選 (點選後變藍色高亮！) -->
             <div class="flex items-center gap-2 flex-wrap pt-1">
-              <span class="text-[12.5px] text-[var(--text-muted)]">現場支付限制：</span>
-              <div class="inline-flex bg-[var(--bg-pill)] p-0.5 rounded-lg">
-                <button onclick="setStoreLinePayFilter('any')" id="lpFilter-any" class="px-2.5 py-1 rounded-md text-[12px] font-medium transition-all">不限</button>
-                <button onclick="setStoreLinePayFilter('no_lp')" id="lpFilter-no_lp" class="px-2.5 py-1 rounded-md text-[12px] font-medium transition-all">僅刷卡 / Apple Pay</button>
-                <button onclick="setStoreLinePayFilter('has_lp')" id="lpFilter-has_lp" class="px-2.5 py-1 rounded-md text-[12px] font-medium transition-all">支援 LINE Pay</button>
+              <span class="text-[12.5px] font-medium text-[var(--text-muted)]">現場支付限制：</span>
+              <div class="inline-flex bg-[var(--bg-pill)] p-1 rounded-xl gap-1">
+                <button onclick="setStoreLinePayFilter('any')" id="lpFilter-any" class="px-3 py-1 rounded-lg text-[12.5px] font-medium transition-all">不限</button>
+                <button onclick="setStoreLinePayFilter('no_lp')" id="lpFilter-no_lp" class="px-3 py-1 rounded-lg text-[12.5px] font-medium transition-all">僅刷卡 / Apple Pay</button>
+                <button onclick="setStoreLinePayFilter('has_lp')" id="lpFilter-has_lp" class="px-3 py-1 rounded-lg text-[12.5px] font-medium transition-all">支援 LINE Pay</button>
               </div>
             </div>
           </div>
@@ -206,18 +212,27 @@
             <div id="topSceneButtons" class="flex flex-wrap gap-2"></div>
           </div>
 
-          <!-- 推薦卡片結果區 (MOZE 極簡留白風格：首選清晰大卡 + 次選優雅分隔列表) -->
+          <!-- 推薦卡片結果區 -->
           <div id="sceneRecommendationBox" class="pt-1 space-y-3"></div>
         </section>
 
-        <!-- 模組 B：⚡ 2 秒快速記帳 -->
-        <section id="quickRecordCard" class="surface-card p-5 sm:p-6 space-y-6">
+        <!-- 模組 B：⚡ 快速記一筆（支援任選補記日期！） -->
+        <section id="quickRecordCard" class="surface-card p-5 sm:p-6 space-y-5">
           <div class="flex items-center justify-between">
             <div>
               <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Quick Entry</span>
               <h3 class="text-[18px] font-bold text-[var(--text-main)] mt-0.5">⚡ 快速記一筆</h3>
             </div>
-            <span class="text-[12.5px] text-[var(--text-muted)]">自動對應權益與回饋試算</span>
+            <span class="text-[12.5px] text-[var(--text-muted)]">可選日期補記帳・自動算回饋</span>
+          </div>
+
+          <!-- 0. 消費日期選擇列（今天 / 昨天 / 前天 / 自選日曆，選中皆變藍色！） -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-[13px] font-semibold text-[var(--text-secondary)]">🗓️ 消費日期（不一定當下記，隨時補登）</label>
+              <span id="selectedDateHint" class="text-[12px] font-medium text-[var(--accent-text)] num-tabular"></span>
+            </div>
+            <div id="quickDatePills" class="flex flex-wrap items-center gap-2"></div>
           </div>
 
           <!-- 金額大字輸入區 (仿 MOZE 記帳首頁視覺焦點) -->
@@ -281,8 +296,8 @@
 
       </div>
 
-      <!-- 右欄 (5 cols on Desktop)：在電腦版常駐顯示「圓餅圖分析 + 最近帳單明細」！ -->
-      <aside id="desktopRightColumn" class="hidden lg:block lg:col-span-5 space-y-6 sticky top-24">
+      <!-- 右欄 (5 cols on Desktop / 手機版也直接顯示於首頁下方，一眼看到圓餅圖與當月帳單！) -->
+      <aside id="desktopRightColumn" class="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
         <div id="desktopDonutMount"></div>
         <div id="desktopRecentMount"></div>
       </aside>
@@ -290,42 +305,48 @@
     </div>
 
     <!-- ======================================================= -->
-    <!-- VIEW 2: 📊 圓餅圖報表與帳單明細 (手機點擊底部「統計明細」或電腦切至報表時顯示) -->
+    <!-- VIEW 2: 📊 圓餅圖報表與歷史月份帳單 -->
     <!-- ======================================================= -->
     <div id="view-analytics" class="hidden space-y-6">
+      <!-- 近 6 個月開銷趨勢柱狀圖 (點選任一月份即可切換查看該月歷史帳單與圓餅圖！) -->
+      <div id="monthlyHistoryTrendMount"></div>
+
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         <!-- 左側：互動圓餅圖與各卡帳單彙總 -->
         <div class="lg:col-span-5 space-y-6">
           <div id="analyticsDonutMount"></div>
 
-          <!-- 各信用卡本期累計帳單小計 -->
+          <!-- 各信用卡所選月份累計帳單小計 -->
           <div class="surface-card p-5 sm:p-6 space-y-4">
             <div class="flex items-center justify-between">
-              <h3 class="text-[16px] font-bold text-[var(--text-main)]">💳 各卡本月累計消費</h3>
+              <h3 id="perCardSpendTitle" class="text-[16px] font-bold text-[var(--text-main)]">💳 各卡當月累計帳單</h3>
               <span class="text-[12.5px] text-[var(--text-muted)]">核對電子帳單用</span>
             </div>
             <div id="perCardSpendSummary" class="divide-y divide-[var(--border-hairline)]"></div>
           </div>
         </div>
 
-        <!-- 右側：完整消費明細與資料備份 -->
+        <!-- 右側：按日期分組的完整消費明細與資料備份 -->
         <div class="lg:col-span-7 space-y-6">
           <div class="surface-card p-5 sm:p-6 space-y-4">
             <div class="flex items-center justify-between flex-wrap gap-2">
               <div>
-                <h3 class="text-[16px] font-bold text-[var(--text-main)]">🧾 消費紀錄明細</h3>
-                <p id="txFilterHint" class="text-[12.5px] text-[var(--text-muted)] mt-0.5">點選左側圓餅圖區塊可快速篩選</p>
+                <h3 id="fullTxTitle" class="text-[16px] font-bold text-[var(--text-main)]">🧾 歷史帳單明細（依日期分組）</h3>
+                <p id="txFilterHint" class="text-[12.5px] text-[var(--text-muted)] mt-0.5">點選左側圓餅圖或上方歷史月份可快速切換篩選</p>
               </div>
-              <div class="flex items-center gap-2">
-                <button id="clearChartFilterBtn" onclick="clearChartSliceFilter()" class="hidden text-[12.5px] font-medium px-2.5 py-1 rounded-lg bg-[var(--accent-soft)] text-[var(--accent-text)]">
-                  顯示全部 ✕
+              <div class="flex items-center gap-2 flex-wrap">
+                <button id="clearDemoBtn" onclick="clearDemoTransactions()" class="hidden text-[12px] font-medium px-2.5 py-1.5 rounded-xl border border-[var(--border-hairline)] text-[var(--text-muted)] hover:text-[var(--danger)]">
+                  🧹 清空預設範例
+                </button>
+                <button id="clearChartFilterBtn" onclick="clearChartSliceFilter()" class="hidden text-[12.5px] font-semibold px-2.5 py-1 rounded-lg bg-[var(--accent)] text-white">
+                  取消圓餅圖篩選 ✕
                 </button>
                 <select id="historyFilterCard" onchange="handleDropdownFilterChange()" class="text-[13px] px-3 py-1.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-main)] focus:outline-none">
                   <option value="all">全部帳戶</option>
                 </select>
               </div>
             </div>
-            <div id="fullTransactionsList" class="divide-y divide-[var(--border-hairline)]"></div>
+            <div id="fullTransactionsList" class="space-y-4"></div>
           </div>
 
           <!-- 備份與還原 -->
@@ -352,7 +373,7 @@
     </div>
 
     <!-- ======================================================= -->
-    <!-- VIEW 3: 💳 我的卡包攻略 (電腦版雙欄/三欄優雅卡片牆；手機版清晰清單) -->
+    <!-- VIEW 3: 💳 我的卡包攻略 -->
     <!-- ======================================================= -->
     <div id="view-cards" class="hidden space-y-6">
       <div class="flex items-center justify-between flex-wrap gap-3">
@@ -370,7 +391,7 @@
   </main>
 
   <!-- ========================================================= -->
-  <!-- 手機版專屬：底部懸浮 App 導覽列 (仿 iOS MOZE / 簡單記帳 底部 Tab Bar) -->
+  <!-- 手機版專屬：底部懸浮 App 導覽列 -->
   <!-- ========================================================= -->
   <nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 backdrop-blur-lg bg-[var(--bg-surface)]/92 border-t border-[var(--border-hairline)] px-4 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
     <div class="max-w-md mx-auto grid grid-cols-3 gap-2">
@@ -380,7 +401,7 @@
       </button>
       <button onclick="switchView('analytics')" id="mobNav-analytics" class="flex flex-col items-center justify-center py-1 rounded-xl transition-colors">
         <span class="text-[18px] leading-none">📊</span>
-        <span class="text-[12px] font-semibold mt-1">圓餅圖帳單</span>
+        <span class="text-[12px] font-semibold mt-1">歷史與圓餅圖</span>
       </button>
       <button onclick="switchView('cards')" id="mobNav-cards" class="flex flex-col items-center justify-center py-1 rounded-xl transition-colors">
         <span class="text-[18px] leading-none">💳</span>
@@ -514,19 +535,115 @@
     </div>
   </div>
 
+  <!-- MODAL 5: 編輯單筆消費紀錄 (支援修改日期、金額、分類、支付與卡片、備註) -->
+  <div id="txEditModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="surface-card max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="text-[16px] font-bold text-[var(--text-main)]">✎ 編輯消費紀錄（可調整日期）</h3>
+        <button onclick="closeTxEditModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">關閉</button>
+      </div>
+      <input type="hidden" id="editTxId" />
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">消費日期</label>
+            <input id="editTxDate" type="date" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] num-tabular" />
+          </div>
+          <div>
+            <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">金額 (NT$)</label>
+            <input id="editTxAmount" type="number" min="1" class="w-full px-3 py-2 text-[14px] font-bold rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] num-tabular" />
+          </div>
+        </div>
+        <div>
+          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">消費分類</label>
+          <select id="editTxScene" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">支付工具</label>
+            <select id="editTxPayMethod" onchange="handleEditTxPayChange()" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]"></select>
+          </div>
+          <div id="editTxCardWrap">
+            <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">扣款信用卡</label>
+            <select id="editTxCard" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]"></select>
+          </div>
+        </div>
+        <div>
+          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">備註說明</label>
+          <input id="editTxNote" type="text" placeholder="選填" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
+        </div>
+      </div>
+      <div class="flex gap-2.5 pt-2">
+        <button onclick="saveTxEdit()" class="flex-1 py-3 rounded-xl text-[14px] font-semibold bg-[var(--accent)] text-white">儲存修改</button>
+        <button onclick="deleteTxFromEditModal()" class="px-4 py-3 rounded-xl text-[13.5px] font-medium bg-[var(--danger-soft)] text-[var(--danger)]">刪除此筆</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     if ('serviceWorker' in navigator) {
+      let swRefreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!swRefreshing) {
+          swRefreshing = true;
+          window.location.reload();
+        }
+      });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=4').then(reg => reg.update()).catch(() => {});
       });
     }
 
     const STORAGE_KEY = 'LAZY_CARD_TRACKER_V2';
     const CHART_COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#06B6D4', '#64748B'];
+    const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
-    const now = new Date();
-    const CURRENT_MONTH = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    document.getElementById('currentMonthBadge').textContent = `${CURRENT_MONTH} 帳期`;
+    // 以使用者本機時區計算 YYYY-MM-DD（避免清晨時區偏差）
+    function getLocalDateStr(offsetDays = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function shiftMonthStr(ym, deltaMonths) {
+      const [y, m] = ym.split('-').map(Number);
+      const d = new Date(y, m - 1 + deltaMonths, 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function formatMonthTitle(ym) {
+      const [y, m] = ym.split('-');
+      return `${y}年 ${Number(m)}月`;
+    }
+
+    function formatDateHeaderLabel(dateStr) {
+      const parts = dateStr.split('-').map(Number);
+      if (parts.length !== 3) return dateStr;
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      const wk = WEEKDAY_NAMES[d.getDay()] || '';
+      const todayStr = getLocalDateStr(0);
+      const yestStr = getLocalDateStr(-1);
+      const tag = dateStr === todayStr ? '・今天' : (dateStr === yestStr ? '・昨天' : '');
+      return `${String(parts[1]).padStart(2, '0')}/${String(parts[2]).padStart(2, '0')} (${wk})${tag}`;
+    }
+
+    const REAL_CURRENT_MONTH = getLocalDateStr(0).slice(0, 7);
+    const PREV_MONTH_1 = shiftMonthStr(REAL_CURRENT_MONTH, -1);
+    const PREV_MONTH_2 = shiftMonthStr(REAL_CURRENT_MONTH, -2);
+    let CURRENT_MONTH = REAL_CURRENT_MONTH; // 目前畫面檢視的帳單月份（可自由切換前幾個月！）
+
+    const QUICK_SEARCH_CHIPS = [
+      { id: 'ktv', label: '🎤 唱歌/好樂迪', query: '唱歌 KTV' },
+      { id: 'dining', label: '🍲 一般餐廳', query: '一般餐廳' },
+      { id: 'dept', label: '🏬 百貨內餐廳', query: '百貨餐廳' },
+      { id: 'hotel', label: '🏨 飯店餐廳', query: '飯店餐廳' },
+      { id: 'drink', label: '🧋 飲料/咖啡', query: '手搖飲/咖啡' },
+      { id: '711', label: '🏪 7-11', query: '7-11' },
+      { id: 'fami', label: '🏪 全家', query: '全家' }
+    ];
 
     const DEFAULT_SCENES = [
       { id: 'cvs', icon: '🏪', name: '便利商店' },
@@ -586,6 +703,22 @@
         linePayMode: 'any',
         title: '💄 康是美 / 藥妝店',
         tip: '康是美/屈臣氏用 Apple Pay 或實體卡刷【國泰 CUBE (切樂饗購 3% 無上限)】（切記勿綁 LINE Pay）；若用 LINE Pay 結帳則選永豐 DAWAY 或台新 @GoGo。'
+      },
+      {
+        id: 'kw-cvs-711',
+        keywords: ['7-11', '711', '統一超商'],
+        sceneId: 'cvs',
+        linePayMode: 'has_lp',
+        title: '🏪 7-11 超商避坑提醒',
+        tip: '7-11 的 LINE Pay 有限定合作銀行（永豐非合作卡），請改用【台新 @GoGo】綁 LINE Pay / 台新 Pay（記得在 Richart Life 領券享最高 3.8%）！'
+      },
+      {
+        id: 'kw-cvs-fami',
+        keywords: ['全家', 'familymart', '萊爾富', '超商', '便利商店'],
+        sceneId: 'cvs',
+        linePayMode: 'has_lp',
+        title: '🏪 全家 / 萊爾富超商推薦',
+        tip: '全家超商直接刷【永豐 DAWAY】綁 LINE Pay 享最高 4.5%（免切權益），或【台新 @GoGo】綁 LINE Pay (領券 3.8%)！'
       },
       {
         id: 'kw-taxi-uber',
@@ -739,15 +872,133 @@
       }
     ];
 
+    function buildInitialSampleTransactions() {
+      return [
+        {
+          id: 'demo-1',
+          date: `${REAL_CURRENT_MONTH}-02`,
+          sceneId: 'dining',
+          payMethodId: 'applepay',
+          cardId: 'cathay-cube',
+          amount: 1280,
+          reward: 38,
+          rate: 3.0,
+          switchTier: '樂饗購',
+          note: '週末餐廳聚餐（範例）'
+        },
+        {
+          id: 'demo-2',
+          date: `${REAL_CURRENT_MONTH}-03`,
+          sceneId: 'cosmed',
+          payMethodId: 'applepay',
+          cardId: 'cathay-cube',
+          amount: 640,
+          reward: 19,
+          rate: 3.0,
+          switchTier: '樂饗購',
+          note: '康是美補貨（範例）'
+        },
+        {
+          id: 'demo-3',
+          date: `${REAL_CURRENT_MONTH}-04`,
+          sceneId: 'cvs',
+          payMethodId: 'linepay',
+          cardId: 'sinopac-daway',
+          amount: 165,
+          reward: 7,
+          rate: 4.5,
+          switchTier: '免切權益 (限LINE Pay)',
+          note: '全家咖啡與早餐（範例）'
+        },
+        {
+          id: 'demo-4',
+          date: `${REAL_CURRENT_MONTH}-05`,
+          sceneId: 'mrt',
+          payMethodId: 'applepay',
+          cardId: 'dbs-eco',
+          amount: 320,
+          reward: 6,
+          rate: 2.0,
+          switchTier: '免切權益',
+          note: '捷運通勤（範例）'
+        },
+        // 上個月歷史帳單範例（讓使用者一切換上個月就能立刻看圓餅圖與帳單核對）
+        {
+          id: 'demo-prev1-1',
+          date: `${PREV_MONTH_1}-12`,
+          sceneId: 'dining',
+          payMethodId: 'applepay',
+          cardId: 'cathay-cube',
+          amount: 1850,
+          reward: 56,
+          rate: 3.0,
+          switchTier: '樂饗購',
+          note: '慶生餐廳聚餐（上月範例）'
+        },
+        {
+          id: 'demo-prev1-2',
+          date: `${PREV_MONTH_1}-18`,
+          sceneId: 'ktv',
+          payMethodId: 'card',
+          cardId: 'dbs-eco',
+          amount: 960,
+          reward: 12,
+          rate: 1.2,
+          switchTier: '免切權益',
+          note: '好樂迪唱歌分攤（上月範例）'
+        },
+        {
+          id: 'demo-prev1-3',
+          date: `${PREV_MONTH_1}-25`,
+          sceneId: 'cvs',
+          payMethodId: 'linepay',
+          cardId: 'taishin-gogo',
+          amount: 420,
+          reward: 16,
+          rate: 3.8,
+          switchTier: '需領Richart券',
+          note: '7-11 補給（上月範例）'
+        },
+        // 前兩個月歷史帳單範例
+        {
+          id: 'demo-prev2-1',
+          date: `${PREV_MONTH_2}-09`,
+          sceneId: 'abroad',
+          payMethodId: 'applepay',
+          cardId: 'fubon-j',
+          amount: 4600,
+          reward: 276,
+          rate: 6.0,
+          switchTier: '需每季登錄',
+          note: '日本藥妝免稅（歷史範例）'
+        },
+        {
+          id: 'demo-prev2-2',
+          date: `${PREV_MONTH_2}-21`,
+          sceneId: 'cosmed',
+          payMethodId: 'applepay',
+          cardId: 'cathay-cube',
+          amount: 890,
+          reward: 27,
+          rate: 3.0,
+          switchTier: '樂饗購',
+          note: '康是美保養品（歷史範例）'
+        }
+      ];
+    }
+
     let appData = loadData();
     let currentView = 'dashboard'; // 'dashboard' | 'analytics' | 'cards'
     let selectedTopScene = 'dining';
     let selectedRecordScene = 'dining';
     let selectedPayMethod = 'applepay';
     let selectedCardId = 'cathay-cube';
+    let selectedExpenseDate = getLocalDateStr(0); // 支援自由選擇記帳日期！
+    let activeQuickChipId = null; // 追蹤被點選的「快查」膠囊，讓它變藍色高亮！
     let storeLinePayFilter = 'any';
     let donutDimension = 'scene'; // 'scene' | 'card' | 'pay'
     let activeSliceFilter = null; // { dimension, key, label }
+    let toastTimer = null;
 
     function loadData() {
       try {
@@ -755,66 +1006,36 @@
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed.cards && parsed.scenes && parsed.payMethods) {
-            if (!parsed.keywordRules) parsed.keywordRules = JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES));
+            if (!parsed.keywordRules || parsed.keywordRules.length < DEFAULT_KEYWORD_RULES.length) {
+              const existingIds = new Set((parsed.keywordRules || []).map(r => r.id));
+              const merged = [...(parsed.keywordRules || [])];
+              DEFAULT_KEYWORD_RULES.forEach(defRule => {
+                if (!existingIds.has(defRule.id)) merged.push(JSON.parse(JSON.stringify(defRule)));
+              });
+              parsed.keywordRules = merged;
+            }
+            // 若舊快取只有當月範例、尚未注入前幾個月歷史範例，且使用者還沒清空過範例，補上前兩月範例方便體驗
+            const hasOnlyDemoOrEmpty = (parsed.transactions || []).some(t => String(t.id).startsWith('demo-'));
+            if (hasOnlyDemoOrEmpty && !parsed._seededV4History) {
+              const existingTxIds = new Set((parsed.transactions || []).map(t => t.id));
+              buildInitialSampleTransactions().forEach(sample => {
+                if (sample.id.startsWith('demo-prev') && !existingTxIds.has(sample.id)) {
+                  parsed.transactions.push(sample);
+                }
+              });
+              parsed._seededV4History = true;
+            }
             return parsed;
           }
         }
       } catch (e) {}
       return {
+        _seededV4History: true,
         scenes: JSON.parse(JSON.stringify(DEFAULT_SCENES)),
         keywordRules: JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES)),
         payMethods: JSON.parse(JSON.stringify(DEFAULT_PAY_METHODS)),
         cards: JSON.parse(JSON.stringify(DEFAULT_CARDS)),
-        transactions: [
-          {
-            id: 'demo-1',
-            date: `${CURRENT_MONTH}-02`,
-            sceneId: 'dining',
-            payMethodId: 'applepay',
-            cardId: 'cathay-cube',
-            amount: 1280,
-            reward: 38,
-            rate: 3.0,
-            switchTier: '樂饗購',
-            note: '週末餐廳聚餐'
-          },
-          {
-            id: 'demo-2',
-            date: `${CURRENT_MONTH}-03`,
-            sceneId: 'cosmed',
-            payMethodId: 'applepay',
-            cardId: 'cathay-cube',
-            amount: 640,
-            reward: 19,
-            rate: 3.0,
-            switchTier: '樂饗購',
-            note: '康是美補貨'
-          },
-          {
-            id: 'demo-3',
-            date: `${CURRENT_MONTH}-04`,
-            sceneId: 'cvs',
-            payMethodId: 'linepay',
-            cardId: 'sinopac-daway',
-            amount: 165,
-            reward: 7,
-            rate: 4.5,
-            switchTier: '免切權益 (限LINE Pay)',
-            note: '全家咖啡與早餐'
-          },
-          {
-            id: 'demo-4',
-            date: `${CURRENT_MONTH}-05`,
-            sceneId: 'mrt',
-            payMethodId: 'applepay',
-            cardId: 'dbs-eco',
-            amount: 320,
-            reward: 6,
-            rate: 2.0,
-            switchTier: '免切權益',
-            note: '捷運通勤'
-          }
-        ]
+        transactions: buildInitialSampleTransactions()
       };
     }
 
@@ -824,9 +1045,18 @@
       } catch (e) {}
     }
 
-    function getCardMonthlySpend(cardId) {
+    function showToast(msg) {
+      const el = document.getElementById('saveToast');
+      if (!el) return;
+      el.innerHTML = msg;
+      el.classList.remove('hidden');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
+    function getCardMonthlySpend(cardId, targetMonth = CURRENT_MONTH) {
       return appData.transactions
-        .filter(t => t.cardId === cardId && t.date.startsWith(CURRENT_MONTH))
+        .filter(t => t.cardId === cardId && (t.date || '').startsWith(targetMonth))
         .reduce((sum, t) => sum + Number(t.amount || 0), 0);
     }
 
@@ -838,7 +1068,60 @@
       return appData.cards.find(c => c.id === id);
     }
 
-    // 切換主視圖 (同時支援電腦版頂部導覽與手機版底部 App Tab Bar)
+    // ==========================================================
+    // 🗓️ 歷史帳單月份切換器 (可自由切換過去 12 個月或任何有帳務的月份)
+    // ==========================================================
+    function getAvailableMonthsList() {
+      const set = new Set();
+      for (let i = 1; i >= -11; i--) {
+        if (i <= 0) set.add(shiftMonthStr(REAL_CURRENT_MONTH, i));
+      }
+      (appData.transactions || []).forEach(t => {
+        if (t.date && t.date.length >= 7) set.add(t.date.slice(0, 7));
+      });
+      set.add(CURRENT_MONTH);
+      return Array.from(set).sort((a, b) => b.localeCompare(a));
+    }
+
+    function setViewMonth(ym) {
+      if (!ym) return;
+      CURRENT_MONTH = ym;
+      activeSliceFilter = null;
+      renderAll();
+    }
+
+    function stepViewMonth(delta) {
+      CURRENT_MONTH = shiftMonthStr(CURRENT_MONTH, delta);
+      activeSliceFilter = null;
+      renderAll();
+    }
+
+    function resetToRealCurrentMonth() {
+      CURRENT_MONTH = REAL_CURRENT_MONTH;
+      activeSliceFilter = null;
+      renderAll();
+    }
+
+    function renderHeaderMonthControl() {
+      const sel = document.getElementById('headerMonthSelect');
+      const backBtn = document.getElementById('backToCurrentMonthBtn');
+      const months = getAvailableMonthsList();
+      if (sel) {
+        sel.innerHTML = months.map(ym => {
+          const tag = ym === REAL_CURRENT_MONTH ? ' (本月)' : '';
+          return `<option value="${ym}" ${ym === CURRENT_MONTH ? 'selected' : ''}>${formatMonthTitle(ym)}${tag}</option>`;
+        }).join('');
+      }
+      if (backBtn) {
+        if (CURRENT_MONTH !== REAL_CURRENT_MONTH) {
+          backBtn.classList.remove('hidden');
+        } else {
+          backBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    // 切換主視圖 (電腦頂部導覽與手機底部導覽選中皆呈現鮮明藍色！)
     function switchView(view) {
       currentView = view;
       ['dashboard', 'analytics', 'cards'].forEach(v => {
@@ -848,8 +1131,8 @@
 
         if (v === view) {
           viewEl.classList.remove('hidden');
-          if (deskBtn) deskBtn.className = 'px-4 py-1.5 rounded-lg text-[13.5px] font-semibold bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs transition-all';
-          if (mobBtn) mobBtn.className = 'flex flex-col items-center justify-center py-1 rounded-xl text-[var(--accent)] transition-colors';
+          if (deskBtn) deskBtn.className = 'px-4 py-1.5 rounded-lg text-[13.5px] font-semibold bg-[var(--accent)] text-white shadow-xs transition-all';
+          if (mobBtn) mobBtn.className = 'flex flex-col items-center justify-center py-1 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] font-bold transition-colors';
         } else {
           viewEl.classList.add('hidden');
           if (deskBtn) deskBtn.className = 'px-4 py-1.5 rounded-lg text-[13.5px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all';
@@ -862,7 +1145,9 @@
     }
 
     function renderAll() {
+      renderHeaderMonthControl();
       renderDesktopKpiStrip();
+      renderQuickSearchChips();
       renderTopSceneAdvisor();
       renderRecordSection();
       renderDonutCharts();
@@ -872,32 +1157,33 @@
     }
 
     // ==========================================================
-    // 電腦版頂部 3 格 KPI 指標卡
+    // 電腦版頂部 3 格 KPI 指標卡 (隨所選月份即時切換)
     // ==========================================================
     function renderDesktopKpiStrip() {
-      const monthTxs = appData.transactions.filter(t => t.date.startsWith(CURRENT_MONTH));
+      const monthTxs = appData.transactions.filter(t => (t.date || '').startsWith(CURRENT_MONTH));
       const cardSpend = monthTxs.filter(t => t.cardId !== 'CASH').reduce((s, t) => s + Number(t.amount || 0), 0);
       const cashSpend = monthTxs.filter(t => t.cardId === 'CASH').reduce((s, t) => s + Number(t.amount || 0), 0);
       const totalSpend = cardSpend + cashSpend;
       const totalReward = monthTxs.reduce((s, t) => s + Number(t.reward || 0), 0);
+      const monthLabel = CURRENT_MONTH === REAL_CURRENT_MONTH ? '本月' : formatMonthTitle(CURRENT_MONTH);
 
       const pendingTasks = appData.cards.filter(c => c.requireMonthlyTask && !(c.monthlyTaskDone && c.monthlyTaskDone[CURRENT_MONTH])).length;
 
       document.getElementById('desktopKpiStrip').innerHTML = `
         <div class="surface-card px-6 py-4 flex items-center justify-between">
           <div>
-            <div class="text-[13px] font-medium text-[var(--text-muted)]">本月總支出（含刷卡與現金）</div>
+            <div class="text-[13px] font-medium text-[var(--text-muted)]">${monthLabel}總支出（含刷卡與現金）</div>
             <div class="text-[26px] font-extrabold num-tabular text-[var(--text-main)] mt-1">NT$ ${totalSpend.toLocaleString()}</div>
           </div>
           <div class="text-right text-[12.5px] text-[var(--text-muted)] space-y-0.5 num-tabular">
-            <div>刷卡待繳 $${cardSpend.toLocaleString()}</div>
+            <div>刷卡帳單 $${cardSpend.toLocaleString()}</div>
             <div>現金支出 $${cashSpend.toLocaleString()}</div>
           </div>
         </div>
 
         <div class="surface-card px-6 py-4 flex items-center justify-between">
           <div>
-            <div class="text-[13px] font-medium text-[var(--text-muted)]">本月預估累積回饋</div>
+            <div class="text-[13px] font-medium text-[var(--text-muted)]">${monthLabel}預估累積回饋</div>
             <div class="text-[26px] font-extrabold num-tabular text-[var(--success)] mt-1">+ ${totalReward.toLocaleString()} <span class="text-[14px] font-semibold">點/元</span></div>
           </div>
           <span class="px-3 py-1 rounded-full text-[12.5px] font-semibold bg-[var(--success-soft)] text-[var(--success)]">自動試算</span>
@@ -916,7 +1202,7 @@
     }
 
     // ==========================================================
-    // 📊 互動式 SVG 甜甜圈圓餅圖 (MOZE 美學風格：大留白、圓心總計、百分比排行)
+    // 📊 互動式 SVG 甜甜圈圓餅圖 (內建月份切換器 + 藍色維度按鈕)
     // ==========================================================
     function setDonutDimension(dim) {
       donutDimension = dim;
@@ -931,10 +1217,6 @@
       } else {
         activeSliceFilter = { dimension: dim, key, label };
       }
-      if (currentView !== 'analytics' && window.innerWidth < 1024) {
-        switchView('analytics');
-        return;
-      }
       renderDonutCharts();
       renderDesktopRecentCard();
       if (currentView === 'analytics') renderAnalyticsView();
@@ -948,9 +1230,10 @@
     }
 
     function buildDonutCardHTML() {
-      const monthTxs = appData.transactions.filter(t => t.date.startsWith(CURRENT_MONTH));
+      const monthTxs = appData.transactions.filter(t => (t.date || '').startsWith(CURRENT_MONTH));
       const totalSpend = monthTxs.reduce((s, t) => s + Number(t.amount || 0), 0);
       const totalReward = monthTxs.reduce((s, t) => s + Number(t.reward || 0), 0);
+      const isCurrentM = CURRENT_MONTH === REAL_CURRENT_MONTH;
 
       // 彙總分組數據
       const map = {};
@@ -986,7 +1269,6 @@
 
       const items = Object.values(map).sort((a, b) => b.amount - a.amount);
 
-      // 產生 SVG Donut 圓弧 (r = 68, circumference = 2 * pi * 68 ≈ 427.26)
       const radius = 68;
       const circumference = 2 * Math.PI * radius;
       let cumulativePercent = 0;
@@ -1020,59 +1302,77 @@
         <circle cx="96" cy="96" r="${radius}" fill="transparent" stroke="var(--border-hairline)" stroke-width="18" />
       `;
 
-      const centerTitle = activeSliceFilter ? activeSliceFilter.label : '本月總支出';
+      const centerTitle = activeSliceFilter
+        ? activeSliceFilter.label
+        : `${formatMonthTitle(CURRENT_MONTH)}`;
       const centerAmount = activeSliceFilter
         ? (items.find(i => i.key === activeSliceFilter.key)?.amount || 0)
         : totalSpend;
 
       return `
-        <section class="surface-card p-5 sm:p-6 space-y-5">
+        <section class="surface-card p-5 sm:p-6 space-y-4">
           <div class="flex items-center justify-between gap-2 flex-wrap">
             <div>
-              <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Analytics</span>
-              <h3 class="text-[17px] font-bold text-[var(--text-main)] mt-0.5">📊 支出比例分析</h3>
+              <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Donut Chart</span>
+              <h3 class="text-[17px] font-bold text-[var(--text-main)] mt-0.5">📊 圓餅圖支出比例</h3>
             </div>
-            <!-- 維度切換器 -->
-            <div class="inline-flex bg-[var(--bg-pill)] p-0.5 rounded-xl">
-              <button onclick="setDonutDimension('scene')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'scene' ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs' : 'text-[var(--text-muted)]'}">依類別</button>
-              <button onclick="setDonutDimension('card')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'card' ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs' : 'text-[var(--text-muted)]'}">依卡片</button>
-              <button onclick="setDonutDimension('pay')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'pay' ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs' : 'text-[var(--text-muted)]'}">依支付</button>
+            <!-- 維度切換器 (選中變藍色！) -->
+            <div class="inline-flex bg-[var(--bg-pill)] p-1 rounded-xl gap-1">
+              <button onclick="setDonutDimension('scene')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'scene' ? 'bg-[var(--accent)] text-white shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">依類別</button>
+              <button onclick="setDonutDimension('card')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'card' ? 'bg-[var(--accent)] text-white shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">依卡片</button>
+              <button onclick="setDonutDimension('pay')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'pay' ? 'bg-[var(--accent)] text-white shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">依支付</button>
             </div>
           </div>
 
+          <!-- 圓餅圖內建歷史月份快速切換列 -->
+          <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]">
+            <button onclick="stepViewMonth(-1)" class="text-[12.5px] font-semibold text-[var(--text-secondary)] hover:text-[var(--accent)] px-2 py-0.5">
+              ◀ 上個月
+            </button>
+            <div class="flex items-center gap-2">
+              <span class="text-[13.5px] font-bold text-[var(--text-main)] num-tabular">${formatMonthTitle(CURRENT_MONTH)}</span>
+              ${isCurrentM
+                ? `<span class="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">本月</span>`
+                : `<button onclick="resetToRealCurrentMonth()" class="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-[var(--accent)] text-white">回本月</button>`}
+            </div>
+            <button onclick="stepViewMonth(1)" class="text-[12.5px] font-semibold text-[var(--text-secondary)] hover:text-[var(--accent)] px-2 py-0.5">
+              下個月 ▶
+            </button>
+          </div>
+
           <!-- 圓餅圖視覺核心 -->
-          <div class="flex flex-col items-center justify-center py-2">
+          <div class="flex flex-col items-center justify-center py-1">
             <div class="relative w-48 h-48 flex items-center justify-center">
               <svg viewBox="0 0 192 192" class="w-48 h-48 -rotate-90">
                 <circle cx="96" cy="96" r="${radius}" fill="transparent" stroke="var(--bg-pill)" stroke-width="20" />
                 ${svgSegments}
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pointer-events-none">
-                <span class="text-[12px] font-medium text-[var(--text-muted)] truncate max-w-[110px]">${centerTitle}</span>
+                <span class="text-[12px] font-medium text-[var(--text-muted)] truncate max-w-[115px]">${centerTitle}</span>
                 <span class="text-[22px] font-extrabold num-tabular text-[var(--text-main)] mt-0.5">$${centerAmount.toLocaleString()}</span>
                 <span class="text-[12px] font-semibold text-[var(--success)] mt-0.5 num-tabular">回饋 +$${totalReward.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
-          <!-- 圖例與百分比進度排行 (仿 MOZE 報表清單) -->
-          <div class="space-y-3 pt-1">
+          <!-- 圖例與百分比進度排行 -->
+          <div class="space-y-2.5 pt-1">
             ${items.length === 0 ? `
-              <p class="text-center text-[13.5px] text-[var(--text-muted)] py-4">本月尚無消費紀錄，記一筆後即自動繪製圓餅圖</p>
+              <p class="text-center text-[13.5px] text-[var(--text-muted)] py-4">${formatMonthTitle(CURRENT_MONTH)} 尚無消費紀錄，可點「◀ 上個月」查看歷史帳單或新增一筆！</p>
             ` : items.map((item, idx) => {
               const pct = totalSpend > 0 ? ((item.amount / totalSpend) * 100).toFixed(1) : '0.0';
               const color = CHART_COLORS[idx % CHART_COLORS.length];
               const isSelected = activeSliceFilter && activeSliceFilter.key === item.key;
               return `
                 <div onclick="clickDonutSlice('${donutDimension}', '${item.key}', '${item.label}')"
-                  class="group p-2.5 -mx-2.5 rounded-xl cursor-pointer transition-colors ${isSelected ? 'bg-[var(--accent-soft)]' : 'hover:bg-[var(--bg-subtle)]'}">
+                  class="group p-2.5 -mx-2 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-[var(--accent-soft)] border-[var(--accent)]' : 'border-transparent hover:bg-[var(--bg-subtle)]'}">
                   <div class="flex items-center justify-between text-[13.5px]">
                     <div class="flex items-center gap-2.5 min-w-0">
                       <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${color}"></span>
-                      <span class="font-medium text-[var(--text-main)] truncate">${item.icon} ${item.label}</span>
-                      <span class="text-[12px] text-[var(--text-muted)] num-tabular">${pct}%</span>
+                      <span class="font-semibold text-[var(--text-main)] truncate">${item.icon} ${item.label}</span>
+                      <span class="text-[12px] text-[var(--text-muted)] num-tabular">${pct}% (${item.count}筆)</span>
                     </div>
-                    <span class="font-semibold num-tabular text-[var(--text-main)]">$${item.amount.toLocaleString()}</span>
+                    <span class="font-bold num-tabular text-[var(--text-main)]">$${item.amount.toLocaleString()}</span>
                   </div>
                   <div class="w-full h-1.5 rounded-full bg-[var(--bg-pill)] overflow-hidden mt-2">
                     <div class="h-full rounded-full transition-all duration-500" style="width: ${pct}%; background-color: ${color}"></div>
@@ -1093,12 +1393,15 @@
       if (anaMount) anaMount.innerHTML = html;
     }
 
-    // 電腦版右欄下方的近期紀錄卡
+    // 首頁當月（或所選歷史月份）按日期分組帳單卡
     function renderDesktopRecentCard() {
       const mount = document.getElementById('desktopRecentMount');
       if (!mount) return;
 
-      let list = appData.transactions;
+      let list = appData.transactions
+        .filter(t => (t.date || '').startsWith(CURRENT_MONTH))
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
       if (activeSliceFilter) {
         list = list.filter(t => {
           if (activeSliceFilter.dimension === 'scene') return t.sceneId === activeSliceFilter.key;
@@ -1106,58 +1409,100 @@
           return t.payMethodId === activeSliceFilter.key;
         });
       }
-      const recent = list.slice(0, 5);
+      const recent = list.slice(0, 8);
 
       mount.innerHTML = `
         <section class="surface-card p-5 sm:p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <h3 class="text-[16px] font-bold text-[var(--text-main)]">
-              🕒 ${activeSliceFilter ? `篩選：${activeSliceFilter.label}` : '近期記帳明細'}
-            </h3>
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="text-[16px] font-bold text-[var(--text-main)]">
+                🧾 ${formatMonthTitle(CURRENT_MONTH)} ${activeSliceFilter ? `・${activeSliceFilter.label}` : '帳單明細'}
+              </h3>
+              <p class="text-[12px] text-[var(--text-muted)] mt-0.5">點 ✎ 可修改日期或金額・點「歷史與圓餅圖」看跨月趨勢</p>
+            </div>
             <div class="flex items-center gap-2">
-              ${activeSliceFilter ? `<button onclick="clearChartSliceFilter()" class="text-[12px] font-medium text-[var(--accent-text)]">清除篩選</button>` : ''}
-              <button onclick="switchView('analytics')" class="text-[13px] font-medium text-[var(--accent-text)] hover:underline">查看全部 →</button>
+              ${activeSliceFilter ? `<button onclick="clearChartSliceFilter()" class="text-[12px] font-semibold px-2.5 py-1 rounded-lg bg-[var(--accent)] text-white">清除篩選</button>` : ''}
+              <button onclick="switchView('analytics')" class="text-[13px] font-semibold text-[var(--accent-text)] hover:underline">完整歷史帳單 →</button>
             </div>
           </div>
-          <div class="divide-y divide-[var(--border-hairline)]">
+          <div class="space-y-3">
             ${recent.length === 0
-              ? `<p class="text-[13.5px] text-[var(--text-muted)] py-4 text-center">尚無紀錄</p>`
-              : recent.map(tx => formatTransactionRow(tx)).join('')}
+              ? `<p class="text-[13.5px] text-[var(--text-muted)] py-4 text-center">${formatMonthTitle(CURRENT_MONTH)} 尚無消費紀錄</p>`
+              : buildDateGroupedTransactionsHTML(recent)}
           </div>
         </section>
       `;
     }
 
     // ==========================================================
-    // 📍 置頂刷卡推薦與智慧關鍵字判斷
+    // 📍 置頂刷卡推薦與「快查」藍色選中狀態
     // ==========================================================
+    function renderQuickSearchChips() {
+      const row = document.getElementById('quickSearchChipsRow');
+      if (!row) return;
+      row.innerHTML = `<span class="text-[12.5px] font-medium text-[var(--text-muted)] shrink-0">快查：</span>` +
+        QUICK_SEARCH_CHIPS.map(chip => {
+          const isActive = activeQuickChipId === chip.id;
+          return `
+            <button onclick="selectQuickChip('${chip.id}')"
+              class="shrink-0 text-[12.5px] px-3 py-1.5 rounded-full transition-all flex items-center gap-1 ${
+                isActive
+                  ? 'bg-[var(--accent)] text-white font-semibold shadow-sm ring-2 ring-blue-500/25'
+                  : 'bg-[var(--bg-pill)] text-[var(--text-secondary)] font-medium hover:text-[var(--text-main)]'
+              }">
+              ${isActive ? '<span>✓</span>' : ''}
+              <span>${chip.label}</span>
+            </button>
+          `;
+        }).join('');
+    }
+
+    function selectQuickChip(chipId) {
+      const chip = QUICK_SEARCH_CHIPS.find(c => c.id === chipId);
+      if (!chip) return;
+      // 再點一次同一個藍色快查可取消選取
+      if (activeQuickChipId === chipId) {
+        clearSmartSearch();
+        return;
+      }
+      activeQuickChipId = chipId;
+      document.getElementById('smartStoreInput').value = chip.query;
+      renderQuickSearchChips();
+      handleSmartSearchInput(false);
+    }
+
     function setStoreLinePayFilter(mode) {
       storeLinePayFilter = mode;
       ['any', 'no_lp', 'has_lp'].forEach(m => {
         const btn = document.getElementById(`lpFilter-${m}`);
+        if (!btn) return;
         if (m === mode) {
-          btn.className = 'px-2.5 py-1 rounded-md text-[12px] font-semibold bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs transition-all';
+          btn.className = 'px-3 py-1 rounded-lg text-[12.5px] font-semibold bg-[var(--accent)] text-white shadow-xs transition-all';
         } else {
-          btn.className = 'px-2.5 py-1 rounded-md text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all';
+          btn.className = 'px-3 py-1 rounded-lg text-[12.5px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all';
         }
       });
       renderTopSceneAdvisor();
     }
 
-    function quickSearchKeyword(text) {
-      document.getElementById('smartStoreInput').value = text;
-      handleSmartSearchInput();
-    }
-
     function clearSmartSearch() {
+      activeQuickChipId = null;
       document.getElementById('smartStoreInput').value = '';
-      handleSmartSearchInput();
+      renderQuickSearchChips();
+      handleSmartSearchInput(false);
     }
 
-    function handleSmartSearchInput() {
-      const q = document.getElementById('smartStoreInput').value.trim().toLowerCase();
+    function handleSmartSearchInput(fromManualInput = false) {
+      const rawVal = document.getElementById('smartStoreInput').value.trim();
+      const q = rawVal.toLowerCase();
       const clearBtn = document.getElementById('clearSearchBtn');
       const diagBox = document.getElementById('smartKeywordDiagnosis');
+
+      if (fromManualInput) {
+        const matchedChip = QUICK_SEARCH_CHIPS.find(c => c.query.toLowerCase() === q || c.label.toLowerCase().includes(q));
+        activeQuickChipId = q && matchedChip ? matchedChip.id : null;
+        renderQuickSearchChips();
+      }
 
       if (!q) {
         clearBtn.classList.add('hidden');
@@ -1184,7 +1529,7 @@
         }
         diagBox.classList.remove('hidden');
         diagBox.innerHTML = `
-          <div class="p-4 rounded-2xl bg-[var(--accent-soft)] space-y-1.5">
+          <div class="p-4 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent)]/30 space-y-1.5">
             <div class="text-[14px] font-bold text-[var(--accent-text)]">${matched.title}</div>
             <p class="text-[13px] text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">${matched.tip}</p>
           </div>
@@ -1193,7 +1538,7 @@
         diagBox.classList.remove('hidden');
         diagBox.innerHTML = `
           <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-1.5">
-            <div class="text-[14px] font-bold text-[var(--text-main)]">💡 未知店家「${q}」判斷口訣</div>
+            <div class="text-[14px] font-bold text-[var(--text-main)]">💡 未知店家「${rawVal}」判斷口訣</div>
             <p class="text-[13px] text-[var(--text-secondary)] leading-relaxed">
               1. 現場可刷 LINE Pay ➔ 刷 <strong>永豐 DAWAY (4.5%)</strong> 或 <strong>台新 @GoGo (3.8%)</strong><br/>
               2. 僅能刷卡且屬餐廳/百貨/藥妝 ➔ 刷 <strong>國泰 CUBE (切樂饗購 3%)</strong><br/>
@@ -1213,12 +1558,13 @@
         const active = s.id === selectedTopScene;
         return `
           <button onclick="selectTopScene('${s.id}')"
-            class="px-3.5 py-2 rounded-xl text-[13.5px] transition-all ${
+            class="px-3.5 py-2 rounded-xl text-[13.5px] transition-all flex items-center gap-1 ${
               active
-                ? 'bg-[var(--accent)] text-white font-semibold shadow-xs'
+                ? 'bg-[var(--accent)] text-white font-semibold shadow-sm ring-2 ring-blue-500/20'
                 : 'bg-[var(--bg-pill)] text-[var(--text-secondary)] font-medium hover:text-[var(--text-main)]'
             }">
-            ${s.icon} ${s.name}
+            ${active ? '<span>✓</span>' : ''}
+            <span>${s.icon} ${s.name}</span>
           </button>
         `;
       }).join('');
@@ -1240,10 +1586,10 @@
           filterNotice = '（現場無 LINE Pay 時僅一般回饋）';
         }
 
-        const spent = getCardMonthlySpend(card.id);
+        const spent = getCardMonthlySpend(card.id, REAL_CURRENT_MONTH);
         const cap = Number(card.monthlySpendCap || 0);
         const isOverCap = cap > 0 && spent >= cap;
-        const taskDone = card.monthlyTaskDone && card.monthlyTaskDone[CURRENT_MONTH];
+        const taskDone = card.monthlyTaskDone && card.monthlyTaskDone[REAL_CURRENT_MONTH];
         return { card, rule, effectiveRate, filterNotice, spent, cap, isOverCap, taskDone };
       }).sort((a, b) => b.effectiveRate - a.effectiveRate);
 
@@ -1256,7 +1602,6 @@
       const firstCapPercent = first.cap > 0 ? Math.min(100, Math.round((first.spent / first.cap) * 100)) : 0;
 
       recBox.innerHTML = `
-        <!-- 首選推薦卡片：大留白、清晰焦點數字、無雜亂邊框 -->
         <div class="p-5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3.5">
           <div class="flex items-start justify-between gap-3">
             <div>
@@ -1305,7 +1650,7 @@
             firstNeedTask ? `
               <div class="p-3 rounded-xl bg-[var(--warn-soft)] flex items-center justify-between gap-3">
                 <span class="text-[13px] text-[var(--warn)] font-medium">🎟️ ${first.card.monthlyTaskDesc}</span>
-                <button onclick="toggleCardMonthlyTask('${first.card.id}')"
+                <button onclick="toggleCardMonthlyTask('${first.card.id}', '${REAL_CURRENT_MONTH}')"
                   class="shrink-0 text-[12.5px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs">
                   勾選本月已領
                 </button>
@@ -1313,13 +1658,12 @@
             ` : `
               <div class="flex items-center justify-between text-[12.5px] text-[var(--text-muted)]">
                 <span class="text-[var(--success)] font-medium">✓ 本月已完成領券 / 登錄</span>
-                <button onclick="toggleCardMonthlyTask('${first.card.id}')" class="hover:underline">重設</button>
+                <button onclick="toggleCardMonthlyTask('${first.card.id}', '${REAL_CURRENT_MONTH}')" class="hover:underline">重設</button>
               </div>
             `
           ) : ''}
         </div>
 
-        <!-- 次選與備用：清爽分隔列 -->
         <div class="divide-y divide-[var(--border-hairline)] px-1">
           ${runnersUp.map((item, idx) => `
             <div class="py-2.5 flex items-center justify-between gap-3">
@@ -1369,41 +1713,102 @@
       setTimeout(() => document.getElementById('expenseAmount').focus(), 250);
     }
 
-    function toggleCardMonthlyTask(cardId) {
+    function toggleCardMonthlyTask(cardId, targetMonth = CURRENT_MONTH) {
       const card = getCardById(cardId);
       if (!card) return;
       if (!card.monthlyTaskDone) card.monthlyTaskDone = {};
-      card.monthlyTaskDone[CURRENT_MONTH] = !card.monthlyTaskDone[CURRENT_MONTH];
+      card.monthlyTaskDone[targetMonth] = !card.monthlyTaskDone[targetMonth];
       saveData();
       renderAll();
     }
 
     // ==========================================================
-    // ⚡ 快速記帳區渲染
+    // ⚡ 快速記帳區渲染（含日期選擇列 + 藍色高亮選項）
     // ==========================================================
+    function selectQuickExpenseDate(dateStr) {
+      if (!dateStr) return;
+      selectedExpenseDate = dateStr;
+      renderRecordSection();
+    }
+
+    function renderRecordDatePicker() {
+      const today = getLocalDateStr(0);
+      const yesterday = getLocalDateStr(-1);
+      const twoDaysAgo = getLocalDateStr(-2);
+      const isCustom = ![today, yesterday, twoDaysAgo].includes(selectedExpenseDate);
+
+      const quickPresets = [
+        { label: '今天', sub: today.slice(5).replace('-', '/'), val: today },
+        { label: '昨天', sub: yesterday.slice(5).replace('-', '/'), val: yesterday },
+        { label: '前天', sub: twoDaysAgo.slice(5).replace('-', '/'), val: twoDaysAgo }
+      ];
+
+      const hintEl = document.getElementById('selectedDateHint');
+      if (hintEl) {
+        const txM = selectedExpenseDate.slice(0, 7);
+        hintEl.textContent = txM !== REAL_CURRENT_MONTH
+          ? `將歸入 ${formatMonthTitle(txM)} 歷史帳單`
+          : `記帳日：${selectedExpenseDate}`;
+      }
+
+      const container = document.getElementById('quickDatePills');
+      if (!container) return;
+
+      container.innerHTML = quickPresets.map(p => {
+        const active = selectedExpenseDate === p.val;
+        return `
+          <button type="button" onclick="selectQuickExpenseDate('${p.val}')"
+            class="px-3.5 py-2 rounded-xl text-[13px] transition-all flex items-center gap-1.5 num-tabular ${
+              active
+                ? 'bg-[var(--accent)] text-white font-semibold shadow-sm ring-2 ring-blue-500/20'
+                : 'bg-[var(--bg-pill)] text-[var(--text-secondary)] font-medium hover:text-[var(--text-main)]'
+            }">
+            ${active ? '<span>✓</span>' : ''}
+            <span>${p.label}</span>
+            <span class="text-[12px] ${active ? 'text-white/85' : 'text-[var(--text-muted)]'}">${p.sub}</span>
+          </button>
+        `;
+      }).join('') + `
+        <label class="px-3 py-1.5 rounded-xl text-[13px] transition-all flex items-center gap-1.5 cursor-pointer num-tabular border ${
+          isCustom
+            ? 'bg-[var(--accent)] text-white font-semibold border-[var(--accent)] shadow-sm ring-2 ring-blue-500/20'
+            : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] font-medium border-[var(--border-hairline)] hover:border-[var(--accent)]'
+        }">
+          <span>📅 ${isCustom ? '✓ 自選：' : '自選日期'}</span>
+          <input type="date" value="${selectedExpenseDate}"
+            onchange="selectQuickExpenseDate(this.value)"
+            class="bg-transparent text-[13px] focus:outline-none cursor-pointer ${isCustom ? 'text-white font-semibold' : 'text-[var(--text-main)]'}" />
+        </label>
+      `;
+    }
+
     function renderRecordSection() {
-      // 1. 地點膠囊
+      // 0. 日期快速選擇列
+      renderRecordDatePicker();
+
+      // 1. 地點膠囊（選中變藍色！）
       const sceneContainer = document.getElementById('recordScenePills');
       sceneContainer.innerHTML = appData.scenes.map(s => {
         const active = s.id === selectedRecordScene;
         return `
           <button onclick="selectRecordScene('${s.id}')"
-            class="px-3.5 py-1.5 rounded-xl text-[13.5px] transition-all ${
+            class="px-3.5 py-2 rounded-xl text-[13.5px] transition-all flex items-center gap-1 ${
               active
-                ? 'bg-[var(--text-main)] text-[var(--bg-surface)] font-semibold'
+                ? 'bg-[var(--accent)] text-white font-semibold shadow-sm ring-2 ring-blue-500/20'
                 : 'bg-[var(--bg-pill)] text-[var(--text-secondary)] font-medium hover:text-[var(--text-main)]'
             }">
-            ${s.icon} ${s.name}
+            ${active ? '<span>✓</span>' : ''}
+            <span>${s.icon} ${s.name}</span>
           </button>
         `;
       }).join('') + `
         <button onclick="openSceneModal()"
-          class="px-3 py-1.5 rounded-xl border border-dashed border-[var(--border-hairline)] text-[13px] text-[var(--text-muted)] hover:text-[var(--text-main)]">
+          class="px-3 py-2 rounded-xl border border-dashed border-[var(--border-hairline)] text-[13px] text-[var(--text-muted)] hover:text-[var(--text-main)]">
           + 新增
         </button>
       `;
 
-      // 2. 支付工具卡片按鈕
+      // 2. 支付工具卡片按鈕（選中變藍色邊框 + 右上角藍底打勾！）
       const payContainer = document.getElementById('payMethodButtons');
       payContainer.innerHTML = appData.payMethods.map(pm => {
         const active = pm.id === selectedPayMethod;
@@ -1412,20 +1817,21 @@
         const subText = isCash ? '免對帳單' : (defCard ? defCard.name : '選擇卡片');
         return `
           <button onclick="selectPayMethod('${pm.id}')"
-            class="p-3 rounded-2xl text-left transition-all border ${
+            class="p-3 rounded-2xl text-left transition-all border-2 ${
               active
-                ? 'bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent-text)]'
-                : 'bg-[var(--bg-subtle)] border-[var(--border-hairline)] text-[var(--text-main)] hover:bg-[var(--bg-pill)]'
+                ? 'bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent-text)] shadow-xs'
+                : 'bg-[var(--bg-subtle)] border-transparent text-[var(--text-main)] hover:bg-[var(--bg-pill)]'
             }">
-            <div class="text-[14px] font-semibold flex items-center justify-between">
-              <span>${pm.icon} ${pm.name}</span>
+            <div class="text-[14px] font-semibold flex items-center justify-between gap-1">
+              <span class="truncate">${pm.icon} ${pm.name}</span>
+              ${active ? '<span class="w-5 h-5 rounded-full bg-[var(--accent)] text-white text-[12px] flex items-center justify-center shrink-0">✓</span>' : ''}
             </div>
             <div class="text-[12px] text-[var(--text-muted)] truncate mt-1">${subText}</div>
           </button>
         `;
       }).join('');
 
-      // 3. 信用卡膠囊
+      // 3. 信用卡膠囊（選中變藍色！）
       const cardSection = document.getElementById('cardSelectorSection');
       const currentPm = appData.payMethods.find(p => p.id === selectedPayMethod);
       const isCashPay = !currentPm || currentPm.id === 'cash' || currentPm.defaultCardId === 'CASH';
@@ -1445,9 +1851,10 @@
             <button onclick="selectRecordCard('${c.id}')"
               class="px-3.5 py-2 rounded-xl text-[13.5px] transition-all flex items-center gap-1.5 ${
                 active
-                  ? 'bg-[var(--accent)] text-white font-semibold shadow-xs'
+                  ? 'bg-[var(--accent)] text-white font-semibold shadow-sm ring-2 ring-blue-500/20'
                   : 'bg-[var(--bg-pill)] text-[var(--text-secondary)] font-medium hover:text-[var(--text-main)]'
               }">
+              ${active ? '<span>✓</span>' : ''}
               <span>${c.name}</span>
               <span class="text-[12px] num-tabular ${active ? 'text-white/85' : 'text-[var(--text-muted)]'}">${rule.rate}%</span>
               ${isDef ? '<span class="text-[12px]" title="預設卡">⭐</span>' : ''}
@@ -1486,6 +1893,7 @@
         pm.defaultCardId = selectedCardId;
         saveData();
         renderRecordSection();
+        showToast('⭐ 已設為此支付工具預設卡片');
       }
     }
 
@@ -1495,11 +1903,12 @@
       const scene = getSceneById(selectedRecordScene);
       const currentPm = appData.payMethods.find(p => p.id === selectedPayMethod);
       const isCashPay = !currentPm || currentPm.id === 'cash' || currentPm.defaultCardId === 'CASH';
+      const recordMonth = (selectedExpenseDate || REAL_CURRENT_MONTH).slice(0, 7);
 
       if (isCashPay) {
         panel.innerHTML = `
           <div class="px-4 py-3 rounded-2xl bg-[var(--bg-subtle)] text-[13px] text-[var(--text-muted)]">
-            💵 現金支出將計入圓餅圖總開銷，不列入信用卡待繳帳單。
+            💵 現金支出將計入 ${formatMonthTitle(recordMonth)} 圓餅圖總開銷，不列入信用卡待繳帳單。
           </div>
         `;
         return;
@@ -1516,10 +1925,10 @@
       };
 
       const estReward = amount > 0 ? Math.round(amount * (rule.rate / 100)) : 0;
-      const spent = getCardMonthlySpend(card.id);
+      const spent = getCardMonthlySpend(card.id, recordMonth);
       const cap = Number(card.monthlySpendCap || 0);
       const afterSpend = spent + amount;
-      const taskDone = card.monthlyTaskDone && card.monthlyTaskDone[CURRENT_MONTH];
+      const taskDone = card.monthlyTaskDone && card.monthlyTaskDone[recordMonth];
       const needTaskRemind = card.requireMonthlyTask && !taskDone;
 
       const isCubeLinePayWarning = card.id === 'cathay-cube' && selectedPayMethod === 'linepay';
@@ -1565,15 +1974,15 @@
             <div class="p-3 rounded-xl bg-[var(--warn-soft)] space-y-1.5">
               <div class="text-[13px] font-semibold text-[var(--warn)]">🎟️ ${card.monthlyTaskDesc}</div>
               <label class="flex items-center gap-2 text-[12.5px] text-[var(--text-secondary)] cursor-pointer">
-                <input type="checkbox" onchange="toggleCardMonthlyTask('${card.id}')" class="rounded" />
-                <span>本月已完成領券 / 登錄（勾選後不再提醒）</span>
+                <input type="checkbox" onchange="toggleCardMonthlyTask('${card.id}', '${recordMonth}')" class="rounded" />
+                <span>${formatMonthTitle(recordMonth)} 已完成領券 / 登錄（勾選後不再提醒）</span>
               </label>
             </div>
           ` : ''}
 
           ${cap > 0 ? `
             <div class="flex items-center justify-between text-[12.5px] text-[var(--text-muted)] pt-2 border-t border-[var(--border-hairline)] num-tabular">
-              <span>本月已刷 $${spent.toLocaleString()} / 上限 $${cap.toLocaleString()}</span>
+              <span>${formatMonthTitle(recordMonth)} 已刷 $${spent.toLocaleString()} / 上限 $${cap.toLocaleString()}</span>
               ${afterSpend > cap ? `<span class="font-semibold text-[var(--danger)]">⚠️ 此筆將超過加碼上限</span>` : `<span>尚餘額度 $${(cap - afterSpend).toLocaleString()}</span>`}
             </div>
           ` : ''}
@@ -1597,6 +2006,8 @@
         return;
       }
 
+      const txDate = selectedExpenseDate || getLocalDateStr(0);
+      const txMonth = txDate.slice(0, 7);
       const currentPm = appData.payMethods.find(p => p.id === selectedPayMethod);
       const isCash = !currentPm || currentPm.id === 'cash' || currentPm.defaultCardId === 'CASH';
       const card = isCash ? null : getCardById(selectedCardId);
@@ -1606,7 +2017,7 @@
 
       const newTx = {
         id: 'tx-' + Date.now(),
-        date: new Date().toISOString().slice(0, 10),
+        date: txDate,
         sceneId: selectedRecordScene,
         payMethodId: selectedPayMethod,
         cardId: isCash ? 'CASH' : selectedCardId,
@@ -1618,14 +2029,44 @@
       };
 
       appData.transactions.unshift(newTx);
+      // 自動切換至該筆日期所屬月份，讓圓餅圖與明細立刻呈現這筆紀錄
+      CURRENT_MONTH = txMonth;
+      activeSliceFilter = null;
       saveData();
 
       amountInput.value = '';
       noteInput.value = '';
       renderAll();
+      showToast(`✅ 已儲存至 ${txDate}（${formatMonthTitle(txMonth)} 帳單）`);
     }
 
-    // 優雅的交易明細列 (仿 Apple Wallet / MOZE：左側圓形圖示、中間標題與副標、右側對齊等寬金額)
+    // 依日期分組渲染交易清單（仿 MOZE / 簡單記帳：每日日期標題 + 單日小計 + 明細列）
+    function buildDateGroupedTransactionsHTML(txList) {
+      const groups = {};
+      txList.forEach(tx => {
+        const d = tx.date || '未知日期';
+        if (!groups[d]) groups[d] = [];
+        groups[d].push(tx);
+      });
+
+      const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+      return sortedDates.map(dateStr => {
+        const dayItems = groups[dateStr];
+        const dayTotal = dayItems.reduce((s, t) => s + Number(t.amount || 0), 0);
+        return `
+          <div class="rounded-2xl border border-[var(--border-hairline)] overflow-hidden bg-[var(--bg-surface)]">
+            <div class="px-4 py-2 bg-[var(--bg-subtle)] border-b border-[var(--border-hairline)] flex items-center justify-between text-[12.5px]">
+              <span class="font-semibold text-[var(--text-secondary)] num-tabular">${formatDateHeaderLabel(dateStr)}</span>
+              <span class="font-semibold text-[var(--text-muted)] num-tabular">單日小計 $${dayTotal.toLocaleString()}</span>
+            </div>
+            <div class="divide-y divide-[var(--border-hairline)] px-4">
+              ${dayItems.map(tx => formatTransactionRow(tx)).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
     function formatTransactionRow(tx) {
       const scene = getSceneById(tx.sceneId);
       const pm = appData.payMethods.find(p => p.id === tx.payMethodId);
@@ -1633,25 +2074,26 @@
       const titleText = tx.note ? tx.note : (scene ? scene.name : '一般消費');
 
       return `
-        <div class="py-3.5 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3.5 min-w-0">
+        <div class="py-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
             <div class="w-10 h-10 rounded-2xl bg-[var(--bg-pill)] flex items-center justify-center text-[18px] shrink-0">
               ${scene ? scene.icon : '🛍️'}
             </div>
             <div class="min-w-0">
               <div class="text-[14.5px] font-semibold text-[var(--text-main)] truncate">${titleText}</div>
               <div class="text-[12.5px] text-[var(--text-muted)] truncate mt-0.5">
-                ${tx.date.slice(5)} ・ ${pm ? pm.name : ''} (${card.name})
+                ${scene ? scene.name : ''} ・ ${pm ? pm.name : ''} (${card.name})
               </div>
             </div>
           </div>
 
-          <div class="flex items-center gap-3 shrink-0">
-            <div class="text-right num-tabular">
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="text-right num-tabular mr-1">
               <div class="text-[15.5px] font-bold text-[var(--text-main)]">$${Number(tx.amount).toLocaleString()}</div>
               ${tx.reward > 0 ? `<div class="text-[12px] font-medium text-[var(--success)]">+${tx.reward} (${tx.rate}%)</div>` : ''}
             </div>
-            <button onclick="deleteTransaction('${tx.id}')" class="text-[13px] text-[var(--text-muted)] hover:text-[var(--danger)] p-1" title="刪除">✕</button>
+            <button onclick="openTxEditModal('${tx.id}')" class="text-[13px] px-2 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--accent)]" title="編輯日期/金額">✎</button>
+            <button onclick="deleteTransaction('${tx.id}')" class="text-[13px] px-2 py-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--danger)]" title="刪除">✕</button>
           </div>
         </div>
       `;
@@ -1663,9 +2105,166 @@
       renderAll();
     }
 
+    function clearDemoTransactions() {
+      appData.transactions = appData.transactions.filter(t => !String(t.id).startsWith('demo-'));
+      appData._seededV4History = true;
+      saveData();
+      renderAll();
+      showToast('🧹 已清空預設範例紀錄，可開始記錄你的真實帳務！');
+    }
+
+    // 編輯單筆消費紀錄 Modal
+    function openTxEditModal(txId) {
+      const tx = appData.transactions.find(t => t.id === txId);
+      if (!tx) return;
+      document.getElementById('editTxId').value = tx.id;
+      document.getElementById('editTxDate').value = tx.date || getLocalDateStr(0);
+      document.getElementById('editTxAmount').value = tx.amount;
+      document.getElementById('editTxNote').value = tx.note || '';
+
+      const scSelect = document.getElementById('editTxScene');
+      scSelect.innerHTML = appData.scenes.map(s => `<option value="${s.id}" ${s.id === tx.sceneId ? 'selected' : ''}>${s.icon} ${s.name}</option>`).join('');
+
+      const pmSelect = document.getElementById('editTxPayMethod');
+      pmSelect.innerHTML = appData.payMethods.map(p => `<option value="${p.id}" ${p.id === tx.payMethodId ? 'selected' : ''}>${p.icon} ${p.name}</option>`).join('');
+
+      const cardSelect = document.getElementById('editTxCard');
+      cardSelect.innerHTML = appData.cards.map(c => `<option value="${c.id}" ${c.id === tx.cardId ? 'selected' : ''}>💳 ${c.name}</option>`).join('');
+
+      handleEditTxPayChange();
+      document.getElementById('txEditModal').classList.remove('hidden');
+    }
+
+    function handleEditTxPayChange() {
+      const pmId = document.getElementById('editTxPayMethod').value;
+      const pm = appData.payMethods.find(p => p.id === pmId);
+      const wrap = document.getElementById('editTxCardWrap');
+      if (!pm || pm.id === 'cash' || pm.defaultCardId === 'CASH') {
+        wrap.classList.add('hidden');
+      } else {
+        wrap.classList.remove('hidden');
+      }
+    }
+
+    function closeTxEditModal() {
+      document.getElementById('txEditModal').classList.add('hidden');
+    }
+
+    function saveTxEdit() {
+      const id = document.getElementById('editTxId').value;
+      const idx = appData.transactions.findIndex(t => t.id === id);
+      if (idx < 0) return;
+
+      const newDate = document.getElementById('editTxDate').value || getLocalDateStr(0);
+      const newAmount = Number(document.getElementById('editTxAmount').value || 0);
+      if (newAmount <= 0) return;
+
+      const newSceneId = document.getElementById('editTxScene').value;
+      const newPayId = document.getElementById('editTxPayMethod').value;
+      const pm = appData.payMethods.find(p => p.id === newPayId);
+      const isCash = !pm || pm.id === 'cash' || pm.defaultCardId === 'CASH';
+      const newCardId = isCash ? 'CASH' : document.getElementById('editTxCard').value;
+      const card = isCash ? null : getCardById(newCardId);
+      const rule = (!isCash && card && card.sceneRules && card.sceneRules[newSceneId])
+        ? card.sceneRules[newSceneId]
+        : { rate: 0, switchTier: '-' };
+
+      appData.transactions[idx] = {
+        ...appData.transactions[idx],
+        date: newDate,
+        sceneId: newSceneId,
+        payMethodId: newPayId,
+        cardId: newCardId,
+        amount: newAmount,
+        reward: isCash ? 0 : Math.round(newAmount * (rule.rate / 100)),
+        rate: isCash ? 0 : rule.rate,
+        switchTier: isCash ? '-' : rule.switchTier,
+        note: document.getElementById('editTxNote').value.trim()
+      };
+
+      CURRENT_MONTH = newDate.slice(0, 7);
+      saveData();
+      closeTxEditModal();
+      renderAll();
+      showToast('✅ 紀錄已更新');
+    }
+
+    function deleteTxFromEditModal() {
+      const id = document.getElementById('editTxId').value;
+      deleteTransaction(id);
+      closeTxEditModal();
+    }
+
     // ==========================================================
-    // VIEW 2: 報表與完整明細頁渲染
+    // VIEW 2: 歷史月份趨勢圖 + 圓餅圖報表與完整明細頁渲染
     // ==========================================================
+    function renderMonthlyHistoryTrend() {
+      const mount = document.getElementById('monthlyHistoryTrendMount');
+      if (!mount) return;
+
+      // 產生最近 6 個月 (由舊到新排列，點任一月份柱狀圖即切換圓餅圖與帳單)
+      const sixMonths = [];
+      for (let i = -5; i <= 0; i++) {
+        const ym = shiftMonthStr(REAL_CURRENT_MONTH, i);
+        const total = appData.transactions
+          .filter(t => (t.date || '').startsWith(ym))
+          .reduce((s, t) => s + Number(t.amount || 0), 0);
+        sixMonths.push({ ym, total });
+      }
+      // 若使用者正在查看比 6 個月更早的歷史月份，將該月加到最左側
+      if (!sixMonths.some(m => m.ym === CURRENT_MONTH)) {
+        const customTotal = appData.transactions
+          .filter(t => (t.date || '').startsWith(CURRENT_MONTH))
+          .reduce((s, t) => s + Number(t.amount || 0), 0);
+        sixMonths[0] = { ym: CURRENT_MONTH, total: customTotal };
+      }
+
+      const maxSpend = Math.max(1, ...sixMonths.map(m => m.total));
+
+      mount.innerHTML = `
+        <section class="surface-card p-5 sm:p-6 space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Monthly History</span>
+              <h3 class="text-[17px] font-bold text-[var(--text-main)] mt-0.5">📅 歷史月份帳單總覽（點選月份即切換下方圓餅圖與明細）</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="stepViewMonth(-1)" class="px-3 py-1.5 rounded-xl text-[12.5px] font-semibold bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--accent)]">◀ 更早月份</button>
+              <button onclick="stepViewMonth(1)" class="px-3 py-1.5 rounded-xl text-[12.5px] font-semibold bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--accent)]">下個月 ▶</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-6 gap-2 sm:gap-4 pt-2 items-end">
+            ${sixMonths.map(item => {
+              const isSelected = item.ym === CURRENT_MONTH;
+              const heightPct = item.total > 0 ? Math.max(14, Math.round((item.total / maxSpend) * 100)) : 6;
+              const shortM = `${Number(item.ym.split('-')[1])}月`;
+              return `
+                <button onclick="setViewMonth('${item.ym}')"
+                  class="group flex flex-col items-center p-2 sm:p-3 rounded-2xl transition-all border ${
+                    isSelected
+                      ? 'bg-[var(--accent-soft)] border-[var(--accent)] shadow-xs'
+                      : 'bg-[var(--bg-subtle)] border-transparent hover:border-[var(--border-hairline)]'
+                  }">
+                  <span class="text-[12px] font-bold num-tabular ${isSelected ? 'text-[var(--accent-text)]' : 'text-[var(--text-muted)]'}">
+                    $${item.total > 0 ? item.total.toLocaleString() : '0'}
+                  </span>
+                  <div class="w-full h-24 flex items-end justify-center my-2">
+                    <div class="w-7 sm:w-10 rounded-t-xl transition-all duration-300 ${
+                      isSelected ? 'bg-[var(--accent)]' : 'bg-[var(--text-muted)]/25 group-hover:bg-[var(--accent)]/50'
+                    }" style="height: ${heightPct}%"></div>
+                  </div>
+                  <span class="text-[13px] font-bold ${isSelected ? 'text-[var(--accent-text)]' : 'text-[var(--text-secondary)]'}">
+                    ${shortM}${item.ym === REAL_CURRENT_MONTH ? '*' : ''}
+                  </span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      `;
+    }
+
     function handleDropdownFilterChange() {
       activeSliceFilter = null;
       renderDonutCharts();
@@ -1673,15 +2272,37 @@
     }
 
     function renderAnalyticsView() {
+      renderMonthlyHistoryTrend();
+
+      const perCardTitle = document.getElementById('perCardSpendTitle');
+      if (perCardTitle) perCardTitle.textContent = `💳 ${formatMonthTitle(CURRENT_MONTH)} 各卡累計帳單`;
+
+      const fullTxTitle = document.getElementById('fullTxTitle');
+      if (fullTxTitle) fullTxTitle.textContent = `🧾 ${formatMonthTitle(CURRENT_MONTH)} 帳單明細（依日期分組）`;
+
+      const hasDemo = appData.transactions.some(t => String(t.id).startsWith('demo-'));
+      const clearDemoBtn = document.getElementById('clearDemoBtn');
+      if (clearDemoBtn) {
+        if (hasDemo) clearDemoBtn.classList.remove('hidden');
+        else clearDemoBtn.classList.add('hidden');
+      }
+
       document.getElementById('perCardSpendSummary').innerHTML = appData.cards.map(c => {
-        const spent = getCardMonthlySpend(c.id);
+        const spent = getCardMonthlySpend(c.id, CURRENT_MONTH);
+        const isPaid = c.paidMonths && c.paidMonths[CURRENT_MONTH];
         return `
-          <div class="py-3 flex items-center justify-between text-[14px]">
+          <div class="py-3 flex items-center justify-between text-[14px] gap-2">
             <div>
               <span class="font-semibold text-[var(--text-main)]">${c.name}</span>
-              <span class="text-[12.5px] text-[var(--text-muted)] ml-2">每月 ${c.statementDay} 號結帳 / ${c.dueDay} 號繳費</span>
+              <span class="text-[12px] text-[var(--text-muted)] ml-1.5">(${c.statementDay}號結帳 / ${c.dueDay}號繳)</span>
             </div>
-            <span class="font-bold num-tabular text-[var(--text-main)]">$${spent.toLocaleString()}</span>
+            <div class="flex items-center gap-2.5">
+              <span class="font-bold num-tabular text-[var(--text-main)]">$${spent.toLocaleString()}</span>
+              <button onclick="toggleCardPaid('${c.id}')"
+                class="text-[12px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${isPaid ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--bg-pill)] text-[var(--text-muted)] hover:text-[var(--text-main)]'}">
+                ${isPaid ? '✓ 已繳' : '標記已繳'}
+              </button>
+            </div>
           </div>
         `;
       }).join('');
@@ -1698,10 +2319,13 @@
       const clearSliceBtn = document.getElementById('clearChartFilterBtn');
       const hintEl = document.getElementById('txFilterHint');
 
-      let filtered = appData.transactions;
+      let filtered = appData.transactions
+        .filter(t => (t.date || '').startsWith(CURRENT_MONTH))
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
       if (activeSliceFilter) {
         clearSliceBtn.classList.remove('hidden');
-        hintEl.textContent = `目前篩選：${activeSliceFilter.label}`;
+        hintEl.textContent = `目前篩選：${formatMonthTitle(CURRENT_MONTH)} ・ ${activeSliceFilter.label}`;
         filtered = filtered.filter(t => {
           if (activeSliceFilter.dimension === 'scene') return t.sceneId === activeSliceFilter.key;
           if (activeSliceFilter.dimension === 'card') return t.cardId === activeSliceFilter.key;
@@ -1709,7 +2333,7 @@
         });
       } else {
         clearSliceBtn.classList.add('hidden');
-        hintEl.textContent = '點選圓餅圖色塊或圖例可快速篩選特定分類';
+        hintEl.textContent = `顯示 ${formatMonthTitle(CURRENT_MONTH)} 共 ${filtered.length} 筆紀錄・點選上方月份或圓餅圖色塊可篩選`;
         if (currentFilter !== 'all') {
           filtered = filtered.filter(t => t.cardId === currentFilter);
         }
@@ -1717,19 +2341,19 @@
 
       const listEl = document.getElementById('fullTransactionsList');
       listEl.innerHTML = filtered.length === 0
-        ? `<p class="text-[14px] text-[var(--text-muted)] py-8 text-center">沒有符合條件的消費紀錄</p>`
-        : filtered.map(tx => formatTransactionRow(tx)).join('');
+        ? `<p class="text-[14px] text-[var(--text-muted)] py-8 text-center">${formatMonthTitle(CURRENT_MONTH)} 沒有符合條件的消費紀錄</p>`
+        : buildDateGroupedTransactionsHTML(filtered);
     }
 
     // ==========================================================
-    // VIEW 3: 卡包與週期攻略頁 (優雅卡片牆)
+    // VIEW 3: 卡包與週期攻略頁 (隨所選月份檢視各卡當月消費與繳款狀態)
     // ==========================================================
     function renderCardsView() {
       const container = document.getElementById('cardsContainer');
       const todayDay = new Date().getDate();
 
       container.innerHTML = appData.cards.map(card => {
-        const spent = getCardMonthlySpend(card.id);
+        const spent = getCardMonthlySpend(card.id, CURRENT_MONTH);
         const cap = Number(card.monthlySpendCap || 0);
         const capPercent = cap > 0 ? Math.min(100, Math.round((spent / cap) * 100)) : 0;
         const taskDone = card.monthlyTaskDone && card.monthlyTaskDone[CURRENT_MONTH];
@@ -1746,7 +2370,7 @@
                 <div>
                   <div class="flex items-center gap-2">
                     <h4 class="text-[18px] font-bold text-[var(--text-main)]">${card.name}</h4>
-                    ${daysToDue <= 5 && !isPaid ? `<span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--danger-soft)] text-[var(--danger)]">${daysToDue} 天後截止</span>` : ''}
+                    ${CURRENT_MONTH === REAL_CURRENT_MONTH && daysToDue <= 5 && !isPaid ? `<span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--danger-soft)] text-[var(--danger)]">${daysToDue} 天後截止</span>` : ''}
                   </div>
                   <p class="text-[13px] text-[var(--text-muted)] mt-1 num-tabular">
                     每月 ${card.statementDay} 號結帳 ・ ${card.dueDay} 號繳款截止
@@ -1755,7 +2379,7 @@
                 <div class="flex items-center gap-2">
                   <button onclick="toggleCardPaid('${card.id}')"
                     class="text-[12.5px] font-semibold px-3 py-1.5 rounded-xl transition-colors ${isPaid ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--bg-pill)] text-[var(--text-secondary)]'}">
-                    ${isPaid ? '✓ 本期已繳' : '標記已繳'}
+                    ${isPaid ? `✓ ${Number(CURRENT_MONTH.split('-')[1])}月已繳` : `標記${Number(CURRENT_MONTH.split('-')[1])}月已繳`}
                   </button>
                   <button onclick="openEditCardModal('${card.id}')" class="text-[13px] font-medium px-3 py-1.5 rounded-xl border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
                     編輯
@@ -1766,7 +2390,7 @@
               <!-- 累計消費與上限進度 -->
               <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] space-y-2">
                 <div class="flex items-baseline justify-between num-tabular">
-                  <span class="text-[13px] text-[var(--text-muted)]">本月累計消費</span>
+                  <span class="text-[13px] text-[var(--text-muted)]">${formatMonthTitle(CURRENT_MONTH)} 累計消費</span>
                   <span class="text-[20px] font-extrabold text-[var(--text-main)]">$${spent.toLocaleString()}</span>
                 </div>
                 ${cap > 0 ? `
@@ -1780,9 +2404,9 @@
               <!-- 領券任務免打擾勾選 -->
               ${card.requireMonthlyTask ? `
                 <label class="flex items-start gap-2.5 p-3.5 rounded-2xl cursor-pointer transition-colors ${taskDone ? 'bg-[var(--bg-subtle)] text-[var(--text-muted)]' : 'bg-[var(--warn-soft)] text-[var(--warn)]'}">
-                  <input type="checkbox" ${taskDone ? 'checked' : ''} onchange="toggleCardMonthlyTask('${card.id}')" class="rounded mt-1 w-4 h-4 shrink-0" />
+                  <input type="checkbox" ${taskDone ? 'checked' : ''} onchange="toggleCardMonthlyTask('${card.id}', '${CURRENT_MONTH}')" class="rounded mt-1 w-4 h-4 shrink-0" />
                   <span class="text-[13px] font-medium leading-relaxed">
-                    ${taskDone ? '✓ 本月已完成領券 / 登錄任務（當月不再跳出提醒）' : card.monthlyTaskDesc}
+                    ${taskDone ? `✓ ${formatMonthTitle(CURRENT_MONTH)} 已完成領券 / 登錄任務（當月不再跳出提醒）` : card.monthlyTaskDesc}
                   </span>
                 </label>
               ` : ''}
@@ -1819,7 +2443,7 @@
       if (!card.paidMonths) card.paidMonths = {};
       card.paidMonths[CURRENT_MONTH] = !card.paidMonths[CURRENT_MONTH];
       saveData();
-      renderCardsView();
+      renderAll();
     }
 
     // ==========================================================
@@ -2131,10 +2755,14 @@
 
     function resetToDefaultData() {
       localStorage.removeItem(STORAGE_KEY);
-      appData = loadData();
+      CURRENT_MONTH = REAL_CURRENT_MONTH;
+      selectedExpenseDate = getLocalDateStr(0);
+      activeQuickChipId = null;
       activeSliceFilter = null;
+      appData = loadData();
       renderAll();
       switchView('dashboard');
+      showToast('🔄 已恢復為預設範本資料');
     }
 
     // 啟動初始化

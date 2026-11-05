@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lazy-card-tracker-v3';
+const CACHE_NAME = 'lazy-card-tracker-v4';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', event => {
@@ -16,15 +16,15 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Network-first 確保每次改版重新整理都能拿到最新畫面，離線時自動讀取快取
+// 一律優先向伺服器抓取最新畫面 (no-cache)，僅在離線時退回本機快取
 self.addEventListener('fetch', event => {
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: 'no-cache' })
       .then(res => {
         const clone = res.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return res;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(event.request, { ignoreSearch: true }))
   );
 });
