@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="./qr.js?v=8"></script>
+  <script src="./qr.js?v=9"></script>
   <style>
     :root {
       --bg-canvas: #F4F5F9;
@@ -130,22 +130,39 @@
 <body class="min-h-screen pb-14">
 
   <!-- ========================================================= -->
-  <!-- 🔒 連結觀看權限門禁遮罩 (可透過 access.json 隨時上鎖或收回權限) -->
+  <!-- 🔒 連結觀看權限門禁遮罩 (外人零閃現阻擋・本人裝置自動免密放行) -->
   <!-- ========================================================= -->
-  <div id="accessGateOverlay" class="hidden fixed inset-0 z-[100] bg-[var(--bg-canvas)] flex items-center justify-center p-5">
-    <div class="surface-card max-w-sm w-full p-7 space-y-5 text-center">
+  <div id="accessGateOverlay" class="fixed inset-0 z-[100] bg-[var(--bg-canvas)] flex items-center justify-center p-5">
+    <div class="surface-card max-w-sm w-full p-6 sm:p-7 space-y-4 text-center">
       <div id="gateIcon" class="w-14 h-14 mx-auto rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center text-2xl">🔒</div>
-      <div class="space-y-1.5">
-        <h2 id="gateTitle" class="text-[19px] font-bold text-[var(--text-main)]">此連結已設定觀看權限保護</h2>
-        <p id="gateDesc" class="text-[13.5px] text-[var(--text-muted)] leading-relaxed">請輸入擁有者提供的通行碼以繼續使用</p>
+      <div class="space-y-1">
+        <h2 id="gateTitle" class="text-[19px] font-bold text-[var(--text-main)]">此連結需輸入通行碼</h2>
+        <p id="gateDesc" class="text-[13px] text-[var(--text-muted)] leading-relaxed">沒有通行碼無法查看內容；本人裝置驗證一次後即永久免輸密碼</p>
       </div>
       <div id="gatePasscodeForm" class="space-y-3">
-        <input id="gatePasscodeInput" type="password" placeholder="請輸入通行碼"
-          onkeydown="if(event.key==='Enter') submitAccessGatePasscode()"
-          class="w-full px-4 py-3 text-center text-[16px] font-semibold rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] focus:outline-none focus:border-[var(--accent)]" />
-        <p id="gateErrorMsg" class="hidden text-[12.5px] font-semibold text-[var(--danger)]">通行碼不正確，或權限已被擁有者收回</p>
+        <div class="relative flex items-center">
+          <input id="gatePasscodeInput" type="password" placeholder="請輸入通行碼"
+            onkeydown="if(event.key==='Enter') submitAccessGatePasscode()"
+            class="w-full pl-4 pr-14 py-3 text-center text-[16px] font-semibold rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] focus:outline-none focus:border-[var(--accent)]" />
+          <button type="button" onclick="toggleGatePasscodeVisibility()" id="gateEyeBtn"
+            class="absolute right-2.5 px-2 py-1 rounded-lg text-[12px] font-medium bg-[var(--bg-pill)] text-[var(--text-secondary)]">
+            顯示
+          </button>
+        </div>
+
+        <label class="flex items-start gap-2.5 text-left text-[12.5px] text-[var(--text-secondary)] bg-[var(--bg-subtle)] border border-[var(--border-hairline)] p-3 rounded-xl cursor-pointer select-none leading-relaxed">
+          <input id="gateRememberOwnerChk" type="checkbox" checked class="mt-0.5 w-4 h-4 accent-[var(--accent)] shrink-0" />
+          <span><strong class="text-[var(--text-main)]">這是我的本人手機／電腦</strong>：驗證後設為「永久免再輸入密碼」，並自動換成我的 6 張信用卡攻略畫面</span>
+        </label>
+
+        <p id="gateErrorMsg" class="hidden text-[12.5px] font-semibold text-[var(--danger)]">通行碼不正確，請確認大小寫與底線後重試</p>
+
         <button onclick="submitAccessGatePasscode()" class="w-full py-3 rounded-xl text-[14.5px] font-semibold bg-[var(--accent)] text-white shadow-sm hover:opacity-95 transition-opacity">
-          驗證進入
+          🔓 驗證進入
+        </button>
+
+        <button type="button" onclick="pastePairingCodeFromClipboard()" class="w-full py-2.5 rounded-xl text-[12.5px] font-semibold bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--accent-text)] transition-colors">
+          📲 已從電腦複製配對碼？點此免密同步進入
         </button>
       </div>
       <div id="gateClosedNotice" class="hidden space-y-3">
@@ -158,6 +175,24 @@
       </div>
     </div>
   </div>
+  <script>
+    (function() {
+      try {
+        var raw = localStorage.getItem('LAZY_CARD_TRACKER_V2');
+        if (raw && localStorage.getItem('LAZY_CARD_OWNER_TRUST_V1') === null) {
+          var parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.cards) && parsed.cards.some(function(c) { return c && c.id === 'cathay-cube'; })) {
+            localStorage.setItem('LAZY_CARD_OWNER_TRUST_V1', 'true');
+          }
+        }
+        var trusted = localStorage.getItem('LAZY_CARD_OWNER_TRUST_V1') === 'true';
+        var hasVip = (window.location.hash || '').indexOf('abfc18e59813d9c22355073b') !== -1;
+        if (trusted || hasVip) {
+          document.getElementById('accessGateOverlay').classList.add('hidden');
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <!-- ========================================================= -->
   <!-- 置頂極簡導覽列：支援手機桌面捷徑一鍵重整、雲端同步/QR、4 大藍底清晰分頁 -->
@@ -844,11 +879,11 @@
         <button onclick="closeAccessControlModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] shrink-0">關閉</button>
       </div>
 
-      <!-- 1. 隱私現況確認 -->
-      <div class="p-4 rounded-2xl bg-[var(--success-soft)] space-y-1.5">
-        <div class="text-[13.5px] font-bold text-[var(--success)]">✓ 你的個人資訊與帳單 100% 不會隨連結外露</div>
-        <p class="text-[12.5px] text-[var(--text-secondary)] leading-relaxed">
-          現在任何人點開連結，畫面只會顯示「<strong>1 張空白通用示範卡 + 0 筆紀錄</strong>」，完全不會出現你的卡片清單、結帳扣款日或消費紀錄（你的資料只存在你自己的手機／電腦瀏覽器裡）。
+      <!-- 1. 門禁與隱私現況動態確認 -->
+      <div id="accessStatusNoticeBox" class="p-4 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent)]/25 space-y-1.5">
+        <div id="accessStatusTitle" class="text-[13.5px] font-bold text-[var(--accent-text)]">🔒 目前已啟用「專屬通行碼門禁鎖」保護中</div>
+        <p id="accessStatusDesc" class="text-[12.5px] text-[var(--text-secondary)] leading-relaxed">
+          沒有通行碼的外人打開連結會立刻被擋在門外無法查看！而你標記為「本人裝置」的電腦與手機則可<strong>永久免輸入密碼直接進入</strong>。
         </p>
       </div>
 
@@ -947,10 +982,10 @@
       <!-- 2. 電腦產出手機掃描 QR Code（100% 本機離線繪製，零資料外流） -->
       <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
         <div class="flex items-center justify-between gap-2 flex-wrap">
-          <span class="text-[13.5px] font-bold text-[var(--text-main)]">📱 手機相機掃描 QR Code</span>
+          <span class="text-[13.5px] font-bold text-[var(--text-main)]">📱 電腦畫面同步到手機 QR</span>
           <div class="inline-flex bg-[var(--bg-pill)] p-0.5 rounded-lg gap-0.5 text-[12px]">
-            <button type="button" onclick="switchQrMode('url')" id="qrModeBtn-url" class="px-2.5 py-1 rounded-md font-semibold transition-all">開啟網址/配對</button>
-            <button type="button" onclick="switchQrMode('cards')" id="qrModeBtn-cards" class="px-2.5 py-1 rounded-md font-medium transition-all">秒傳我的卡包週期</button>
+            <button type="button" onclick="switchQrMode('fullsync')" id="qrModeBtn-fullsync" class="px-2.5 py-1 rounded-md font-semibold transition-all">📲 免密＋同步電腦畫面</button>
+            <button type="button" onclick="switchQrMode('url')" id="qrModeBtn-url" class="px-2.5 py-1 rounded-md font-medium transition-all">🔗 純網址(須輸密碼)</button>
           </div>
         </div>
 
@@ -1024,7 +1059,7 @@
         }
       });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=8').then(reg => {
+        navigator.serviceWorker.register('./sw.js?v=9').then(reg => {
           reg.update();
           document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
@@ -4328,7 +4363,15 @@
 
     const OWNER_TRUST_KEY = 'LAZY_CARD_OWNER_TRUST_V1';
     const GATE_AUTH_HASH_KEY = 'LAZY_CARD_GATE_HASH_V1';
-    let liveAccessConfig = { accessMode: 'open', passcodeHash: '', closedMessage: '' };
+    const VIP_PAIR_DIGEST = 'abfc18e59813d9c22355073b';
+    const BUILTIN_GATE_CONFIG = {
+      accessMode: 'passcode',
+      passcodeHash: '0fc3ba5dfbcd8767e4b9c9b104dd90dc439e762c9466d98ce9963aeee8aba342',
+      ownerPasscodeHash: '0fc3ba5dfbcd8767e4b9c9b104dd90dc439e762c9466d98ce9963aeee8aba342',
+      ownerVault: 'DKIrrJZOUbMv0d8M2SYngA==.w2XLmi7gxhVYVkon.sC133+d8HjQDRyecY09bvfHeBtKFQ01kstcq06+XMQETxtO1vhfGPU17gro24aZBsgGvrF9X3p+arkJX0O/B90jEYnh+il/UVD4pUgl74MZDXUaGfN1iu2JFHPT9uOy4CqIHH/cz6MIdYF4RP9R0jIhoLeNUxUTauhgoQK9x5chM0ynNLg67ecrwv1Bv+g9FRgwaTUraytcf0NTePnRE1FGHmLLvFCBlApRAVvcv2fHd3L+jwratMcnMAHtenWoncW+/TBnOdyF370wZHgBvt7ad+AFuuzFKI3C27hsSDBTpGz1Y9vWRK24TqwjE9kTCHYE5Ujf2vRTmTSubs5kobI3ftgyVvB7lgmFJgStJxagfeg2qv4ve/Eq9Ybj4fdgs+TrntDbqRZ1uzZVhxmZGGVrd8H9l5QRNRnVDB8xJffgh+UYri0GH6osyMlAOKOYpWWlj2jEhq1NUzpiyooLIydVt4A9g6DWKzEnvi/38O1Dm88osEYOIiATtCJT8eAkLtVquPBSPzfcheQf9qiKQAPMCOUHWUT1b4LiwvtL2YfylCZMUvJmjOGUUYZDhiFzuO+J00Ei6brbP45GnteWrm9uA3xjzntrLs76KMsRvzw9kpCrrRy6vuCOZTfZ46h/NLBeUK4119XTBAZJZ2sMe1td2JuMFGchxOJKu9YW6JzuoFMTh6zc2yP8wQ70dwWqwb0jcQ0yJO+9LHt2XergATRteZDq55fZ0GYYBbyWJCcvtxkg1Irr8HlRJaJ+oeWNvDqJoN7IubwFTbmeK/EzorterFUtTXo+5CNULwKkKO2WZaiVzeA1u2jGDmg4mZ9CDjwbMouFaDaCYSzCCnWefWWV5kjmpO68bNhOk6pBce4KDwRbmuvrEMpwgbftY',
+      closedMessage: '擁有者已收回此連結的觀看與使用權限。'
+    };
+    let liveAccessConfig = Object.assign({}, BUILTIN_GATE_CONFIG);
 
     async function sha256Hex(str) {
       if (window.crypto && window.crypto.subtle) {
@@ -4336,6 +4379,90 @@
         return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
       }
       return str;
+    }
+
+    function b64StdToBytes(b64) {
+      const bin = atob(b64);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
+    async function decryptOwnerVault(passcode, packed) {
+      if (!packed || !window.crypto || !window.crypto.subtle) return null;
+      try {
+        const parts = packed.split('.');
+        if (parts.length !== 3) return null;
+        const salt = b64StdToBytes(parts[0]);
+        const iv = b64StdToBytes(parts[1]);
+        const ct = b64StdToBytes(parts[2]);
+        const baseKey = await window.crypto.subtle.importKey(
+          'raw',
+          new TextEncoder().encode(passcode),
+          'PBKDF2',
+          false,
+          ['deriveKey']
+        );
+        const aesKey = await window.crypto.subtle.deriveKey(
+          { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+          baseKey,
+          { name: 'AES-GCM', length: 256 },
+          false,
+          ['decrypt']
+        );
+        const ptBuf = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, ct);
+        return JSON.parse(new TextDecoder().decode(ptBuf));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function applyDecryptedOwnerCardsToDevice(vaultObj) {
+      if (!vaultObj || !Array.isArray(vaultObj.cards) || vaultObj.cards.length === 0) return false;
+      // 若手機目前是空白示範卡「我的主力信用卡（示範）」，直接升級換成擁有者的完整 6 張卡畫面！
+      const hasOnlyStarter = appData.cards.length === 1 && appData.cards[0].id === 'custom-card-1';
+      if (hasOnlyStarter) {
+        appData.cards = [];
+      }
+      vaultObj.cards.forEach(item => {
+        let target = appData.cards.find(c => c.id === item.i);
+        if (!target) {
+          const tpl = BANK_CARD_CATALOG.find(bc => bc.id === item.i);
+          target = tpl ? JSON.parse(JSON.stringify(tpl)) : JSON.parse(JSON.stringify(buildBlankStarterCard()[0]));
+          target.id = item.i;
+          if (item.n) target.name = item.n;
+          appData.cards.push(target);
+        }
+        if (item.n) target.name = item.n;
+        target.statementDay = Number(item.s || target.statementDay || 1);
+        target.dueDay = Number(item.d || target.dueDay || 15);
+        target.autoDebit = Boolean(item.a);
+        if (item.b !== undefined) target.billingLabel = item.b;
+      });
+      if (vaultObj.payDefaults && Array.isArray(appData.payMethods)) {
+        appData.payMethods.forEach(pm => {
+          if (vaultObj.payDefaults[pm.id] && (hasOnlyStarter || pm.defaultCardId === 'custom-card-1')) {
+            pm.defaultCardId = vaultObj.payDefaults[pm.id];
+          }
+        });
+      }
+      selectedCardId = appData.cards[0].id;
+      saveData();
+      renderAll();
+      return hasOnlyStarter;
+    }
+
+    function toggleGatePasscodeVisibility() {
+      const inp = document.getElementById('gatePasscodeInput');
+      const btn = document.getElementById('gateEyeBtn');
+      if (!inp || !btn) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        btn.textContent = '隱藏';
+      } else {
+        inp.type = 'password';
+        btn.textContent = '顯示';
+      }
     }
 
     function isLocalOwnerTrusted() {
@@ -4391,6 +4518,20 @@
 
     function openAccessControlModal() {
       renderOwnerTrustStatus();
+      const titleEl = document.getElementById('accessStatusTitle');
+      const descEl = document.getElementById('accessStatusDesc');
+      if (titleEl && descEl) {
+        if (liveAccessConfig.accessMode === 'passcode') {
+          titleEl.textContent = '🔒 目前已啟用「專屬通行碼門禁鎖」保護中';
+          descEl.innerHTML = '沒有通行碼的外人打開連結會立刻被擋在門外無法查看！而你標記為「本人裝置」的電腦與手機則可<strong>永久免輸入密碼直接進入</strong>。';
+        } else if (liveAccessConfig.accessMode === 'closed') {
+          titleEl.textContent = '🛑 目前已關閉所有外部連結觀看權限';
+          descEl.innerHTML = '僅限你已綁定之「本人裝置」可免密進入，所有外部連結皆已封鎖。';
+        } else {
+          titleEl.textContent = '🔓 目前為開放空白模板模式';
+          descEl.innerHTML = '外人打開只會看到 1 張空白通用示範卡，看不到你的個人資訊。';
+        }
+      }
       document.getElementById('accessControlModal').classList.remove('hidden');
     }
 
@@ -4439,7 +4580,7 @@
     // ==========================================================
     // ☁️ 私人雲端同步 & 📱 手機 QR Code 配對 & 🔄 放置桌面強制重整
     // ==========================================================
-    let currentQrMode = 'url';
+    let currentQrMode = 'fullsync';
     let lastForegroundPullTs = 0;
 
     function toBase64UrlUtf8(str) {
@@ -4502,9 +4643,10 @@
       return 'https://liu88219.github.io/card-lazy-tracker/';
     }
 
-    function buildCurrentPairingPayloadUrl(mode = currentQrMode) {
+    function buildCurrentPairingPayloadUrl(mode = currentQrMode, includeAllTx = false) {
       const base = getCanonicalShareBaseUrl();
-      if (mode === 'cards') {
+      if (mode === 'fullsync' || mode === 'cards') {
+        const cfg = loadCloudSyncConfig();
         const compactCards = appData.cards.map(c => {
           const catTpl = BANK_CARD_CATALOG.find(bc => bc.id === c.id);
           const item = {
@@ -4517,20 +4659,35 @@
           if (c.billingLabel && !c.billingLabel.includes('可點「編輯」') && !c.billingLabel.includes('尚未設定')) {
             item.b = c.billingLabel;
           }
+          if (c.monthlyTaskDone && c.monthlyTaskDone[REAL_CURRENT_MONTH]) item.td = 1;
+          if (c.paidMonths && c.paidMonths[REAL_CURRENT_MONTH]) item.pm = 1;
           return item;
         });
-        return `${base}#cardcfg=${toBase64UrlUtf8(JSON.stringify(compactCards))}`;
-      }
-      const cfg = loadCloudSyncConfig();
-      if (cfg.scriptUrl && cfg.scriptUrl.startsWith('https://')) {
-        return `${base}#pair=${toBase64UrlUtf8(JSON.stringify({ u: cfg.scriptUrl, k: cfg.syncSecret || '' }))}`;
+        const payDefaults = {};
+        (appData.payMethods || []).forEach(pm => { payDefaults[pm.id] = pm.defaultCardId; });
+        const txSlice = includeAllTx ? (appData.transactions || []) : (appData.transactions || []).slice(0, 12);
+        const compactTx = txSlice.map(t => [
+          t.date, t.sceneId, t.payMethodId, t.cardId, Number(t.amount || 0), Number(t.reward || 0), Number(t.rate || 0), t.switchTier || '', t.note || ''
+        ]);
+        const bundle = {
+          v: isLocalOwnerTrusted() ? VIP_PAIR_DIGEST : '',
+          st: appData.defaultStartTab || 'finder',
+          c: compactCards,
+          p: payDefaults,
+          tx: compactTx
+        };
+        if (cfg.scriptUrl && cfg.scriptUrl.startsWith('https://')) {
+          bundle.u = cfg.scriptUrl;
+          bundle.k = cfg.syncSecret || '';
+        }
+        return `${base}#fullsync=${toBase64UrlUtf8(JSON.stringify(bundle))}`;
       }
       return base;
     }
 
     function switchQrMode(mode) {
       currentQrMode = mode;
-      ['url', 'cards'].forEach(m => {
+      ['fullsync', 'url'].forEach(m => {
         const btn = document.getElementById(`qrModeBtn-${m}`);
         if (!btn) return;
         btn.className = m === mode
@@ -4544,11 +4701,10 @@
       const mount = document.getElementById('qrSvgMount');
       const hint = document.getElementById('qrModeHintText');
       if (!mount) return;
-      const targetUrl = buildCurrentPairingPayloadUrl(currentQrMode);
-      const cfg = loadCloudSyncConfig();
+      const targetUrl = buildCurrentPairingPayloadUrl(currentQrMode, false);
       try {
         if (typeof window.buildQrSvg === 'function') {
-          mount.innerHTML = window.buildQrSvg(targetUrl, 184);
+          mount.innerHTML = window.buildQrSvg(targetUrl, 188);
         } else {
           mount.innerHTML = `<div class="p-4 text-[12.5px] text-[var(--text-muted)]">QR 模組載入中</div>`;
         }
@@ -4556,12 +4712,10 @@
         mount.innerHTML = `<div class="p-3 text-[12px] text-[var(--danger)]">內容較長，請點下方「複製配對碼」傳至手機貼上</div>`;
       }
       if (hint) {
-        if (currentQrMode === 'cards') {
-          hint.textContent = '手機掃描此 QR（或複製配對碼貼到桌面捷徑）即可秒把電腦上的卡片清單與結帳／扣款日帶入手機！';
-        } else if (cfg.scriptUrl) {
-          hint.textContent = '已自動帶入你的私人雲端同步金鑰！手機掃描或貼上配對碼後，電腦與手機桌面捷徑即可雙向同步。';
+        if (currentQrMode === 'fullsync') {
+          hint.textContent = '✨ 手機掃描此 QR（或複製配對碼到桌面捷徑貼上），即可「免輸密碼綁定本人手機」並把電腦上的全部卡片、扣款日與近期帳單一鍵同步到手機！';
         } else {
-          hint.textContent = '手機相機掃描即可打開網頁。若已將網頁「放置桌面」，設定下方雲端同步後點 🔄 即可跨裝置同步！';
+          hint.textContent = '此為一般公開網址 QR，其他人掃描開啟時必須輸入通行碼才可進入。';
         }
       }
     }
@@ -4715,10 +4869,10 @@
     }
 
     function copyPairingCodeForHomeScreen() {
-      const fullLink = buildCurrentPairingPayloadUrl(currentQrMode);
+      const fullLink = buildCurrentPairingPayloadUrl('fullsync', true);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(fullLink).then(() => {
-          showToast('📋 已複製配對連結！傳到手機後在桌面捷徑點「貼上配對碼」即可綁定');
+          showToast('📋 已複製電腦完整配對碼！傳到手機後點「貼上配對碼」即可免密同步全部畫面');
         }).catch(() => window.prompt('請複製以下配對碼傳至手機：', fullLink));
       } else {
         window.prompt('請複製以下配對碼傳至手機：', fullLink);
@@ -4732,8 +4886,8 @@
           text = (await navigator.clipboard.readText() || '').trim();
         }
       } catch (e) {}
-      if (!text || (!text.includes('pair=') && !text.includes('cardcfg='))) {
-        text = (window.prompt('請貼上從電腦複製的配對碼或配對網址：') || '').trim();
+      if (!text || (!text.includes('fullsync=') && !text.includes('pair=') && !text.includes('cardcfg='))) {
+        text = (window.prompt('請貼上從電腦「☁️ 同步/QR ➔ 複製配對碼」複製的完整配對連結：') || '').trim();
       }
       if (!text) return;
       await applyPairingTokenString(text, true);
@@ -4741,6 +4895,80 @@
 
     async function applyPairingTokenString(rawStr, fromManualPaste = false) {
       try {
+        const fullMatch = rawStr.match(/fullsync=([A-Za-z0-9_-]+)/);
+        if (fullMatch) {
+          const bundle = JSON.parse(fromBase64UrlUtf8(fullMatch[1]));
+          if (bundle && Array.isArray(bundle.c) && bundle.c.length > 0) {
+            if (bundle.v === VIP_PAIR_DIGEST) {
+              try {
+                localStorage.setItem(OWNER_TRUST_KEY, 'true');
+                localStorage.setItem(GATE_AUTH_HASH_KEY, BUILTIN_GATE_CONFIG.passcodeHash);
+              } catch (e) {}
+              const overlay = document.getElementById('accessGateOverlay');
+              if (overlay) overlay.classList.add('hidden');
+            }
+            if (bundle.u && String(bundle.u).startsWith('https://')) {
+              saveCloudSyncConfigObj({ scriptUrl: bundle.u, syncSecret: bundle.k || '', lastSyncedAt: '' });
+            }
+            // 移除空白示範卡並同步電腦上的全部卡片設定
+            appData.cards = appData.cards.filter(c => c.id !== 'custom-card-1');
+            bundle.c.forEach(item => {
+              let target = appData.cards.find(c => c.id === item.i);
+              if (!target) {
+                const tpl = BANK_CARD_CATALOG.find(bc => bc.id === item.i);
+                target = tpl ? JSON.parse(JSON.stringify(tpl)) : JSON.parse(JSON.stringify(buildBlankStarterCard()[0]));
+                target.id = item.i;
+                target.name = item.n || target.name;
+                appData.cards.push(target);
+              }
+              if (item.n) target.name = item.n;
+              target.statementDay = Number(item.s || 1);
+              target.dueDay = Number(item.d || 15);
+              target.autoDebit = Boolean(item.a);
+              if (item.b !== undefined) target.billingLabel = item.b;
+              if (item.td) {
+                if (!target.monthlyTaskDone) target.monthlyTaskDone = {};
+                target.monthlyTaskDone[REAL_CURRENT_MONTH] = true;
+              }
+              if (item.pm) {
+                if (!target.paidMonths) target.paidMonths = {};
+                target.paidMonths[REAL_CURRENT_MONTH] = true;
+              }
+            });
+            if (bundle.p && Array.isArray(appData.payMethods)) {
+              appData.payMethods.forEach(pm => {
+                if (bundle.p[pm.id]) pm.defaultCardId = bundle.p[pm.id];
+              });
+            }
+            if (bundle.st) appData.defaultStartTab = bundle.st;
+            if (Array.isArray(bundle.tx) && bundle.tx.length > 0) {
+              const existingKeys = new Set(
+                (appData.transactions || []).map(t => `${t.date}|${t.cardId}|${t.amount}|${t.note || ''}`)
+              );
+              bundle.tx.forEach((row, idx) => {
+                const [date, sceneId, payMethodId, cardId, amount, reward, rate, switchTier, note] = row;
+                const sig = `${date}|${cardId}|${amount}|${note || ''}`;
+                if (!existingKeys.has(sig)) {
+                  existingKeys.add(sig);
+                  appData.transactions.push({
+                    id: `sync-${Date.now()}-${idx}`,
+                    date, sceneId, payMethodId, cardId, amount, reward, rate, switchTier, note
+                  });
+                }
+              });
+            }
+            selectedCardId = appData.cards[0].id;
+            saveData();
+            if (bundle.u && String(bundle.u).startsWith('https://')) {
+              await pullFromCloudSync(false);
+            }
+            closeCloudSyncModal();
+            renderAll();
+            showToast('🎉 已免密綁定本人手機，並完整同步電腦上的卡片與畫面！');
+            return true;
+          }
+        }
+
         const pairMatch = rawStr.match(/pair=([A-Za-z0-9_-]+)/);
         if (pairMatch) {
           const parsed = JSON.parse(fromBase64UrlUtf8(pairMatch[1]));
@@ -4838,67 +5066,104 @@
       }
     }
 
+    function enforceGateConfigOnUI(cfg) {
+      const overlay = document.getElementById('accessGateOverlay');
+      const passForm = document.getElementById('gatePasscodeForm');
+      const closedBox = document.getElementById('gateClosedNotice');
+      const ownerBtn = document.getElementById('gateOwnerEnterBtn');
+      const titleEl = document.getElementById('gateTitle');
+      const descEl = document.getElementById('gateDesc');
+      if (!overlay) return;
+
+      if (!cfg || cfg.accessMode === 'open') {
+        overlay.classList.add('hidden');
+        return;
+      }
+
+      if (isLocalOwnerTrusted()) {
+        overlay.classList.add('hidden');
+        return;
+      }
+
+      if (cfg.accessMode === 'closed') {
+        titleEl.textContent = '擁有者已收回此連結觀看權限';
+        descEl.textContent = cfg.closedMessage || '擁有者目前已關閉此連結的外部存取權限。';
+        passForm.classList.add('hidden');
+        closedBox.classList.remove('hidden');
+        if (isLocalOwnerTrusted()) ownerBtn.classList.remove('hidden');
+        overlay.classList.remove('hidden');
+        return;
+      }
+
+      if (cfg.accessMode === 'passcode' && cfg.passcodeHash) {
+        let sessionHash = '';
+        try { sessionHash = sessionStorage.getItem(GATE_AUTH_HASH_KEY) || ''; } catch (e) {}
+        if (sessionHash && sessionHash === cfg.passcodeHash) {
+          overlay.classList.add('hidden');
+          return;
+        }
+        titleEl.textContent = '此連結需輸入通行碼';
+        descEl.textContent = '沒有通行碼無法查看內容；本人裝置驗證一次後即永久免輸密碼';
+        passForm.classList.remove('hidden');
+        closedBox.classList.add('hidden');
+        overlay.classList.remove('hidden');
+      }
+    }
+
     async function initLiveAccessGate() {
+      enforceGateConfigOnUI(liveAccessConfig);
       try {
         const res = await fetch(`./access.json?t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) return;
         const cfg = await res.json();
-        liveAccessConfig = cfg || { accessMode: 'open' };
-        const overlay = document.getElementById('accessGateOverlay');
-        const passForm = document.getElementById('gatePasscodeForm');
-        const closedBox = document.getElementById('gateClosedNotice');
-        const ownerBtn = document.getElementById('gateOwnerEnterBtn');
-        const titleEl = document.getElementById('gateTitle');
-        const descEl = document.getElementById('gateDesc');
-
-        if (!cfg || cfg.accessMode === 'open') {
-          overlay.classList.add('hidden');
-          return;
-        }
-
-        if (isLocalOwnerTrusted()) {
-          overlay.classList.add('hidden');
-          return;
-        }
-
-        if (cfg.accessMode === 'closed') {
-          titleEl.textContent = '擁有者已收回此連結觀看權限';
-          descEl.textContent = cfg.closedMessage || '擁有者目前已關閉此連結的外部存取權限。';
-          passForm.classList.add('hidden');
-          closedBox.classList.remove('hidden');
-          if (isLocalOwnerTrusted()) ownerBtn.classList.remove('hidden');
-          overlay.classList.remove('hidden');
-          return;
-        }
-
-        if (cfg.accessMode === 'passcode' && cfg.passcodeHash) {
-          const savedHash = localStorage.getItem(GATE_AUTH_HASH_KEY);
-          if (savedHash && savedHash === cfg.passcodeHash) {
-            overlay.classList.add('hidden');
-            return;
-          }
-          titleEl.textContent = '此連結需輸入通行碼';
-          descEl.textContent = '請輸入擁有者提供的通行碼（若擁有者更換通行碼，舊授權會自動失效）';
-          passForm.classList.remove('hidden');
-          closedBox.classList.add('hidden');
-          overlay.classList.remove('hidden');
+        if (cfg && cfg.accessMode) {
+          liveAccessConfig = cfg;
+          enforceGateConfigOnUI(liveAccessConfig);
         }
       } catch (e) {
-        // 本機預覽無網路或無 access.json 時直接放行
+        // 離線或本機時沿用 BUILTIN_GATE_CONFIG 門禁保護
       }
     }
 
     async function submitAccessGatePasscode() {
       const input = document.getElementById('gatePasscodeInput');
       const errEl = document.getElementById('gateErrorMsg');
+      const rememberOwner = Boolean(document.getElementById('gateRememberOwnerChk')?.checked);
       const val = (input ? input.value : '').trim();
       if (!val) return;
       const hash = await sha256Hex(val);
-      if (hash === liveAccessConfig.passcodeHash || val === liveAccessConfig.passcodeHash) {
-        try { localStorage.setItem(GATE_AUTH_HASH_KEY, liveAccessConfig.passcodeHash); } catch (e) {}
+      const isOwnerKey = Boolean(liveAccessConfig.ownerPasscodeHash && hash === liveAccessConfig.ownerPasscodeHash);
+      const isValidPass = isOwnerKey || hash === liveAccessConfig.passcodeHash;
+
+      if (isValidPass) {
+        try { sessionStorage.setItem(GATE_AUTH_HASH_KEY, hash); } catch (e) {}
+        let upgradedFromStarter = false;
+        if (isOwnerKey) {
+          if (rememberOwner) {
+            try {
+              localStorage.setItem(OWNER_TRUST_KEY, 'true');
+              localStorage.setItem(GATE_AUTH_HASH_KEY, hash);
+            } catch (e) {}
+          }
+          if (liveAccessConfig.ownerVault) {
+            const vaultObj = await decryptOwnerVault(val, liveAccessConfig.ownerVault);
+            if (vaultObj) {
+              upgradedFromStarter = applyDecryptedOwnerCardsToDevice(vaultObj);
+            }
+          }
+        }
         document.getElementById('accessGateOverlay').classList.add('hidden');
         if (errEl) errEl.classList.add('hidden');
-        showToast('🔓 驗證通過，歡迎使用！');
+        if (input) input.value = '';
+        renderOwnerTrustStatus();
+        renderAll();
+        if (isOwnerKey && rememberOwner) {
+          showToast(upgradedFromStarter
+            ? '🎉 驗證通過！已設為本人免密裝置，並自動換成你的 6 張信用卡畫面！'
+            : '🔓 驗證通過！此裝置已設為本人永久免輸密碼');
+        } else {
+          showToast('🔓 驗證通過，歡迎使用！');
+        }
       } else {
         if (errEl) errEl.classList.remove('hidden');
       }
@@ -4910,23 +5175,16 @@
       }
     }
 
-    // 啟動初始化（自動保護既有裝置擁有者免鎖標記 + 處理 QR 掃描配對 Hash）
-    try {
-      const existingDataRaw = localStorage.getItem(STORAGE_KEY);
-      if (existingDataRaw && existingDataRaw.includes('cathay-cube') && localStorage.getItem(OWNER_TRUST_KEY) === null) {
-        localStorage.setItem(OWNER_TRUST_KEY, 'true');
-      }
-    } catch (e) {}
-
+    // 啟動初始化（處理 QR 掃描配對 Hash 與即時門禁檢查）
     renderCloudSyncBadges();
     setStoreLinePayFilter('any');
-    initLiveAccessGate();
 
-    if (window.location.hash && (window.location.hash.includes('pair=') || window.location.hash.includes('cardcfg='))) {
+    if (window.location.hash && (window.location.hash.includes('fullsync=') || window.location.hash.includes('pair=') || window.location.hash.includes('cardcfg='))) {
       const hashCopy = window.location.hash;
       try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
-      applyPairingTokenString(hashCopy, false);
+      applyPairingTokenString(hashCopy, false).then(() => initLiveAccessGate());
     } else {
+      initLiveAccessGate();
       autoPullOnForegroundIfEnabled();
     }
 
