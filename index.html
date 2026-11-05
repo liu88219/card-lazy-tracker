@@ -202,6 +202,9 @@
   <!-- ========================================================= -->
   <main id="appMainContainer" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-7">
 
+    <!-- 自動扣款前帳戶餘額提醒 & 銀行權益換季到期自動預警區 -->
+    <div id="systemAlertsMount" class="space-y-2.5 mb-5 empty:hidden"></div>
+
     <!-- 電腦版頂部 3 格總覽指標條 -->
     <section id="desktopKpiStrip" class="hidden lg:grid grid-cols-3 gap-5 mb-7"></section>
 
@@ -220,8 +223,8 @@
               <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Smart Card Finder</span>
               <h2 class="text-[18px] font-bold text-[var(--text-main)] mt-0.5 truncate">📍 我現在在哪？刷哪張最好？</h2>
             </div>
-            <button onclick="openKeywordRuleModal()" class="shrink-0 text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
-              管理關鍵字
+            <button onclick="openPromoMonitorModal()" class="shrink-0 text-[12.5px] font-semibold px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors">
+              🔔 權益檢查
             </button>
           </div>
 
@@ -230,7 +233,7 @@
             <div class="relative flex items-center min-w-0">
               <span class="absolute left-3.5 text-[var(--text-muted)] text-sm pointer-events-none">🔍</span>
               <input id="smartStoreInput" type="text"
-                placeholder="輸入店名或點快查（例：好樂迪、百貨餐廳...）"
+                placeholder="輸入任何店名（例：全聯、家樂福、蝦皮、小店...）"
                 oninput="handleSmartSearchInput(true)"
                 class="w-full min-w-0 pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors" />
               <button id="clearSearchBtn" onclick="clearSmartSearch()" class="hidden absolute right-2.5 text-[12px] font-medium px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">
@@ -261,7 +264,10 @@
           <div class="space-y-2.5">
             <div class="flex items-center justify-between gap-2">
               <span class="text-[12.5px] font-medium text-[var(--text-muted)]">選擇消費分類</span>
-              <button onclick="openSceneModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline shrink-0">+ 新增 / 編輯分類</button>
+              <div class="flex items-center gap-3 shrink-0">
+                <button onclick="openKeywordRuleModal()" class="text-[12.5px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">自訂愛店關鍵字</button>
+                <button onclick="openSceneModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline">+ 分類</button>
+              </div>
             </div>
             <div id="topSceneButtons" class="flex flex-wrap gap-2"></div>
           </div>
@@ -432,12 +438,17 @@
     <div id="view-cards" class="hidden space-y-6">
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 class="text-[20px] font-bold text-[var(--text-main)]">💳 我的信用卡包與權益週期</h2>
-          <p class="text-[13.5px] text-[var(--text-muted)] mt-0.5">管理結帳日、繳費日、每月領券免打擾勾選與回饋上限</p>
+          <h2 class="text-[20px] font-bold text-[var(--text-main)]">💳 我的信用卡包與扣款週期</h2>
+          <p class="text-[13.5px] text-[var(--text-muted)] mt-0.5">管理結帳日、自動扣款日、權益到期提醒與每月領券免打擾勾選</p>
         </div>
-        <button onclick="openEditCardModal(null)" class="text-[13.5px] font-semibold px-4 py-2.5 rounded-xl bg-[var(--accent)] text-white shadow-sm hover:opacity-90">
-          + 新增信用卡
-        </button>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="openPromoMonitorModal()" class="text-[13px] font-semibold px-3.5 py-2.5 rounded-xl bg-[var(--bg-pill)] text-[var(--text-main)] hover:border-[var(--accent)] border border-[var(--border-hairline)]">
+            🔔 銀行權益換季檢查
+          </button>
+          <button onclick="openEditCardModal(null)" class="text-[13.5px] font-semibold px-4 py-2.5 rounded-xl bg-[var(--accent)] text-white shadow-sm hover:opacity-90">
+            + 新增信用卡
+          </button>
+        </div>
       </div>
       <div id="cardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
     </div>
@@ -551,8 +562,22 @@
           <input id="editCardStatementDay" type="number" min="1" max="31" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
         </div>
         <div>
-          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">每月繳費截止日 (1~31)</label>
+          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">每月繳費 / 自動扣款日 (1~31)</label>
           <input id="editCardDueDay" type="number" min="1" max="31" class="w-full px-3 py-2 text-[14px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
+        </div>
+        <div class="col-span-2 flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]">
+          <label class="flex items-center gap-2 text-[13px] font-semibold cursor-pointer">
+            <input id="editCardAutoDebit" type="checkbox" class="rounded w-4 h-4" />
+            <span>🏦 已設定帳戶自動扣款（扣款日前提醒確認餘額）</span>
+          </label>
+        </div>
+        <div>
+          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">帳單週期顯示文字 (選填)</label>
+          <input id="editCardBillingLabel" type="text" placeholder="例：每月17號結帳・隔月5號自動扣款" class="w-full px-3 py-2 text-[13px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
+        </div>
+        <div>
+          <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">本期權益公告到期日</label>
+          <input id="editCardPromoUntil" type="date" class="w-full px-3 py-2 text-[13px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] num-tabular" />
         </div>
         <div>
           <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">每月加碼刷卡上限 (0=無上限)</label>
@@ -727,6 +752,36 @@
     </div>
   </div>
 
+  <!-- MODAL 8: 銀行回饋權益換季 / 到期監控中心 -->
+  <div id="promoMonitorModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="surface-card max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <h3 class="text-[17px] font-bold text-[var(--text-main)] truncate">🔔 銀行回饋權益換季與官網核對</h3>
+          <p class="text-[12.5px] text-[var(--text-muted)] mt-0.5">到期前 14 天自動跳出提醒・一鍵開銀行官網或叫 AI 同步最新公告</p>
+        </div>
+        <button onclick="closePromoMonitorModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] shrink-0">關閉</button>
+      </div>
+
+      <div id="promoMonitorCardsList" class="space-y-2.5"></div>
+
+      <div class="p-4 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent)]/25 space-y-2.5">
+        <div class="text-[13.5px] font-bold text-[var(--accent-text)]">🤖 如何讓 AI 自動幫你追最新銀行改版？</div>
+        <p class="text-[12.5px] text-[var(--text-secondary)] leading-relaxed">
+          台灣銀行大多在每季末或半年末（6/30、12/31、3/31）調整回饋。當上方顯示「即將到期／已換季」時，點下方按鈕複製指令貼回對話框（或搭配排程），AI 就會上網查最新銀行官網並幫你更新！
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="copyAiRefreshPrompt()" class="px-3.5 py-2 rounded-xl text-[13px] font-semibold bg-[var(--accent)] text-white shadow-xs">
+            📋 複製「請 AI 查最新權益並更新」指令
+          </button>
+          <button onclick="openKeywordRuleModal(); closePromoMonitorModal();" class="px-3.5 py-2 rounded-xl text-[13px] font-medium bg-[var(--bg-surface)] text-[var(--text-main)] border border-[var(--border-hairline)]">
+            🔍 自訂店家關鍵字庫
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     if ('serviceWorker' in navigator) {
       let swRefreshing = false;
@@ -737,7 +792,7 @@
         }
       });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=5').then(reg => reg.update()).catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=6').then(reg => reg.update()).catch(() => {});
       });
     }
 
@@ -784,49 +839,125 @@
     let CURRENT_MONTH = REAL_CURRENT_MONTH; // 目前畫面檢視的帳單月份（可自由切換前幾個月！）
 
     const QUICK_SEARCH_CHIPS = [
-      { id: 'ktv', label: '🎤 唱歌/好樂迪', query: '唱歌 KTV' },
+      { id: 'pxmart', label: '🛒 全聯', query: '全聯' },
+      { id: 'carrefour', label: '🛒 家樂福', query: '家樂福' },
+      { id: 'costco', label: '🛒 好市多', query: '好市多' },
+      { id: 'poya', label: '🛍️ 寶雅/小北', query: '寶雅' },
+      { id: 'ec', label: '📦 蝦皮/momo', query: '蝦皮' },
+      { id: 'ktv', label: '🎤 唱歌/KTV', query: '唱歌 KTV' },
       { id: 'dining', label: '🍲 一般餐廳', query: '一般餐廳' },
-      { id: 'dept', label: '🏬 百貨內餐廳', query: '百貨餐廳' },
-      { id: 'hotel', label: '🏨 飯店餐廳', query: '飯店餐廳' },
-      { id: 'drink', label: '🧋 飲料/咖啡', query: '手搖飲/咖啡' },
       { id: '711', label: '🏪 7-11', query: '7-11' },
       { id: 'fami', label: '🏪 全家', query: '全家' }
     ];
 
     const DEFAULT_SCENES = [
       { id: 'cvs', icon: '🏪', name: '便利商店' },
+      { id: 'mart', icon: '🛒', name: '量販/超市' },
       { id: 'cosmed', icon: '💄', name: '康是美/藥妝' },
       { id: 'dining', icon: '🍽️', name: '餐廳吃飯' },
+      { id: 'online', icon: '📦', name: '網購/外送' },
       { id: 'ktv', icon: '🎤', name: '唱歌/娛樂' },
       { id: 'mrt', icon: '🚇', name: '捷運/交通' },
       { id: 'abroad', icon: '✈️', name: '出國旅遊' },
-      { id: 'general', icon: '🛍️', name: '一般/其他' }
+      { id: 'general', icon: '🧾', name: '一般/未知店' }
     ];
 
     const DEFAULT_KEYWORD_RULES = [
+      {
+        id: 'kw-pxmart',
+        keywords: ['全聯', 'pxpay', 'px pay', '全聯福利中心', '福利中心'],
+        sceneId: 'mart',
+        linePayMode: 'no_lp',
+        title: '🛒 全聯福利中心（⚠️ 多數銀行排除 0% 地雷！）',
+        tip: '台新、星展、富邦、永豐、中信刷全聯一般皆「0% 無回饋」！\n✅ 你手上的卡唯一有回饋：刷【國泰 CUBE】店內實體卡或綁 PX Pay 切換【集精選】享 2%（若綁全支付則切【全支付】方案）。'
+      },
+      {
+        id: 'kw-carrefour',
+        keywords: ['家樂福', 'carrefour', 'miacbon', 'mia c\'bon', '頂好'],
+        sceneId: 'mart',
+        linePayMode: 'any',
+        title: '🛒 家樂福（量販店 / 超市）最佳刷法',
+        tip: '• 刷【台新 @GoGo (Richart卡)】切【天天刷】享最高 3.3%！\n• 刷【國泰 CUBE】務必切【集精選】享 2% 無上限（注意：家樂福不屬於樂饗購，千萬別切錯！）。'
+      },
+      {
+        id: 'kw-costco',
+        keywords: ['好市多', 'costco'],
+        sceneId: 'mart',
+        linePayMode: 'no_lp',
+        title: '🚨 好市多 Costco 賣場限定卡提醒',
+        tip: '好市多實體賣場與線上購物目前「僅限刷台北富邦 Costco 聯名卡」（國泰舊聯名卡已停用，一般 CUBE 卡與其他 5 張卡皆無法在好市多刷卡結帳），需付現或使用富邦 Costco 卡！'
+      },
+      {
+        id: 'kw-hypermarket-others',
+        keywords: ['大潤發', '大全聯', '愛買', '大買家', '美廉社', '楓康', '喜美', '裕毛屋', '量販', '量販店'],
+        sceneId: 'mart',
+        linePayMode: 'any',
+        title: '🛒 愛買 / 大潤發(大全聯) / 美廉社 / 量販超市',
+        tip: '• 愛買：刷【國泰 CUBE】切【集精選】享 2%，或大買家切【台新天天刷】3.3%。\n• 大潤發(大全聯) / 美廉社（非 CUBE 集精選名單）：若現場可刷 LINE Pay 選【台新/永豐】；僅能刷實體卡請選【星展 eco (1.2% 無腦保底 / 優選量販 2%)】，別刷 CUBE (會變 0.3%)！'
+      },
+      {
+        id: 'kw-life-store',
+        keywords: ['寶雅', 'poya', '小北', '小北百貨', '大創', 'daiso', '光南', '四季百貨', '佳瑪', '金興發', '勝佳', '墊腳石'],
+        sceneId: 'mart',
+        linePayMode: 'any',
+        title: '🛍️ 寶雅 / 小北百貨 / 大創 / 生活百貨避坑',
+        tip: '⚠️ 寶雅、小北百貨「不在」國泰 CUBE 常態樂饗購/集精選名單內（直接刷 CUBE 僅 0.3%）！\n✅ 現場支援 LINE Pay ➔ 刷【台新 @GoGo / 永豐 DAWAY】；僅刷實體卡 / Apple Pay ➔ 刷【星展 eco 1.2% 無上限】保底最高！'
+      },
+      {
+        id: 'kw-home-ikea',
+        keywords: ['ikea', '宜家', '宜得利', 'nitori', '特力屋', 'hola', '無印良品', 'muji'],
+        sceneId: 'mart',
+        linePayMode: 'any',
+        title: '🛋️ IKEA / 特力屋 / 宜得利 / 無印良品',
+        tip: '• IKEA 宜家家居：刷【國泰 CUBE】切【集精選】享 2% 無上限。\n• 無印良品 / 宜得利：若開在百貨公司內且掛百貨帳單，刷【國泰 CUBE 切樂饗購 3%】；街邊獨立店可刷 LINE Pay 用台新/永豐，僅刷卡用【星展 eco 1.2%】。'
+      },
+      {
+        id: 'kw-apparel-sport',
+        keywords: ['uniqlo', 'gu', 'zara', 'net', 'h&m', '迪卡儂', 'decathlon', 'nike', 'adidas', 'new balance', '服飾'],
+        sceneId: 'general',
+        linePayMode: 'any',
+        title: '👕 Uniqlo / GU / 迪卡儂 / 服飾店判斷',
+        tip: '• 開在各大百貨專櫃內：刷【國泰 CUBE 切樂饗購 3%】。\n• 街邊獨立門市 / 迪卡儂：支援 LINE Pay 刷【台新/永豐】，僅能刷卡/Apple Pay 刷【星展 eco 1.2% 無上限】（別刷 CUBE 獨立店僅 0.3%）。'
+      },
+      {
+        id: 'kw-ecommerce',
+        keywords: ['蝦皮', 'shopee', 'momo', 'pchome', '酷澎', 'coupang', '淘寶', '博客來', '誠品線上', 'yahoo購物', '東森購物', '網購', '電商'],
+        sceneId: 'online',
+        linePayMode: 'no_lp',
+        title: '📦 蝦皮 / momo / 酷澎 Coupang / PChome 網購',
+        tip: '• 刷【台新 @GoGo (Richart卡)】切【數趣刷】享最高 3.3%！\n• 或刷【國泰 CUBE】切【玩數位】享 3% 無上限（注意：網購要切玩數位，且勿透過 LINE Pay 轉付以免掉回饋）。'
+      },
+      {
+        id: 'kw-delivery',
+        keywords: ['ubereats', 'uber eats', 'foodpanda', '熊貓', '外送'],
+        sceneId: 'online',
+        linePayMode: 'any',
+        title: '🛵 Uber Eats / foodpanda 外送平台',
+        tip: 'Apple Pay 或直接綁卡刷【國泰 CUBE】切【樂饗購】享 3% 無上限；若用 LINE Pay 結帳（如 foodpanda/UberEats 支援時）亦可用台新/永豐。'
+      },
       {
         id: 'kw-ktv',
         keywords: ['唱歌', 'ktv', '好樂迪', '錢櫃', '星聚點', '享溫馨', 'singgo', '夜唱'],
         sceneId: 'ktv',
         linePayMode: 'no_lp',
         title: '🎤 唱歌 / KTV（錢櫃、好樂迪）避坑提醒',
-        tip: '錢櫃、好樂迪「不屬於」國泰 CUBE 常態【樂饗購】（除非當月壽星切慶生月 10% 或有領限時 KTV 券，否則僅 0.3%）。若可刷 LINE Pay (如享溫馨) 首選永豐 DAWAY 4.5%；錢櫃/好樂迪僅能刷卡時，請刷【星展 eco 1.2%】保底最高！'
+        tip: '錢櫃、好樂迪「不屬於」國泰 CUBE 常態【樂饗購】（除非當月壽星切慶生月 10% 或有領限時 KTV 券，否則僅 0.3%）。若可刷 LINE Pay (如享溫馨) 用永豐/台新；僅能刷卡時請刷【星展 eco 1.2%】保底最高！'
       },
       {
         id: 'kw-general-dining',
-        keywords: ['一般餐廳', '餐廳', '吃飯', '聚餐', '火鍋', '燒肉', '居酒屋', '早午餐', '海底撈', '壽司郎', '藏壽司', '王品', '鼎泰豐', '麥當勞', '肯德基'],
+        keywords: ['一般餐廳', '餐廳', '吃飯', '聚餐', '火鍋', '燒肉', '居酒屋', '早午餐', '海底撈', '壽司郎', '藏壽司', '王品', '鼎泰豐', '麥當勞', '肯德基', '必勝客', '摩斯', '爭鮮'],
         sceneId: 'dining',
         linePayMode: 'any',
-        title: '🍽️ 一般餐廳判斷口訣：先看能不能刷 LINE Pay',
-        tip: '• 僅能刷卡 / Apple Pay：無腦刷【國泰 CUBE】切【樂饗購】享 3% 無上限。\n• 可刷 LINE Pay：刷【永豐 DAWAY (4.5%)】或【台新 @GoGo (3.8% 需領券)】回饋更高！'
+        title: '🍽️ 國內餐廳 / 速食店（麥當勞、火鍋、聚餐）',
+        tip: '• 僅能刷卡 / Apple Pay：無腦刷【國泰 CUBE】切【樂饗購】享 3% 無上限（國內餐飲 MCC 皆認列，含麥當勞）。\n• 支援 LINE Pay / 台新 Pay：亦可用【台新 @GoGo】或【永豐 DAWAY】！'
       },
       {
         id: 'kw-dept-dining',
-        keywords: ['百貨餐廳', '百貨公司', '新光三越', 'sogo', '遠百', '大遠百', '微風', '101', '誠品', '巨城', '漢神', 'lalaport', '美食街'],
+        keywords: ['百貨餐廳', '百貨公司', '百貨', '新光三越', 'sogo', '遠百', '大遠百', '微風', '101', '誠品', '巨城', '漢神', 'lalaport', '三井', 'outlet', '華泰名品城', '美食街'],
         sceneId: 'dining',
         linePayMode: 'no_lp',
-        title: '🏬 百貨公司內餐廳 / 美食街',
-        tip: '國泰 CUBE 的【樂饗購 (3% 無上限)】同時涵蓋國內餐飲與各大主力百貨，不怕帳單掛在百貨名下，用 Apple Pay 或實體卡刷 CUBE 最穩！'
+        title: '🏬 百貨公司 / Outlet / 百貨美食街',
+        tip: '國泰 CUBE 的【樂饗購 (3% 無上限)】同時涵蓋國內餐飲與各大主力百貨 / Outlet，不怕專櫃掛在百貨名下，用 Apple Pay 或實體卡刷 CUBE 最穩！'
       },
       {
         id: 'kw-hotel-dining',
@@ -838,19 +969,19 @@
       },
       {
         id: 'kw-drink-cafe',
-        keywords: ['手搖飲', '飲料', '咖啡', '星巴克', '路易莎', '50嵐', '麻古', '迷客夏', '得正', '一沐日', '清心', '小吃'],
+        keywords: ['手搖飲', '飲料', '咖啡', '星巴克', '路易莎', 'cama', '50嵐', '麻古', '迷客夏', '得正', '一沐日', '清心', '小吃'],
         sceneId: 'dining',
         linePayMode: 'has_lp',
         title: '🧋 手搖飲 / 咖啡廳 / 街邊小店',
-        tip: '支援 LINE Pay 直接用【永豐 DAWAY (4.5%)】或【台新 @GoGo (3.8%)】；星巴克等僅刷卡店請刷【國泰 CUBE (切樂饗購 3%)】。'
+        tip: '支援 LINE Pay 直接用【永豐 DAWAY】或【台新 @GoGo】；星巴克、路易莎等刷卡店可刷【國泰 CUBE (切樂饗購 3%)】。'
       },
       {
         id: 'kw-cosmed-drug',
-        keywords: ['康是美', '屈臣氏', '寶雅', '藥妝', '松本清', '唐吉訶德', '藥局'],
+        keywords: ['康是美', '屈臣氏', '松本清', '日藥本舖', '唐吉訶德', 'donki', '藥妝'],
         sceneId: 'cosmed',
         linePayMode: 'any',
-        title: '💄 康是美 / 藥妝店',
-        tip: '康是美/屈臣氏用 Apple Pay 或實體卡刷【國泰 CUBE (切樂饗購 3% 無上限)】（切記勿綁 LINE Pay）；若用 LINE Pay 結帳則選永豐 DAWAY 或台新 @GoGo。'
+        title: '💄 康是美 / 屈臣氏 / 藥妝店',
+        tip: '康是美、屈臣氏用 Apple Pay 或實體卡刷【國泰 CUBE (切樂饗購 3% 無上限)】（切記勿綁 LINE Pay）；若用 LINE Pay 結帳則選台新或永豐。'
       },
       {
         id: 'kw-cvs-711',
@@ -858,23 +989,55 @@
         sceneId: 'cvs',
         linePayMode: 'has_lp',
         title: '🏪 7-11 超商避坑提醒',
-        tip: '7-11 的 LINE Pay 有限定合作銀行（永豐非合作卡），請改用【台新 @GoGo】綁 LINE Pay / 台新 Pay（記得在 Richart Life 領券享最高 3.8%）！'
+        tip: '7-11 的 LINE Pay 有限定合作銀行（永豐非合作卡），請改用【台新 @GoGo】綁台新 Pay / LINE Pay（切 Pay著刷），或【國泰 CUBE】切【集精選 2%】！'
       },
       {
         id: 'kw-cvs-fami',
-        keywords: ['全家', 'familymart', '萊爾富', '超商', '便利商店'],
+        keywords: ['全家', 'familymart', '萊爾富', 'ok超商', '超商', '便利商店'],
         sceneId: 'cvs',
         linePayMode: 'has_lp',
         title: '🏪 全家 / 萊爾富超商推薦',
-        tip: '全家超商直接刷【永豐 DAWAY】綁 LINE Pay 享最高 4.5%（免切權益），或【台新 @GoGo】綁 LINE Pay (領券 3.8%)！'
+        tip: '全家超商可刷【台新 @GoGo】綁台新 Pay / LINE Pay（切 Pay著刷最高 3.8%）或【永豐 DAWAY】綁 LINE Pay，實體感應亦可切【國泰 CUBE 集精選 2%】！'
+      },
+      {
+        id: 'kw-gas-parking',
+        keywords: ['中油', '加油', '台塑', '全國加油', '台亞', '停車', '嘟嘟房', '車麻吉', '台灣聯通', 'etag'],
+        sceneId: 'mrt',
+        linePayMode: 'no_lp',
+        title: '⛽ 加油站 / 停車費',
+        tip: '• 中油直營加油：刷【國泰 CUBE】切【集精選】享 2%，或【台新 @GoGo】切【天天刷】。\n• 其他加油站 / 停車：若支援 LINE Pay (如車麻吉/LINE GO) 用台新/永豐，一般刷卡用【星展 eco】！'
+      },
+      {
+        id: 'kw-movie-stream',
+        keywords: ['威秀', '秀泰', '國賓', '美麗華影城', '電影', '影城', 'netflix', 'spotify', 'youtube', 'disney+', 'kkbox', 'apple music', 'steam', 'nintendo', 'playstation'],
+        sceneId: 'ktv',
+        linePayMode: 'no_lp',
+        title: '🎬 電影院 / 影音串流 (Netflix、YouTube、遊戲)',
+        tip: '• Netflix / YouTube / Spotify / Steam / PlayStation：刷【國泰 CUBE】切【玩數位】享 3%！\n• 威秀 / 秀泰影城：現場無 LINE Pay 時刷【星展 eco 1.2%】保底（避免 CUBE 非指定影城僅 0.3%）。'
+      },
+      {
+        id: 'kw-travel-booking',
+        keywords: ['agoda', 'booking', 'hotels.com', 'airbnb', 'trip.com', 'klook', 'kkday', '長榮', '華航', '星宇', '虎航', '樂桃', '機票', '訂房', '日本', '韓國', '泰國'],
+        sceneId: 'abroad',
+        linePayMode: 'no_lp',
+        title: '✈️ 機票 / 訂房網 (Agoda、Klook) / 出國旅遊',
+        tip: '• 日韓泰當地實體消費：首選【富邦 J 卡 (登錄最高 6%)】或【星展 eco (免登錄 5%，上限 $15,000)】。\n• 買機票、Agoda/Booking/Klook 訂房行程、大額無上限：刷【國泰 CUBE 切趣旅行 3%】或【台新切玩旅刷 3.3%】！'
       },
       {
         id: 'kw-taxi-uber',
-        keywords: ['uber', '計程車', '叫車', '高鐵', '台鐵', '台灣大車隊', 'yoxi', 'linego', '加油'],
+        keywords: ['uber', '計程車', '叫車', '高鐵', '台鐵', '台灣大車隊', '55688', 'yoxi', 'linego'],
         sceneId: 'mrt',
         linePayMode: 'no_lp',
-        title: '🚕 叫車 (Uber / 大車隊) / 高鐵 / 交通',
-        tip: '日常搭捷運刷【星展 eco】；搭高鐵、Uber、台灣大車隊刷【國泰 CUBE】切【趣旅行】享 3% 無上限！'
+        title: '🚕 叫車 (Uber / 55688) / 高鐵 / 台鐵 / 捷運',
+        tip: '日常感應搭捷運刷【星展 eco】；搭高鐵、台鐵、Uber、55688 刷【國泰 CUBE】切【趣旅行】或【台新切天天刷】享 3%～3.3%！'
+      },
+      {
+        id: 'kw-excluded-bills',
+        keywords: ['醫院', '診所', '掛號', '牙醫', '學費', '水費', '電費', '瓦斯', '中華電信', '繳稅', '所得稅', '牌照稅', '房屋稅', '罰單', '勞保', '健保', '保費'],
+        sceneId: 'general',
+        linePayMode: 'no_lp',
+        title: '🚨 銀行「一般消費排除項目（0% 地雷）」提醒',
+        tip: '醫療院所、水電瓦斯、稅款、罰單、學費在幾乎所有銀行都屬「非一般消費（直接刷卡 0% 無回饋）」！\n💡 破解法：水電/電信費可看超商代收搭配指定支付，一般診所若支援 LINE Pay 可試綁行動支付，否則刷哪張皆無一般點數回饋。'
       }
     ];
 
@@ -889,111 +1052,141 @@
       {
         id: 'cathay-cube',
         name: '國泰 CUBE',
-        statementDay: 5,
-        dueDay: 22,
+        statementDay: 27,
+        dueDay: 7,
+        autoDebit: true,
+        billingLabel: '每月 27 號截止 ・ 隔月 7 號自動扣款',
+        promoValidUntil: '2026-12-31',
+        officialUrl: 'https://www.cathaybk.com.tw/cathaybk/personal/product/credit-card/cards/cube/',
         monthlySpendCap: 0,
         supportedPayments: ['applepay', 'card', 'linepay'],
         requireMonthlyTask: false,
         monthlyTaskDesc: '季加碼或特定通路可至 CUBE App 領優惠券',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: '注意：CUBE 綁 LINE Pay 不享 3% 加碼（請用 Apple Pay 或實體卡）。每晚 23:59 前切換當天權益即可。客服：02-2383-1000。',
+        overdueNote: '🏦 自動扣款：每月 27 號結帳截止、隔月 7 號自動扣款（請於 6 號前確認國泰帳戶餘額）。注意：綁 LINE Pay 不享 3% 加碼；不在指定名單的店家僅 0.3%！客服：02-2383-1000。',
         sceneRules: {
           dining:  { rate: 3.0, switchTier: '樂饗購', recPay: 'Apple Pay / 實體卡', note: '國內餐廳與百貨餐廳 3% 無上限（勿綁 LINE Pay）' },
-          cosmed:  { rate: 3.0, switchTier: '樂饗購', recPay: 'Apple Pay / 實體卡', note: '康是美/屈臣氏 3% 無上限（勿綁 LINE Pay）' },
-          abroad:  { rate: 3.0, switchTier: '趣旅行', recPay: 'Apple Pay / 實體卡', note: '海外實體、機票、訂房 3% 無上限，大額首選' },
+          mart:    { rate: 2.0, switchTier: '集精選', recPay: '實體卡 / Apple Pay / PX Pay', note: '全聯唯一有回饋！家樂福、全聯、愛買、IKEA 切【集精選 2%】（勿切樂饗購；大潤發/小北/寶雅不含在內）' },
+          cosmed:  { rate: 3.0, switchTier: '樂饗購', recPay: 'Apple Pay / 實體卡', note: '康是美/屈臣氏 3% 無上限（寶雅不含在內，勿綁 LINE Pay）' },
+          online:  { rate: 3.0, switchTier: '網購切玩數位 / 外送切樂饗購', recPay: '線上刷卡 / Apple Pay', note: '蝦皮/momo/酷澎切【玩數位 3%】；UberEats/foodpanda 切【樂饗購 3%】' },
+          abroad:  { rate: 3.0, switchTier: '趣旅行', recPay: 'Apple Pay / 實體卡', note: '海外實體、機票、Agoda/Klook 3% 無上限，大額首選' },
           ktv:     { rate: 0.3, switchTier: '常態不支援 (壽星切慶生月10%)', recPay: '有領券或壽星才刷', note: '錢櫃/好樂迪非樂饗購常態通路，無券建議改刷星展 eco 1.2%' },
-          mrt:     { rate: 3.0, switchTier: '趣旅行', recPay: 'Apple Pay / 實體卡', note: '高鐵、Uber、大車隊切【趣旅行】享 3%' },
-          cvs:     { rate: 0.3, switchTier: '不推薦超商', recPay: '改刷永豐 / 台新', note: '超商建議改刷永豐 DAWAY 或台新 @GoGo' },
-          general: { rate: 0.3, switchTier: '一般消費', recPay: 'Apple Pay / 實體卡', note: '非指定通路僅 0.3%' }
+          mrt:     { rate: 3.0, switchTier: '趣旅行 / 集精選(中油)', recPay: 'Apple Pay / 實體卡', note: '高鐵、Uber、大車隊切【趣旅行 3%】；中油直營切【集精選 2%】' },
+          cvs:     { rate: 2.0, switchTier: '集精選', recPay: '實體卡 / Apple Pay', note: '7-11、全家切【集精選】享 2%（綁 LINE Pay 請改刷台新/永豐）' },
+          general: { rate: 0.3, switchTier: '非指定通路僅 0.3%', recPay: '建議改刷星展 eco', note: '⚠️ 不在 CUBE 指定名單的小店僅 0.3%，沒 LINE Pay 時請改刷星展 eco 1.2%！' }
         }
       },
       {
         id: 'taishin-gogo',
-        name: '台新 @GoGo',
-        statementDay: 12,
-        dueDay: 27,
+        name: '台新 @GoGo (Richart)',
+        statementDay: 7,
+        dueDay: 22,
+        autoDebit: true,
+        billingLabel: '每月 22 號截止（自動扣款）',
+        promoValidUntil: '2027-03-31',
+        officialUrl: 'https://www.taishinbank.com.tw/TSB/personal/credit/intro/overview/cg021/card001/',
         monthlySpendCap: 16666,
         supportedPayments: ['linepay', 'applepay', 'card'],
         requireMonthlyTask: true,
-        monthlyTaskDesc: '每月需至 Richart Life App 領取「LINE Pay / Pay著刷」加碼券',
+        monthlyTaskDesc: '確認 Richart Life App 切換對應方案（Pay著刷 / 天天刷 / 數趣刷 / 玩旅刷）或領加碼券',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: '需設定 Richart 帳戶自動扣繳。Richart Life App 可切換「Pay著刷 / 玩旅刷」（每日限切 1 次）。客服：02-2655-3355。',
+        overdueNote: '🏦 自動扣款：每月 22 號自動扣款（請於 21 號前確認 Richart 帳戶餘額）。現已整合為 Richart 切換刷（台新Pay最高3.8% / LINE Pay 2.3%~3.8% / 家樂福切天天刷3.3%）。客服：02-2655-3355。',
         sceneRules: {
-          cvs:     { rate: 3.8, switchTier: 'Pay著刷 (需領券)', recPay: '綁 LINE Pay', note: '7-11 與全家綁 LINE Pay 搭配領券最高 3.8%' },
-          abroad:  { rate: 3.3, switchTier: '玩旅刷', recPay: '實體卡 / Apple Pay', note: '切換【玩旅刷】海外消費最高 3.3%' },
-          dining:  { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay)', recPay: '綁 LINE Pay', note: '餐廳支援 LINE Pay 且已領券適用' },
-          cosmed:  { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay)', recPay: '綁 LINE Pay', note: '綁 LINE Pay 結帳且已領券適用' },
-          ktv:     { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay)', recPay: '綁 LINE Pay', note: '支援 LINE Pay 之 KTV 適用' },
-          mrt:     { rate: 1.0, switchTier: '一般消費', recPay: '實體卡', note: '捷運建議刷星展 eco' },
-          general: { rate: 3.8, switchTier: 'Pay著刷 (限LINE Pay)', recPay: '綁 LINE Pay', note: '支援 LINE Pay 店家適用' }
+          cvs:     { rate: 3.8, switchTier: 'Pay著刷', recPay: '台新 Pay / LINE Pay', note: '7-11 與全家綁台新 Pay 最高 3.8%（LINE Pay 亦適用）' },
+          mart:    { rate: 3.3, switchTier: '天天刷 (全聯除外)', recPay: '實體卡 / 台新 Pay', note: '家樂福、大買家切【天天刷】最高 3.3%！注意：全聯排除 0% 無回饋' },
+          online:  { rate: 3.3, switchTier: '數趣刷', recPay: '線上刷卡', note: '蝦皮、momo、酷澎 Coupang、PChome 切【數趣刷】最高 3.3%' },
+          abroad:  { rate: 3.3, switchTier: '玩旅刷', recPay: '實體卡 / Apple Pay', note: '切換【玩旅刷】海外消費與機票訂房最高 3.3%' },
+          dining:  { rate: 3.3, switchTier: '好饗刷 / Pay著刷', recPay: '實體卡或台新Pay/LINE Pay', note: '國內餐飲切【好饗刷 3.3%】，或行動支付切【Pay著刷】' },
+          cosmed:  { rate: 3.3, switchTier: '天天刷 / Pay著刷', recPay: '台新 Pay / LINE Pay', note: '藥妝行動支付或指定通路適用' },
+          ktv:     { rate: 3.3, switchTier: '好饗刷 / Pay著刷', recPay: '實體卡 / LINE Pay', note: '支援 KTV 或綁行動支付適用' },
+          mrt:     { rate: 3.3, switchTier: '天天刷', recPay: '實體卡', note: '台鐵、高鐵、台灣大車隊切【天天刷】最高 3.3%' },
+          general: { rate: 2.3, switchTier: 'Pay著刷 (限行動支付)', recPay: '綁 LINE Pay / 台新 Pay', note: '未知小店只要能刷 LINE Pay / 台新 Pay 就有加碼（純刷實體卡僅 0.3%）' }
         }
       },
       {
         id: 'sinopac-daway',
         name: '永豐 DAWAY',
-        statementDay: 15,
-        dueDay: 30,
+        statementDay: 18,
+        dueDay: 2,
+        autoDebit: true,
+        billingLabel: '每月 18 號結帳 ・ 隔月 2 號自動扣款',
+        promoValidUntil: '2026-12-31',
+        officialUrl: 'https://bank.sinopac.com/sinopacBT/personal/credit-card/introduction/bankcard/DAWAY.html',
         monthlySpendCap: 10000,
         supportedPayments: ['linepay', 'applepay', 'card'],
         requireMonthlyTask: false,
-        monthlyTaskDesc: '確認已設定永豐自動扣繳與電子帳單',
+        monthlyTaskDesc: '確認已達成 DAWAY GO 條件（永豐自動扣繳＋電子帳單）',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: 'LINE Pay 主力卡！全家可用永豐 LINE Pay，但 7-11 不支援永豐（7-11 請改選台新 @GoGo）。客服：02-2528-7776。',
+        overdueNote: '🏦 自動扣款：每月 18 號結帳、隔月 2 號自動扣款（月底前請確認永豐帳戶餘額）。LINE Pay 無腦免切權益卡！注意 7-11 與全聯不支援永豐 LINE Pay。客服：02-2528-7776。',
         sceneRules: {
-          cvs:     { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay (全家)', note: '全家首選！7-11 不支援永豐 LINE Pay，7-11 請改刷台新 @GoGo' },
-          dining:  { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '支援 LINE Pay 的餐廳與手搖飲首選' },
-          cosmed:  { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '支援 LINE Pay 時享高回饋' },
-          ktv:     { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '享溫馨等可刷 LINE Pay 之 KTV 首選' },
-          abroad:  { rate: 2.5, switchTier: '免切權益', recPay: '海外實體', note: '海外基本 2.5% 無上限' },
+          cvs:     { rate: 4.5, switchTier: '免切權益 (限全家LINE Pay)', recPay: '綁 LINE Pay (全家)', note: '全家免切權益直接刷（註：舊戶DAWAY GO為2%、新戶最高6%~8%）；7-11 不支援永豐' },
+          mart:    { rate: 2.0, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '家樂福/小北/寶雅等支援 LINE Pay 門市免切權益直接刷；全聯不支援、刷實體卡僅 0.5%' },
+          dining:  { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '支援 LINE Pay 的餐廳、小吃、手搖飲免切權益直接刷' },
+          cosmed:  { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '支援 LINE Pay 時免切權益享加碼' },
+          online:  { rate: 2.0, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '結帳可選 LINE Pay 付款之網購適用' },
+          ktv:     { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '享溫馨等可刷 LINE Pay 之 KTV 適用' },
+          abroad:  { rate: 2.5, switchTier: '免切權益', recPay: '海外實體', note: '海外實體消費無上限' },
           mrt:     { rate: 0.5, switchTier: '免切權益', recPay: '不推薦', note: '捷運請刷星展 eco' },
-          general: { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '能刷 LINE Pay 的小店無腦首選' }
+          general: { rate: 4.5, switchTier: '免切權益 (限LINE Pay)', recPay: '綁 LINE Pay', note: '不在銀行名單上的未知小店，只要能刷 LINE Pay 就刷這張免切權益！' }
         }
       },
       {
         id: 'ctbc-linepay',
         name: '中信 LINE Pay',
-        statementDay: 18,
-        dueDay: 3,
+        statementDay: 17,
+        dueDay: 5,
+        autoDebit: true,
+        billingLabel: '每月 17 號結帳 ・ 隔月 5 號自動扣款',
+        promoValidUntil: '2026-12-31',
+        officialUrl: 'https://www.ctbcbank.com/content/dam/minisite/long/creditcard/LINEPay/index.html',
         monthlySpendCap: 0,
         supportedPayments: ['linepay', 'applepay', 'card'],
         requireMonthlyTask: false,
         monthlyTaskDesc: '指定加碼通路有時需登錄',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: '7-11 支援中信綁 LINE Pay，國內一般消費 1% 無上限備用卡。客服：0800-024-365。',
+        overdueNote: '🏦 自動扣款：每月 17 號結帳、隔月 5 號自動扣款（請於 4 號前確認扣款帳戶餘額）。7-11 支援中信綁 LINE Pay，國內一般消費 1% 無上限備用卡。客服：0800-024-365。',
         sceneRules: {
           cvs:     { rate: 1.0, switchTier: '免切權益', recPay: '綁 LINE Pay (7-11可)', note: '7-11 可刷備用卡' },
+          mart:    { rate: 1.0, switchTier: '免切權益 (全聯除外)', recPay: '實體卡 / LINE Pay', note: '國內一般賣場 1% 無上限（全聯排除 0%）' },
           mrt:     { rate: 1.0, switchTier: '免切權益', recPay: '感應搭捷運', note: '備用交通卡' },
           abroad:  { rate: 2.8, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '海外實體 2.8% 無上限' },
           dining:  { rate: 1.0, switchTier: '免切權益', recPay: 'LINE Pay / 實體卡', note: '國內一般 1%' },
           cosmed:  { rate: 1.0, switchTier: '免切權益', recPay: 'LINE Pay', note: '國內一般 1%' },
+          online:  { rate: 1.0, switchTier: '免切權益', recPay: '線上刷卡 / LINE Pay', note: '國內一般網購 1% 無上限' },
           ktv:     { rate: 1.0, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '國內一般 1% 無上限' },
-          general: { rate: 1.0, switchTier: '免切權益', recPay: '實體卡 / LINE Pay', note: '國內一般 1% 無上限' }
+          general: { rate: 1.0, switchTier: '免切權益', recPay: '實體卡 / LINE Pay', note: '國內一般消費 1% 無上限' }
         }
       },
       {
         id: 'dbs-eco',
         name: '星展 eco 永續',
-        statementDay: 20,
-        dueDay: 5,
+        statementDay: 5,
+        dueDay: 20,
+        autoDebit: true,
+        billingLabel: '每月 20 號截止（自動扣款）',
+        promoValidUntil: '2026-12-31',
+        officialUrl: 'https://www.dbs.com.tw/personal-zh/cards/dbs-credit-cards/eco-card',
         monthlySpendCap: 15000,
         supportedPayments: ['applepay', 'card'],
         requireMonthlyTask: false,
         monthlyTaskDesc: '海外 5% 免登錄',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: '日韓泰新歐美實體刷卡 5% 免登錄（每期刷滿 $15,000 封頂）。國內一般消費 1.2% 無上限，去錢櫃/好樂迪或未知通路不能刷 LINE Pay 時保底最優！客服：02-6612-9889。',
+        overdueNote: '🏦 自動扣款：每月 20 號截止自動扣款（請於 19 號前確認扣款帳戶餘額）。日韓泰新歐美實體 5% 免登錄；國內「不在銀行名單且不能刷 LINE Pay」的賣場/小店無腦保底首選！客服：02-6612-9889。',
         sceneRules: {
           mrt:     { rate: 2.0, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '日常捷運主力卡' },
+          mart:    { rate: 1.2, switchTier: '免切權益 (非指定賣場保底)', recPay: '實體卡 / Apple Pay', note: '大潤發/寶雅/小北/在地超市無 LINE Pay 時保底首選（eco優選指定量販最高2%；全聯排除0%）' },
           abroad:  { rate: 5.0, switchTier: '免切權益・免登錄', recPay: '海外實體卡 / Apple Pay', note: '日韓泰新歐美實體 5% 免登錄（每期上限刷 $15,000）' },
-          ktv:     { rate: 1.2, switchTier: '免切權益 (國內保底)', recPay: '實體卡 / Apple Pay', note: '錢櫃/好樂迪不能刷 LINE Pay 且無 CUBE 券時，刷這張 1.2% 保底最優' },
+          ktv:     { rate: 1.2, switchTier: '免切權益 (國內保底)', recPay: '實體卡 / Apple Pay', note: '錢櫃/好樂迪/影城不能刷 LINE Pay 時，保底最優' },
           dining:  { rate: 1.2, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '國內一般 1.2% 無上限' },
           cosmed:  { rate: 1.2, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '國內一般 1.2%' },
-          cvs:     { rate: 1.0, switchTier: '免切權益', recPay: '不推薦', note: '超商建議用 LINE Pay 卡' },
-          general: { rate: 1.2, switchTier: '免切權益 (未知通路保底)', recPay: '實體卡 / Apple Pay', note: '不確定分類又不能刷 LINE Pay 時，保底 1.2% 最穩' }
+          online:  { rate: 1.2, switchTier: '免切權益', recPay: '線上刷卡', note: '非指定中小型網購保底 1.2% 無上限' },
+          cvs:     { rate: 1.0, switchTier: '免切權益', recPay: '不推薦', note: '超商建議用 LINE Pay 卡或 CUBE 集精選' },
+          general: { rate: 1.2, switchTier: '免切權益 (未知店家保底王)', recPay: '實體卡 / Apple Pay', note: '⭐ 銀行沒列名的未知小店又不能刷 LINE Pay 時，刷這張保底無上限最穩（贏過 CUBE 的 0.3%）！' }
         }
       },
       {
@@ -1001,21 +1194,27 @@
         name: '富邦 J 卡',
         statementDay: 23,
         dueDay: 8,
+        autoDebit: false,
+        billingLabel: '每月 23 號結帳 ・ 8 號截止（可編輯）',
+        promoValidUntil: '2026-12-31',
+        officialUrl: 'https://www.fubon.com/banking/personal/credit_card/all_card/jcard/jcard.htm',
         monthlySpendCap: 33333,
         supportedPayments: ['applepay', 'card'],
         requireMonthlyTask: true,
         monthlyTaskDesc: '日韓泰最高 6%（其中 3% 加碼需至富邦官網搶登錄；儲值 Suica 亦需登錄）',
         monthlyTaskDone: {},
         paidMonths: {},
-        overdueNote: '日韓泰旅遊王牌！基本日韓泰 3% 無上限免登錄，有登錄再 +3% = 6%。客服：02-8751-6665。',
+        overdueNote: '日韓泰旅遊王牌！基本日韓泰 3% 無上限免登錄，有登錄再 +3% = 6%（全聯排除 0%）。客服：02-8751-6665。',
         sceneRules: {
           abroad:  { rate: 6.0, switchTier: '免切權益 (登錄6%/未登3%)', recPay: '日韓泰實體 / Suica', note: '日韓泰實體最高 6%，Apple Pay 儲值日本 Suica 最高 10%' },
+          mart:    { rate: 1.0, switchTier: '免切權益 (全聯除外)', recPay: '實體卡 / Apple Pay', note: '國內一般量販 1% 無上限（全聯排除 0%）' },
           dining:  { rate: 1.0, switchTier: '免切權益', recPay: '實體卡', note: '國內一般 1%' },
           cosmed:  { rate: 1.0, switchTier: '免切權益', recPay: '實體卡', note: '國內一般 1%' },
+          online:  { rate: 1.0, switchTier: '免切權益', recPay: '線上刷卡', note: '國內一般網購 1%' },
           ktv:     { rate: 1.0, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '國內一般 1%' },
-          cvs:     { rate: 1.0, switchTier: '免切權益', recPay: '不推薦', note: '國內超商請用永豐/台新' },
+          cvs:     { rate: 1.0, switchTier: '免切權益', recPay: '不推薦', note: '國內超商請用台新/永豐' },
           mrt:     { rate: 1.0, switchTier: '免切權益', recPay: '日本 Suica 儲值', note: '日本搭地鐵神卡；台灣捷運刷星展 eco' },
-          general: { rate: 1.0, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '國內一般 1%' }
+          general: { rate: 1.0, switchTier: '免切權益', recPay: '實體卡 / Apple Pay', note: '國內一般 1% 無上限' }
         }
       }
     ];
@@ -1197,11 +1396,17 @@
           monthlyTaskDone: {},
           paidMonths: {},
           overdueNote: '可點「編輯」輸入結帳日與各分類回饋%',
+          autoDebit: false,
+          billingLabel: '每月 1 號結帳 ・ 15 號截止',
+          promoValidUntil: '2026-12-31',
+          officialUrl: '',
           supportedPayments: ['linepay', 'applepay', 'card'],
           sceneRules: {
             dining:  { rate: 3.0, switchTier: '一般/指定權益', recPay: 'Apple Pay / 實體卡', note: '' },
+            mart:    { rate: 2.0, switchTier: '量販/超市', recPay: '實體卡', note: '' },
             cvs:     { rate: 3.0, switchTier: '行動支付', recPay: 'LINE Pay', note: '' },
             cosmed:  { rate: 3.0, switchTier: '一般/指定權益', recPay: '實體卡', note: '' },
+            online:  { rate: 3.0, switchTier: '網購/外送', recPay: '線上刷卡', note: '' },
             ktv:     { rate: 1.0, switchTier: '一般消費', recPay: '實體卡', note: '' },
             mrt:     { rate: 1.0, switchTier: '一般消費', recPay: '感應支付', note: '' },
             abroad:  { rate: 3.0, switchTier: '海外消費', recPay: '實體卡 / Apple Pay', note: '' },
@@ -1227,7 +1432,7 @@
 
     let appData = loadData();
     let currentView = 'dashboard';
-    let selectedTopScene = (appData.scenes[2] && appData.scenes[2].id) || appData.scenes[0].id;
+    let selectedTopScene = (appData.scenes.find(s => s.id === 'dining') || appData.scenes[0]).id;
     let selectedRecordScene = selectedTopScene;
     let selectedPayMethod = (appData.payMethods[1] && appData.payMethods[1].id) || appData.payMethods[0].id;
     let selectedCardId = appData.cards[0].id;
@@ -1245,29 +1450,71 @@
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed.cards && parsed.scenes && parsed.payMethods) {
-            if (!parsed.keywordRules || parsed.keywordRules.length < DEFAULT_KEYWORD_RULES.length) {
-              const existingIds = new Set((parsed.keywordRules || []).map(r => r.id));
-              const merged = [...(parsed.keywordRules || [])];
-              DEFAULT_KEYWORD_RULES.forEach(defRule => {
-                if (!existingIds.has(defRule.id)) merged.push(JSON.parse(JSON.stringify(defRule)));
+            let needsResave = false;
+
+            // 1. 補齊最新分類（量販/超市 mart、網購/外送 online 等）
+            const existingSceneIds = new Set(parsed.scenes.map(s => s.id));
+            DEFAULT_SCENES.forEach((defSc, idx) => {
+              if (!existingSceneIds.has(defSc.id)) {
+                parsed.scenes.splice(Math.min(idx, parsed.scenes.length), 0, JSON.parse(JSON.stringify(defSc)));
+                needsResave = true;
+              }
+            });
+
+            // 2. 升級關鍵字資料庫（加入全聯、家樂福、好市多、寶雅、IKEA、蝦皮等 200+ 店家與排除地雷）
+            if (!parsed._migratedV6) {
+              const defMap = new Map(DEFAULT_KEYWORD_RULES.map(r => [r.id, r]));
+              const customRules = (parsed.keywordRules || []).filter(r => !defMap.has(r.id));
+              parsed.keywordRules = [
+                ...JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES)),
+                ...customRules
+              ];
+
+              // 同步更新預設 6 張信用卡的最新結帳日/自動扣款日、量販網購規則與權益到期日（保留使用者既有記帳與勾選紀錄！）
+              const defCardMap = new Map(DEFAULT_CARDS.map(c => [c.id, c]));
+              parsed.cards.forEach(c => {
+                const dc = defCardMap.get(c.id);
+                if (dc) {
+                  c.name = dc.name;
+                  c.statementDay = dc.statementDay;
+                  c.dueDay = dc.dueDay;
+                  c.autoDebit = dc.autoDebit;
+                  c.billingLabel = dc.billingLabel;
+                  c.promoValidUntil = dc.promoValidUntil;
+                  c.officialUrl = dc.officialUrl;
+                  c.overdueNote = dc.overdueNote;
+                  c.monthlyTaskDesc = dc.monthlyTaskDesc;
+                  c.sceneRules = Object.assign({}, JSON.parse(JSON.stringify(dc.sceneRules)), c.sceneRules ? {
+                    // 用最新校正後的預設分類回饋覆蓋舊預設，同時保留使用者自建分類
+                    ...Object.fromEntries(Object.entries(c.sceneRules).filter(([k]) => !dc.sceneRules[k])),
+                    ...JSON.parse(JSON.stringify(dc.sceneRules))
+                  } : {});
+                }
               });
-              parsed.keywordRules = merged;
+
+              parsed._migratedV6 = true;
+              needsResave = true;
             }
+
             // 自動把使用者「我的帳本」裡舊版的 demo-* 預設範例紀錄全數移走，只保留真實記帳！
             if (profileId === 'profile-main' && !parsed._cleanedDemoV5) {
               parsed.transactions = (parsed.transactions || []).filter(t => !String(t.id).startsWith('demo-'));
               parsed._cleanedDemoV5 = true;
-              try { localStorage.setItem(key, JSON.stringify(parsed)); } catch (e) {}
+              needsResave = true;
             }
             if (typeof parsed.pinQuickEntryTop !== 'boolean') parsed.pinQuickEntryTop = false;
+            if (needsResave) {
+              try { localStorage.setItem(key, JSON.stringify(parsed)); } catch (e) {}
+            }
             return parsed;
           }
         }
       } catch (e) {}
 
-      // 全新主帳本：保留 6 張卡攻略，但預設 0 筆範例帳單，版面乾乾淨淨！
+      // 全新主帳本：保留 6 張卡最新扣款日與攻略，預設 0 筆範例帳單
       const cleanInit = {
         _cleanedDemoV5: true,
+        _migratedV6: true,
         pinQuickEntryTop: false,
         scenes: JSON.parse(JSON.stringify(DEFAULT_SCENES)),
         keywordRules: JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES)),
@@ -1478,6 +1725,95 @@
       }
     }
 
+    function getDaysUntilDateStr(dateStr) {
+      if (!dateStr) return 999;
+      const parts = dateStr.split('-').map(Number);
+      if (parts.length !== 3) return 999;
+      const target = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59);
+      const now = new Date();
+      return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    function formatCardBillingText(card) {
+      if (card.billingLabel && card.billingLabel.trim()) return card.billingLabel.trim();
+      return `每月 ${card.statementDay} 號結帳 ・ ${card.dueDay} 號${card.autoDebit ? '自動扣款' : '繳款截止'}`;
+    }
+
+    function renderSystemAlerts() {
+      const mount = document.getElementById('systemAlertsMount');
+      if (!mount) return;
+
+      const todayDay = new Date().getDate();
+      const alertsHTML = [];
+
+      // 1. 自動扣款前 0~4 天帳戶餘額檢查提醒
+      const upcomingAutoDebits = appData.cards.filter(card => {
+        if (!card.dueDay) return false;
+        const isPaid = card.paidMonths && card.paidMonths[REAL_CURRENT_MONTH];
+        if (isPaid) return false;
+        let diff = card.dueDay - todayDay;
+        if (diff < 0) diff += 30;
+        return diff >= 0 && diff <= 4;
+      });
+
+      if (upcomingAutoDebits.length > 0) {
+        const itemsText = upcomingAutoDebits.map(c => {
+          let diff = c.dueDay - todayDay;
+          if (diff < 0) diff += 30;
+          const dayWord = diff === 0 ? '今天' : `${diff} 天後 (${c.dueDay}號)`;
+          return `<strong>${c.name}</strong>（${dayWord}${c.autoDebit ? '自動扣款' : '截止'}）`;
+        }).join('、');
+
+        alertsHTML.push(`
+          <div class="p-3.5 rounded-2xl bg-[var(--warn-soft)] border border-[var(--warn)]/30 flex items-center justify-between gap-3 flex-wrap">
+            <div class="text-[13px] text-[var(--warn)] leading-relaxed min-w-0">
+              🏦 <strong>近期扣款提醒：</strong>${itemsText}，請確認扣款銀行帳戶餘額足夠！
+            </div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              ${upcomingAutoDebits.map(c => `
+                <button onclick="markCurrentMonthPaid('${c.id}')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs">
+                  ✓ ${c.name} 已確認
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `);
+      }
+
+      // 2. 銀行回饋權益即將換季 / 已過期自動預警（到期前 14 天內或已過期自動跳出！）
+      const expiringCards = appData.cards.filter(c => {
+        if (!c.promoValidUntil) return false;
+        return getDaysUntilDateStr(c.promoValidUntil) <= 14;
+      });
+
+      if (expiringCards.length > 0) {
+        const hasExpired = expiringCards.some(c => getDaysUntilDateStr(c.promoValidUntil) < 0);
+        const names = expiringCards.map(c => `${c.name} (${c.promoValidUntil})`).join('、');
+        alertsHTML.push(`
+          <div class="p-3.5 rounded-2xl ${hasExpired ? 'bg-[var(--danger-soft)] text-[var(--danger)]' : 'bg-[var(--accent-soft)] text-[var(--accent-text)]'} flex items-center justify-between gap-3 flex-wrap">
+            <div class="text-[13px] font-medium leading-relaxed min-w-0">
+              🔔 <strong>銀行權益換季提醒：</strong>${names} ${hasExpired ? '公告期限已跨季，請確認最新回饋權益！' : '即將換季到期，留意銀行最新公告！'}
+            </div>
+            <button onclick="openPromoMonitorModal()" class="shrink-0 px-3 py-1 rounded-lg text-[12px] font-semibold bg-[var(--accent)] text-white">
+              檢查更新 →
+            </button>
+          </div>
+        `);
+      }
+
+      mount.innerHTML = alertsHTML.join('');
+    }
+
+    function markCurrentMonthPaid(cardId) {
+      const card = getCardById(cardId);
+      if (!card) return;
+      if (!card.paidMonths) card.paidMonths = {};
+      card.paidMonths[REAL_CURRENT_MONTH] = true;
+      saveData();
+      renderAll();
+      showToast(`✓ 已標記「${card.name}」本月扣款已確認`);
+    }
+
     function renderAll() {
       const mainContainer = document.getElementById('appMainContainer');
       renderHeaderMonthControl();
@@ -1486,6 +1822,7 @@
         return;
       }
       if (mainContainer) mainContainer.classList.remove('hidden');
+      renderSystemAlerts();
       renderPinOrderState();
       renderDesktopKpiStrip();
       renderQuickSearchChips();
@@ -1814,6 +2151,48 @@
       handleSmartSearchInput(false);
     }
 
+    // 針對「不在銀行明確指定名單上」的店家，自動依店名字根推論銀行 MCC 規則與保底最佳卡
+    function inferUnlistedStoreStrategy(rawVal) {
+      const s = rawVal.toLowerCase();
+      if (/(麵|飯|鍋|燒肉|牛排|壽司|食堂|餐|酒館|居酒屋|早午餐|鐵板|拉麵|便當|滷味|炸雞|披薩|漢堡|豆花|冰|甜點|蛋糕|烘焙|麵包|茶|飲|咖啡|cafe|bistro|bar|小吃|料理)/.test(s)) {
+        return {
+          sceneId: 'dining',
+          linePayMode: 'any',
+          title: `🍽️ 「${rawVal}」不在連鎖名單，但銀行依「餐飲類別」認列！`,
+          tip: `銀行不需列出全台每家獨立餐廳，只要該店刷卡機登記為「國內餐飲類 MCC」：\n• 僅能刷實體卡 / Apple Pay ➔ 刷【國泰 CUBE 切樂饗購】照樣有 3% 無上限（或台新切好饗刷 3.3%）！\n• 現場可刷 LINE Pay / 台新 Pay ➔ 刷【台新 @GoGo】或【永豐 DAWAY】最穩！`
+        };
+      }
+      if (/(超市|生鮮|賣場|量販|五金|雜貨|生活|商行|批發|市場|市集|選物|文具|書局|玩具|寵物|藥局)/.test(s)) {
+        return {
+          sceneId: 'general',
+          linePayMode: 'any',
+          title: `🛒 「${rawVal}」非銀行指定連鎖賣場 — 小心別刷錯卡變 0.3%！`,
+          tip: `⚠️ 國泰 CUBE【集精選】只認官網列名的指定連鎖（家樂福、全聯、7-11、全家、IKEA），沒列名的在地賣場刷 CUBE 只有 0.3%！\n✅ 正確最優解：\n1. 能刷 LINE Pay / 台新 Pay ➔ 刷【永豐 DAWAY】或【台新 @GoGo】（看支付管道、不挑店名！）\n2. 只能刷實體卡 / Apple Pay ➔ 直接刷【星展 eco (1.2% 無上限)】拿國內一般消費保底最高！`
+        };
+      }
+      if (/(旅店|民宿|商旅|溫泉|渡假|文旅|行旅|hotel|inn|機票|旅行社|租車)/.test(s)) {
+        return {
+          sceneId: 'abroad',
+          linePayMode: 'no_lp',
+          title: `🧳 「${rawVal}」住宿 / 旅遊類推論`,
+          tip: `國內外飯店、商旅、民宿或旅行社請款若屬住宿旅遊 MCC，刷【國泰 CUBE 切趣旅行 3% 無上限】或【台新切玩旅刷 3.3%】最划算！`
+        };
+      }
+      return {
+        sceneId: 'general',
+        linePayMode: 'any',
+        title: `💡 「${rawVal}」未在銀行指定名單 — 2 秒選出最高回饋卡`,
+        tip: `沒列在銀行指定名單的店家，刷「指定通路卡 (如 CUBE)」只剩 0.3%！請改用「不挑店名」的刷法：\n1. 店裡有貼 LINE Pay / 台新 Pay ➔ 刷【永豐 DAWAY】或【台新 @GoGo】\n2. 店裡只能刷實體卡 / Apple Pay ➔ 若是餐廳切【國泰 CUBE 樂饗購 3%】；非餐廳直接刷【星展 eco (1.2% 保底無上限)】最高！`
+      };
+    }
+
+    function quickClassifyUnknown(sceneId, lpMode) {
+      selectedTopScene = sceneId;
+      selectedRecordScene = sceneId;
+      setStoreLinePayFilter(lpMode);
+      renderRecordSection();
+    }
+
     function handleSmartSearchInput(fromManualInput = false) {
       const rawVal = document.getElementById('smartStoreInput').value.trim();
       const q = rawVal.toLowerCase();
@@ -1840,7 +2219,11 @@
 
       let matched = null;
       for (const rule of (appData.keywordRules || [])) {
-        if (rule.keywords.some(k => q.includes(k.toLowerCase()) || k.toLowerCase().includes(q))) {
+        if (rule.keywords.some(k => {
+          const kw = k.toLowerCase();
+          // 避免單字太短誤判：輸入關鍵字包含規則詞，或輸入至少 2 字且被規則詞包含
+          return q.includes(kw) || (q.length >= 2 && kw.includes(q));
+        })) {
           matched = rule;
           break;
         }
@@ -1860,15 +2243,22 @@
           </div>
         `;
       } else {
+        const inferred = inferUnlistedStoreStrategy(rawVal);
+        selectedTopScene = inferred.sceneId;
+        selectedRecordScene = inferred.sceneId;
+        if (inferred.linePayMode && inferred.linePayMode !== 'any') {
+          setStoreLinePayFilter(inferred.linePayMode);
+        }
         diagBox.classList.remove('hidden');
         diagBox.innerHTML = `
-          <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-1.5">
-            <div class="text-[14px] font-bold text-[var(--text-main)]">💡 未知店家「${rawVal}」判斷口訣</div>
-            <p class="text-[13px] text-[var(--text-secondary)] leading-relaxed">
-              1. 現場可刷 LINE Pay ➔ 刷 <strong>永豐 DAWAY (4.5%)</strong> 或 <strong>台新 @GoGo (3.8%)</strong><br/>
-              2. 僅能刷卡且屬餐廳/百貨/藥妝 ➔ 刷 <strong>國泰 CUBE (切樂饗購 3%)</strong><br/>
-              3. 僅能刷卡且屬娛樂/唱歌/未知分類 ➔ 刷 <strong>星展 eco (1.2% 保底無上限)</strong>
-            </p>
+          <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-2.5">
+            <div class="text-[14px] font-bold text-[var(--text-main)]">${inferred.title}</div>
+            <p class="text-[13px] text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">${inferred.tip}</p>
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              <button type="button" onclick="quickClassifyUnknown('general', 'has_lp')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--bg-pill)] text-[var(--text-main)] hover:text-[var(--accent)]">💚 店內可刷 LINE Pay</button>
+              <button type="button" onclick="quickClassifyUnknown('general', 'no_lp')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--bg-pill)] text-[var(--text-main)] hover:text-[var(--accent)]">💳 純刷卡非指定店 (保底1.2%)</button>
+              <button type="button" onclick="quickClassifyUnknown('dining', 'no_lp')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--bg-pill)] text-[var(--text-main)] hover:text-[var(--accent)]">🍽️ 這是餐廳 (刷卡3%)</button>
+            </div>
           </div>
         `;
       }
@@ -2602,15 +2992,15 @@
         const isPaid = c.paidMonths && c.paidMonths[CURRENT_MONTH];
         return `
           <div class="py-3 flex items-center justify-between text-[14px] gap-2">
-            <div>
-              <span class="font-semibold text-[var(--text-main)]">${c.name}</span>
-              <span class="text-[12px] text-[var(--text-muted)] ml-1.5">(${c.statementDay}號結帳 / ${c.dueDay}號繳)</span>
+            <div class="min-w-0">
+              <div class="font-semibold text-[var(--text-main)] truncate">${c.name}</div>
+              <div class="text-[12px] text-[var(--text-muted)] truncate mt-0.5">${formatCardBillingText(c)}</div>
             </div>
-            <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-2.5 shrink-0">
               <span class="font-bold num-tabular text-[var(--text-main)]">$${spent.toLocaleString()}</span>
               <button onclick="toggleCardPaid('${c.id}')"
                 class="text-[12px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${isPaid ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--bg-pill)] text-[var(--text-muted)] hover:text-[var(--text-main)]'}">
-                ${isPaid ? '✓ 已繳' : '標記已繳'}
+                ${isPaid ? (c.autoDebit ? '✓ 已扣款' : '✓ 已繳') : (c.autoDebit ? '確認扣款' : '標記已繳')}
               </button>
             </div>
           </div>
@@ -2671,25 +3061,35 @@
 
         let daysToDue = card.dueDay - todayDay;
         if (daysToDue < 0) daysToDue += 30;
+        const promoDaysLeft = card.promoValidUntil ? getDaysUntilDateStr(card.promoValidUntil) : 999;
 
         return `
           <div class="surface-card p-6 space-y-5 flex flex-col justify-between">
             <div class="space-y-4">
               <!-- 卡片頂部資訊 -->
               <div class="flex items-start justify-between gap-3">
-                <div>
-                  <div class="flex items-center gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
                     <h4 class="text-[18px] font-bold text-[var(--text-main)]">${card.name}</h4>
-                    ${CURRENT_MONTH === REAL_CURRENT_MONTH && daysToDue <= 5 && !isPaid ? `<span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--danger-soft)] text-[var(--danger)]">${daysToDue} 天後截止</span>` : ''}
+                    ${card.autoDebit ? `<span class="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">🏦 自動扣款</span>` : ''}
+                    ${CURRENT_MONTH === REAL_CURRENT_MONTH && daysToDue <= 5 && !isPaid ? `<span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--danger-soft)] text-[var(--danger)]">${daysToDue === 0 ? '今天' : daysToDue + ' 天後'}${card.autoDebit ? '扣款' : '截止'}</span>` : ''}
                   </div>
                   <p class="text-[13px] text-[var(--text-muted)] mt-1 num-tabular">
-                    每月 ${card.statementDay} 號結帳 ・ ${card.dueDay} 號繳款截止
+                    ${formatCardBillingText(card)}
                   </p>
+                  ${card.promoValidUntil ? `
+                    <div class="flex items-center gap-2 mt-1 text-[12px] flex-wrap">
+                      <span class="${promoDaysLeft <= 14 ? 'text-[var(--danger)] font-semibold' : 'text-[var(--text-muted)]'} num-tabular">
+                        📅 本期權益公告至：${card.promoValidUntil}${promoDaysLeft <= 14 ? (promoDaysLeft < 0 ? '（已跨季請檢查）' : `（剩 ${promoDaysLeft} 天換季）`) : ''}
+                      </span>
+                      ${card.officialUrl ? `<a href="${card.officialUrl}" target="_blank" rel="noopener noreferrer" class="text-[var(--accent-text)] font-medium hover:underline">官網公告 ↗</a>` : ''}
+                    </div>
+                  ` : ''}
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 shrink-0">
                   <button onclick="toggleCardPaid('${card.id}')"
                     class="text-[12.5px] font-semibold px-3 py-1.5 rounded-xl transition-colors ${isPaid ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--bg-pill)] text-[var(--text-secondary)]'}">
-                    ${isPaid ? `✓ ${Number(CURRENT_MONTH.split('-')[1])}月已繳` : `標記${Number(CURRENT_MONTH.split('-')[1])}月已繳`}
+                    ${isPaid ? `✓ ${Number(CURRENT_MONTH.split('-')[1])}月已扣/繳` : (card.autoDebit ? `確認${Number(CURRENT_MONTH.split('-')[1])}月扣款` : `標記${Number(CURRENT_MONTH.split('-')[1])}月已繳`)}
                   </button>
                   <button onclick="openEditCardModal('${card.id}')" class="text-[13px] font-medium px-3 py-1.5 rounded-xl border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
                     編輯
@@ -2952,6 +3352,9 @@
       document.getElementById('editCardName').value = card.name;
       document.getElementById('editCardStatementDay').value = card.statementDay;
       document.getElementById('editCardDueDay').value = card.dueDay;
+      document.getElementById('editCardAutoDebit').checked = Boolean(card.autoDebit);
+      document.getElementById('editCardBillingLabel').value = card.billingLabel || '';
+      document.getElementById('editCardPromoUntil').value = card.promoValidUntil || '';
       document.getElementById('editCardCap').value = card.monthlySpendCap || 0;
       document.getElementById('editCardPayments').value = (card.supportedPayments || []).join(',');
       document.getElementById('editCardNeedTask').checked = !!card.requireMonthlyTask;
@@ -3004,6 +3407,9 @@
       existing.name = name;
       existing.statementDay = Number(document.getElementById('editCardStatementDay').value || 10);
       existing.dueDay = Number(document.getElementById('editCardDueDay').value || 25);
+      existing.autoDebit = document.getElementById('editCardAutoDebit').checked;
+      existing.billingLabel = document.getElementById('editCardBillingLabel').value.trim();
+      existing.promoValidUntil = document.getElementById('editCardPromoUntil').value || '';
       existing.monthlySpendCap = Number(document.getElementById('editCardCap').value || 0);
       existing.supportedPayments = document.getElementById('editCardPayments').value.split(',').map(s => s.trim()).filter(Boolean);
       existing.requireMonthlyTask = document.getElementById('editCardNeedTask').checked;
@@ -3034,6 +3440,64 @@
       saveData();
       closeEditCardModal();
       renderAll();
+    }
+
+    // ==========================================================
+    // 🔔 銀行回饋權益換季 / 到期監控中心 Modal 邏輯
+    // ==========================================================
+    function openPromoMonitorModal() {
+      renderPromoMonitorList();
+      document.getElementById('promoMonitorModal').classList.remove('hidden');
+    }
+
+    function closePromoMonitorModal() {
+      document.getElementById('promoMonitorModal').classList.add('hidden');
+    }
+
+    function renderPromoMonitorList() {
+      const el = document.getElementById('promoMonitorCardsList');
+      if (!el) return;
+      el.innerHTML = appData.cards.map(c => {
+        const daysLeft = c.promoValidUntil ? getDaysUntilDateStr(c.promoValidUntil) : 999;
+        let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-[var(--success-soft)] text-[var(--success)]">✓ 權益有效中</span>`;
+        if (!c.promoValidUntil) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[12px] font-medium bg-[var(--bg-pill)] text-[var(--text-muted)]">未設定期限</span>`;
+        } else if (daysLeft < 0) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-[var(--danger-soft)] text-[var(--danger)]">⚠️ 已過公告期</span>`;
+        } else if (daysLeft <= 14) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-[var(--warn-soft)] text-[var(--warn)]">⏳ 剩 ${daysLeft} 天換季</span>`;
+        }
+
+        return `
+          <div class="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-2">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div class="font-bold text-[14.5px] text-[var(--text-main)]">${c.name}</div>
+              ${statusBadge}
+            </div>
+            <div class="flex items-center justify-between gap-2 text-[12.5px] text-[var(--text-muted)] flex-wrap">
+              <span class="num-tabular">目前公告期限：${c.promoValidUntil || '未標註'}</span>
+              <div class="flex items-center gap-2">
+                ${c.officialUrl ? `<a href="${c.officialUrl}" target="_blank" rel="noopener noreferrer" class="font-semibold text-[var(--accent-text)] hover:underline">查看銀行官網 ↗</a>` : ''}
+                <button onclick="closePromoMonitorModal(); openEditCardModal('${c.id}');" class="font-medium text-[var(--text-secondary)] hover:text-[var(--text-main)]">手動編輯</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function copyAiRefreshPrompt() {
+      const cardNames = appData.cards.map(c => c.name).join('、');
+      const promptText = `幫我上網查「${cardNames}」目前最新的銀行官方刷卡回饋權益有沒有改版（含餐廳、超商、量販全聯家樂福、網購、海外回饋%與上限），並直接幫我同步更新到卡神記帳 GitHub Pages！`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(promptText).then(() => {
+          showToast('📋 已複製指令！貼回 AI 對話框即可自動上網查最新權益');
+        }).catch(() => {
+          showToast('💡 可直接回對話框說：幫我查這 6 張卡最新回饋並更新');
+        });
+      } else {
+        showToast('💡 可直接回對話框說：幫我查這 6 張卡最新回饋並更新');
+      }
     }
 
     function exportBackupJSON() {
