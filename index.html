@@ -81,9 +81,30 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+    /* 確保手機版與電腦版輸入框預覽文字 (placeholder) 超出寬度時一律優雅顯示 ... 不被半字裁切 */
+    input[type="text"],
+    input[type="search"],
+    input[type="password"],
+    select {
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    input::placeholder,
+    input::-webkit-input-placeholder {
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
     /* 手機版底部安全距離 */
     .pb-safe {
       padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* 跳轉錨點預留置頂導覽高度 */
+    .scroll-anchor {
+      scroll-margin-top: 7.5rem;
     }
 
     /* Donut 圓餅圖動畫 */
@@ -99,100 +120,133 @@
 <body class="min-h-screen pb-safe lg:pb-12">
 
   <!-- ========================================================= -->
-  <!-- 頂部導覽列 (電腦版寬螢幕置頂列 / 手機版清爽標題列) -->
+  <!-- 置頂釘選導覽列 + 一鍵快速跳轉列 (電腦與手機皆固定最上方) -->
   <!-- ========================================================= -->
-  <header class="sticky top-0 z-30 backdrop-blur-md bg-[var(--bg-surface)]/85 border-b border-[var(--border-hairline)]">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-[var(--accent)] text-white flex items-center justify-center text-lg shadow-sm">
-          💳
+  <header class="sticky top-0 z-30 backdrop-blur-md bg-[var(--bg-surface)]/92 border-b border-[var(--border-hairline)]">
+    <div class="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 pt-2.5 pb-2 space-y-2">
+      <!-- 第一列：標題、帳本切換、電腦主選單、清爽年月切換 -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-[var(--accent)] text-white flex items-center justify-center text-base shadow-sm shrink-0">
+            💳
+          </div>
+          <h1 class="text-[15.5px] font-bold tracking-tight text-[var(--text-main)] truncate hidden sm:block">卡神記帳</h1>
+          <!-- 多帳本 / 使用者隔離切換按鈕 -->
+          <button onclick="openProfileModal()" id="activeProfileBtn"
+            class="px-2.5 py-1 rounded-xl bg-[var(--bg-pill)] border border-[var(--border-hairline)] text-[12.5px] font-semibold text-[var(--text-main)] hover:border-[var(--accent)] transition-colors flex items-center gap-1 max-w-[145px] sm:max-w-[190px] min-w-0">
+            <span id="activeProfileLabel" class="truncate">👤 我的帳本</span>
+            <span class="text-[12px] text-[var(--text-muted)] shrink-0">▾</span>
+          </button>
+          <button onclick="lockCurrentProfileNow()" id="quickLockBtn" title="立即鎖定此帳本"
+            class="hidden px-2 py-1 rounded-xl bg-[var(--bg-pill)] text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[var(--accent)] shrink-0">
+            🔒 鎖上
+          </button>
         </div>
-        <div>
-          <h1 class="text-[16px] font-bold tracking-tight text-[var(--text-main)] leading-snug">卡神記帳</h1>
-          <p class="text-[12px] text-[var(--text-muted)] leading-none mt-0.5 hidden sm:block">信用卡回饋導航 × 極簡視覺記帳（資料僅存本機）</p>
+
+        <!-- 電腦版主選單 (lg 以上顯示) -->
+        <nav class="hidden lg:flex items-center gap-1.5 bg-[var(--bg-pill)] p-1 rounded-xl shrink-0">
+          <button onclick="switchView('dashboard')" id="deskNav-dashboard" class="px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all">
+            ⚡ 刷卡與記帳
+          </button>
+          <button onclick="switchView('analytics')" id="deskNav-analytics" class="px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all">
+            📊 圓餅圖與歷史帳單
+          </button>
+          <button onclick="switchView('cards')" id="deskNav-cards" class="px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all">
+            💳 卡包攻略
+          </button>
+        </nav>
+
+        <!-- 極簡年月切換器 (去除突兀標籤，乾淨切換前幾個月歷史帳單) -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="backToCurrentMonthBtn" onclick="resetToRealCurrentMonth()" class="hidden text-[12px] font-semibold px-2 py-1 rounded-lg bg-[var(--accent-soft)] text-[var(--accent-text)] transition-all">
+            回當月
+          </button>
+          <div class="inline-flex items-center bg-[var(--bg-pill)] rounded-xl px-1 py-0.5">
+            <button onclick="stepViewMonth(-1)" class="px-1.5 py-0.5 rounded-lg text-[13px] font-bold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors" title="上個月">‹</button>
+            <select id="headerMonthSelect" onchange="setViewMonth(this.value)" class="bg-transparent text-[13px] font-semibold text-[var(--text-main)] px-1 py-0.5 focus:outline-none num-tabular cursor-pointer"></select>
+            <button onclick="stepViewMonth(1)" class="px-1.5 py-0.5 rounded-lg text-[13px] font-bold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors" title="下個月">›</button>
+          </div>
         </div>
       </div>
 
-      <!-- 電腦版主選單 (lg 以上顯示) -->
-      <nav class="hidden lg:flex items-center gap-1.5 bg-[var(--bg-pill)] p-1 rounded-xl">
-        <button onclick="switchView('dashboard')" id="deskNav-dashboard" class="px-4 py-1.5 rounded-lg text-[13.5px] font-semibold transition-all">
-          ⚡ 記帳與刷卡導航
-        </button>
-        <button onclick="switchView('analytics')" id="deskNav-analytics" class="px-4 py-1.5 rounded-lg text-[13.5px] font-semibold transition-all">
-          📊 圓餅圖與歷史帳單
-        </button>
-        <button onclick="switchView('cards')" id="deskNav-cards" class="px-4 py-1.5 rounded-lg text-[13.5px] font-semibold transition-all">
-          💳 我的卡包攻略 (6)
-        </button>
-      </nav>
-
-      <!-- 全域帳單月份切換器 (可隨時切換查看前幾個月歷史帳單與圓餅圖) -->
-      <div class="flex items-center gap-1.5">
-        <button id="backToCurrentMonthBtn" onclick="resetToRealCurrentMonth()" class="hidden text-[12px] font-semibold px-2.5 py-1 rounded-lg bg-[var(--accent)] text-white shadow-xs transition-all">
-          回本月
-        </button>
-        <div class="inline-flex items-center bg-[var(--bg-pill)] rounded-xl p-0.5 border border-[var(--border-hairline)]">
-          <button onclick="stepViewMonth(-1)" class="px-2 py-1 rounded-lg text-[12.5px] font-bold text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors" title="上個月">◀</button>
-          <select id="headerMonthSelect" onchange="setViewMonth(this.value)" class="bg-transparent text-[13px] font-semibold text-[var(--text-main)] px-1.5 py-1 focus:outline-none num-tabular cursor-pointer"></select>
-          <button onclick="stepViewMonth(1)" class="px-2 py-1 rounded-lg text-[12.5px] font-bold text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors" title="下個月">▶</button>
+      <!-- 第二列：置頂釘選快捷列（手機與電腦完整顯示不裁切，隨時一點馬上記帳／釘選置頂！） -->
+      <div class="flex items-center justify-between gap-1.5 pt-0.5">
+        <div class="flex items-center gap-1.5 min-w-0">
+          <button onclick="quickJumpTo('record')"
+            class="px-2.5 sm:px-3 py-1 rounded-full text-[12px] sm:text-[12.5px] font-semibold bg-[var(--accent)] text-white shadow-xs hover:opacity-95 active:scale-95 transition-all shrink-0">
+            ⚡ 馬上記帳
+          </button>
+          <button onclick="quickJumpTo('finder')"
+            class="px-2.5 sm:px-3 py-1 rounded-full text-[12px] sm:text-[12.5px] font-medium bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors shrink-0">
+            📍 查刷哪張
+          </button>
+          <button onclick="quickJumpTo('donut')"
+            class="px-2.5 sm:px-3 py-1 rounded-full text-[12px] sm:text-[12.5px] font-medium bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-colors shrink-0">
+            📊 圓餅圖
+          </button>
         </div>
+
+        <button onclick="togglePinQuickEntry()" id="headerPinQuickBtn"
+          class="shrink-0 px-2.5 sm:px-3 py-1 rounded-full text-[12px] font-semibold transition-all">
+          📌 釘選置頂
+        </button>
       </div>
     </div>
   </header>
 
   <!-- 記帳成功提示 Toast -->
-  <div id="saveToast" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[var(--accent)] text-white text-[13.5px] font-semibold shadow-lg flex items-center gap-2.5"></div>
+  <div id="saveToast" class="hidden fixed top-28 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[var(--accent)] text-white text-[13.5px] font-semibold shadow-lg flex items-center gap-2.5 max-w-[90vw] truncate"></div>
 
   <!-- ========================================================= -->
   <!-- 主內容容器：手機單欄舒適留白 / 電腦 max-w-6xl 雙欄黃金比例 -->
   <!-- ========================================================= -->
-  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 lg:pt-8">
+  <main id="appMainContainer" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-7">
 
-    <!-- 電腦版頂部 3 格總覽指標條 (lg 以上顯示，連動所選月份) -->
+    <!-- 電腦版頂部 3 格總覽指標條 -->
     <section id="desktopKpiStrip" class="hidden lg:grid grid-cols-3 gap-5 mb-7"></section>
 
     <!-- ======================================================= -->
-    <!-- VIEW 1: 首頁儀表板 (電腦版左 7 右 5 雙欄並排；手機版上下串聯直看圓餅圖！) -->
+    <!-- VIEW 1: 首頁儀表板 (支援將「快速記帳」釘選在最上方！) -->
     <!-- ======================================================= -->
     <div id="view-dashboard" class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
 
-      <!-- 左欄 (7 cols on Desktop)：置頂刷卡查詢 + 2秒記帳 -->
-      <div class="lg:col-span-7 space-y-6">
+      <!-- 左欄 (flex-col 支援動態釘選對調上下順序) -->
+      <div id="leftModulesColumn" class="lg:col-span-7 flex flex-col gap-6 min-w-0">
 
         <!-- 模組 A：我現在在哪？刷哪張最好？ -->
-        <section class="surface-card p-5 sm:p-6 space-y-5">
-          <div class="flex items-center justify-between">
-            <div>
+        <section id="smartFinderCard" class="surface-card p-5 sm:p-6 space-y-5 scroll-anchor min-w-0 order-1">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0">
               <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Smart Card Finder</span>
-              <h2 class="text-[18px] font-bold text-[var(--text-main)] mt-0.5">📍 我現在在哪？刷哪張最好？</h2>
+              <h2 class="text-[18px] font-bold text-[var(--text-main)] mt-0.5 truncate">📍 我現在在哪？刷哪張最好？</h2>
             </div>
-            <button onclick="openKeywordRuleModal()" class="text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
+            <button onclick="openKeywordRuleModal()" class="shrink-0 text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
               管理關鍵字
             </button>
           </div>
 
           <!-- 搜尋框與「快查」藍色高亮膠囊列 -->
-          <div class="space-y-3">
-            <div class="relative flex items-center">
-              <span class="absolute left-3.5 text-[var(--text-muted)] text-sm">🔍</span>
+          <div class="space-y-3 min-w-0">
+            <div class="relative flex items-center min-w-0">
+              <span class="absolute left-3.5 text-[var(--text-muted)] text-sm pointer-events-none">🔍</span>
               <input id="smartStoreInput" type="text"
-                placeholder="輸入店名或點下方快查（例：好樂迪唱歌、百貨餐廳、星巴克...）"
+                placeholder="輸入店名或點快查（例：好樂迪、百貨餐廳...）"
                 oninput="handleSmartSearchInput(true)"
-                class="w-full pl-10 pr-16 py-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors" />
-              <button id="clearSearchBtn" onclick="clearSmartSearch()" class="hidden absolute right-3 text-[12px] font-medium px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">
+                class="w-full min-w-0 pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors" />
+              <button id="clearSearchBtn" onclick="clearSmartSearch()" class="hidden absolute right-2.5 text-[12px] font-medium px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">
                 清除
               </button>
             </div>
 
-            <!-- 快查快點列 (點選後會變藍色高亮！再點一次可取消) -->
+            <!-- 快查快點列 -->
             <div class="space-y-1.5">
               <div class="flex items-center gap-2 flex-wrap" id="quickSearchChipsRow"></div>
             </div>
 
-            <!-- 店家支援支付篩選 (點選後變藍色高亮！) -->
+            <!-- 店家支援支付篩選 -->
             <div class="flex items-center gap-2 flex-wrap pt-1">
               <span class="text-[12.5px] font-medium text-[var(--text-muted)]">現場支付限制：</span>
-              <div class="inline-flex bg-[var(--bg-pill)] p-1 rounded-xl gap-1">
+              <div class="inline-flex flex-wrap bg-[var(--bg-pill)] p-1 rounded-xl gap-1">
                 <button onclick="setStoreLinePayFilter('any')" id="lpFilter-any" class="px-3 py-1 rounded-lg text-[12.5px] font-medium transition-all">不限</button>
                 <button onclick="setStoreLinePayFilter('no_lp')" id="lpFilter-no_lp" class="px-3 py-1 rounded-lg text-[12.5px] font-medium transition-all">僅刷卡 / Apple Pay</button>
                 <button onclick="setStoreLinePayFilter('has_lp')" id="lpFilter-has_lp" class="px-3 py-1 rounded-lg text-[12.5px] font-medium transition-all">支援 LINE Pay</button>
@@ -205,87 +259,90 @@
 
           <!-- 地點分類膠囊列 -->
           <div class="space-y-2.5">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-2">
               <span class="text-[12.5px] font-medium text-[var(--text-muted)]">選擇消費分類</span>
-              <button onclick="openSceneModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline">+ 新增 / 編輯分類</button>
+              <button onclick="openSceneModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline shrink-0">+ 新增 / 編輯分類</button>
             </div>
             <div id="topSceneButtons" class="flex flex-wrap gap-2"></div>
           </div>
 
           <!-- 推薦卡片結果區 -->
-          <div id="sceneRecommendationBox" class="pt-1 space-y-3"></div>
+          <div id="sceneRecommendationBox" class="pt-1 space-y-3 min-w-0"></div>
         </section>
 
-        <!-- 模組 B：⚡ 快速記一筆（支援任選補記日期！） -->
-        <section id="quickRecordCard" class="surface-card p-5 sm:p-6 space-y-5">
-          <div class="flex items-center justify-between">
-            <div>
+        <!-- 模組 B：⚡ 快速記一筆（支援📌釘選置頂 + 任選補記日期！） -->
+        <section id="quickRecordCard" class="surface-card p-5 sm:p-6 space-y-5 scroll-anchor min-w-0 order-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0">
               <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Quick Entry</span>
-              <h3 class="text-[18px] font-bold text-[var(--text-main)] mt-0.5">⚡ 快速記一筆</h3>
+              <h3 class="text-[18px] font-bold text-[var(--text-main)] mt-0.5 truncate">⚡ 快速記一筆</h3>
             </div>
-            <span class="text-[12.5px] text-[var(--text-muted)]">可選日期補記帳・自動算回饋</span>
+            <button onclick="togglePinQuickEntry()" id="cardPinQuickBtn"
+              class="shrink-0 px-3 py-1.5 rounded-xl text-[12.5px] font-semibold transition-all">
+              📌 釘選置頂
+            </button>
           </div>
 
-          <!-- 0. 消費日期選擇列（今天 / 昨天 / 前天 / 自選日曆，選中皆變藍色！） -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="text-[13px] font-semibold text-[var(--text-secondary)]">🗓️ 消費日期（不一定當下記，隨時補登）</label>
-              <span id="selectedDateHint" class="text-[12px] font-medium text-[var(--accent-text)] num-tabular"></span>
+          <!-- 0. 消費日期選擇列 -->
+          <div class="space-y-2 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <label class="text-[13px] font-semibold text-[var(--text-secondary)] truncate">🗓️ 消費日期（可隨時補登）</label>
+              <span id="selectedDateHint" class="text-[12px] font-medium text-[var(--accent-text)] num-tabular shrink-0"></span>
             </div>
             <div id="quickDatePills" class="flex flex-wrap items-center gap-2"></div>
           </div>
 
-          <!-- 金額大字輸入區 (仿 MOZE 記帳首頁視覺焦點) -->
-          <div class="bg-[var(--bg-subtle)] rounded-2xl p-4 sm:p-5 border border-[var(--border-hairline)]">
-            <div class="flex items-baseline justify-between gap-4">
+          <!-- 金額大字輸入區 (修正手機版備註文字靠左自動 ... 省略，絕不半字裁切！) -->
+          <div class="bg-[var(--bg-subtle)] rounded-2xl p-4 sm:p-5 border border-[var(--border-hairline)] min-w-0">
+            <div class="flex items-baseline justify-between gap-3 min-w-0">
               <span class="text-[13px] font-medium text-[var(--text-muted)] shrink-0">消費金額</span>
-              <div class="flex items-baseline justify-end flex-1">
-                <span class="text-[20px] font-semibold text-[var(--text-muted)] mr-1.5">NT$</span>
+              <div class="flex items-baseline justify-end flex-1 min-w-0">
+                <span class="text-[20px] font-semibold text-[var(--text-muted)] mr-1.5 shrink-0">NT$</span>
                 <input id="expenseAmount" type="number" inputmode="numeric" placeholder="0"
                   oninput="updateSmartAdvisory()"
-                  class="w-full max-w-[200px] text-right text-[32px] font-extrabold num-tabular bg-transparent text-[var(--text-main)] placeholder:text-[var(--text-muted)]/40 focus:outline-none" />
+                  class="w-full max-w-[180px] text-right text-[32px] font-extrabold num-tabular bg-transparent text-[var(--text-main)] placeholder:text-[var(--text-muted)]/40 focus:outline-none" />
               </div>
             </div>
-            <div class="mt-3 pt-3 border-t border-[var(--border-hairline)] flex items-center gap-3">
-              <span class="text-[13px] text-[var(--text-muted)] shrink-0">備註說明</span>
-              <input id="expenseNote" type="text" placeholder="選填，例如：假日聚餐、好樂迪、全家咖啡..."
-                class="w-full bg-transparent text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none text-right" />
+            <div class="mt-3 pt-3 border-t border-[var(--border-hairline)] flex items-center gap-3 min-w-0">
+              <span class="text-[13px] text-[var(--text-muted)] shrink-0">備註</span>
+              <input id="expenseNote" type="text" placeholder="選填：餐廳、唱歌、咖啡..."
+                class="flex-1 min-w-0 bg-transparent text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none text-left sm:text-right" />
             </div>
           </div>
 
           <!-- 1. 消費分類選擇 -->
           <div class="space-y-2.5">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-2">
               <label class="text-[13px] font-semibold text-[var(--text-secondary)]">消費地點 / 類別</label>
-              <button onclick="openSceneModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline">編輯 / 新增</button>
+              <button onclick="openSceneModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline shrink-0">編輯 / 新增</button>
             </div>
             <div id="recordScenePills" class="flex flex-wrap gap-2"></div>
           </div>
 
           <!-- 2. 支付方式選擇 -->
           <div class="space-y-2.5">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-2">
               <label class="text-[13px] font-semibold text-[var(--text-secondary)]">支付工具</label>
-              <button onclick="openPayMethodManageModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline">新增 / 編輯支付工具</button>
+              <button onclick="openPayMethodManageModal()" class="text-[12.5px] font-medium text-[var(--accent-text)] hover:underline shrink-0">新增 / 編輯</button>
             </div>
             <div id="payMethodButtons" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
           </div>
 
-          <!-- 3. 綁定信用卡選擇 (非現金時展開) -->
-          <div id="cardSelectorSection" class="space-y-2.5 pt-1">
+          <!-- 3. 綁定信用卡選擇 -->
+          <div id="cardSelectorSection" class="space-y-2.5 pt-1 min-w-0">
             <div class="flex items-center justify-between flex-wrap gap-2">
-              <label id="cardSelectorLabel" class="text-[13px] font-semibold text-[var(--text-secondary)]">本次扣款信用卡</label>
-              <div class="flex items-center gap-3 text-[12.5px]">
-                <button onclick="setCurrentAsPayDefault()" class="font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">⭐ 設為此支付預設</button>
+              <label id="cardSelectorLabel" class="text-[13px] font-semibold text-[var(--text-secondary)] truncate">本次扣款信用卡</label>
+              <div class="flex items-center gap-3 text-[12.5px] shrink-0">
+                <button onclick="setCurrentAsPayDefault()" class="font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">⭐ 設預設</button>
                 <button onclick="openEditCardModal(selectedCardId)" class="font-medium text-[var(--accent-text)] hover:underline">編輯此卡</button>
-                <button onclick="openEditCardModal(null)" class="font-medium text-[var(--accent-text)] hover:underline">+ 新增卡片</button>
+                <button onclick="openEditCardModal(null)" class="font-medium text-[var(--accent-text)] hover:underline">+ 新增卡</button>
               </div>
             </div>
             <div id="recordCardPills" class="flex flex-wrap gap-2"></div>
           </div>
 
           <!-- 動態權益提醒與預估回饋面板 -->
-          <div id="smartAdvisoryPanel"></div>
+          <div id="smartAdvisoryPanel" class="min-w-0"></div>
 
           <!-- 確認記帳主按鈕 -->
           <button onclick="submitExpense()"
@@ -296,9 +353,9 @@
 
       </div>
 
-      <!-- 右欄 (5 cols on Desktop / 手機版也直接顯示於首頁下方，一眼看到圓餅圖與當月帳單！) -->
-      <aside id="desktopRightColumn" class="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
-        <div id="desktopDonutMount"></div>
+      <!-- 右欄：互動圓餅圖與當月帳單 -->
+      <aside id="desktopRightColumn" class="lg:col-span-5 space-y-6 lg:sticky lg:top-28 min-w-0">
+        <div id="desktopDonutMount" class="scroll-anchor"></div>
         <div id="desktopRecentMount"></div>
       </aside>
 
@@ -308,40 +365,37 @@
     <!-- VIEW 2: 📊 圓餅圖報表與歷史月份帳單 -->
     <!-- ======================================================= -->
     <div id="view-analytics" class="hidden space-y-6">
-      <!-- 近 6 個月開銷趨勢柱狀圖 (點選任一月份即可切換查看該月歷史帳單與圓餅圖！) -->
+      <!-- 近 6 個月開銷趨勢柱狀圖 -->
       <div id="monthlyHistoryTrendMount"></div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         <!-- 左側：互動圓餅圖與各卡帳單彙總 -->
-        <div class="lg:col-span-5 space-y-6">
+        <div class="lg:col-span-5 space-y-6 min-w-0">
           <div id="analyticsDonutMount"></div>
 
           <!-- 各信用卡所選月份累計帳單小計 -->
           <div class="surface-card p-5 sm:p-6 space-y-4">
-            <div class="flex items-center justify-between">
-              <h3 id="perCardSpendTitle" class="text-[16px] font-bold text-[var(--text-main)]">💳 各卡當月累計帳單</h3>
-              <span class="text-[12.5px] text-[var(--text-muted)]">核對電子帳單用</span>
+            <div class="flex items-center justify-between gap-2">
+              <h3 id="perCardSpendTitle" class="text-[16px] font-bold text-[var(--text-main)] truncate">💳 各卡當月累計帳單</h3>
+              <span class="text-[12.5px] text-[var(--text-muted)] shrink-0">核對帳單用</span>
             </div>
             <div id="perCardSpendSummary" class="divide-y divide-[var(--border-hairline)]"></div>
           </div>
         </div>
 
-        <!-- 右側：按日期分組的完整消費明細與資料備份 -->
-        <div class="lg:col-span-7 space-y-6">
+        <!-- 右側：按日期分組的完整消費明細與資料管理 -->
+        <div class="lg:col-span-7 space-y-6 min-w-0">
           <div class="surface-card p-5 sm:p-6 space-y-4">
             <div class="flex items-center justify-between flex-wrap gap-2">
-              <div>
-                <h3 id="fullTxTitle" class="text-[16px] font-bold text-[var(--text-main)]">🧾 歷史帳單明細（依日期分組）</h3>
-                <p id="txFilterHint" class="text-[12.5px] text-[var(--text-muted)] mt-0.5">點選左側圓餅圖或上方歷史月份可快速切換篩選</p>
+              <div class="min-w-0">
+                <h3 id="fullTxTitle" class="text-[16px] font-bold text-[var(--text-main)] truncate">🧾 歷史帳單明細（依日期分組）</h3>
+                <p id="txFilterHint" class="text-[12.5px] text-[var(--text-muted)] mt-0.5 truncate">點選圓餅圖或上方歷史月份可快速切換篩選</p>
               </div>
               <div class="flex items-center gap-2 flex-wrap">
-                <button id="clearDemoBtn" onclick="clearDemoTransactions()" class="hidden text-[12px] font-medium px-2.5 py-1.5 rounded-xl border border-[var(--border-hairline)] text-[var(--text-muted)] hover:text-[var(--danger)]">
-                  🧹 清空預設範例
-                </button>
                 <button id="clearChartFilterBtn" onclick="clearChartSliceFilter()" class="hidden text-[12.5px] font-semibold px-2.5 py-1 rounded-lg bg-[var(--accent)] text-white">
                   取消圓餅圖篩選 ✕
                 </button>
-                <select id="historyFilterCard" onchange="handleDropdownFilterChange()" class="text-[13px] px-3 py-1.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-main)] focus:outline-none">
+                <select id="historyFilterCard" onchange="handleDropdownFilterChange()" class="text-[13px] px-3 py-1.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-main)] focus:outline-none max-w-[160px]">
                   <option value="all">全部帳戶</option>
                 </select>
               </div>
@@ -349,23 +403,23 @@
             <div id="fullTransactionsList" class="space-y-4"></div>
           </div>
 
-          <!-- 備份與還原 -->
+          <!-- 備份、多帳本與範本中心入口 -->
           <div class="surface-card p-5 sm:p-6 space-y-3">
-            <h3 class="text-[15px] font-bold text-[var(--text-main)]">🛡️ 本機資料備份與還原</h3>
+            <h3 class="text-[15px] font-bold text-[var(--text-main)]">🛡️ 本機備份・多帳本隔離與範本中心</h3>
             <p class="text-[13px] text-[var(--text-muted)] leading-relaxed">
-              採用零個資外洩架構，帳務資料僅儲存在你目前裝置的瀏覽器中。更換手機或跨電腦同步時，可匯出 JSON 檔案備份。
+              資料僅儲存在各自裝置瀏覽器中（朋友在自己手機打開網址完全看不到你的資料）。若同一台裝置想與他人共用或預覽範例，可點「帳本切換與範本中心」建立獨立帳本或上密碼鎖。
             </p>
             <div class="flex flex-wrap gap-2.5 pt-1">
+              <button onclick="openProfileModal()" class="text-[13px] font-semibold px-4 py-2 rounded-xl bg-[var(--accent)] text-white hover:opacity-90">
+                👤 帳本切換 / 隱私鎖 / 範本中心
+              </button>
               <button onclick="exportBackupJSON()" class="text-[13px] font-semibold px-4 py-2 rounded-xl bg-[var(--bg-pill)] text-[var(--text-main)] hover:opacity-85">
-                📥 匯出備份檔 (.json)
+                📥 匯出此帳本 (.json)
               </button>
               <label class="text-[13px] font-semibold px-4 py-2 rounded-xl bg-[var(--bg-pill)] text-[var(--text-main)] hover:opacity-85 cursor-pointer">
                 📤 匯入還原
                 <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
               </label>
-              <button onclick="resetToDefaultData()" class="text-[13px] font-medium px-4 py-2 rounded-xl border border-[var(--border-hairline)] text-[var(--text-muted)] hover:text-[var(--danger)]">
-                重置為預設範本
-              </button>
             </div>
           </div>
         </div>
@@ -580,6 +634,99 @@
     </div>
   </div>
 
+  <!-- MODAL 6: 多帳本切換・隱私密碼鎖・範本中心 (讓不同人分開使用、且範本預設移到這裡不污染主帳本！) -->
+  <div id="profileModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="surface-card max-w-lg w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <h3 class="text-[17px] font-bold text-[var(--text-main)]">👤 帳本切換・隱私鎖・範本中心</h3>
+          <p class="text-[12.5px] text-[var(--text-muted)] mt-0.5">切換不同使用者帳本、設定密碼保護、或體驗預設範本</p>
+        </div>
+        <button onclick="closeProfileModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] shrink-0">關閉</button>
+      </div>
+
+      <!-- 1. 切換帳本清單 -->
+      <div class="space-y-2.5">
+        <div class="text-[13px] font-semibold text-[var(--text-secondary)]">📂 目前裝置上的獨立帳本（點選切換）</div>
+        <div id="profileListContainer" class="space-y-2"></div>
+      </div>
+
+      <!-- 2. 目前帳本的 4 位數隱私密碼鎖設定 -->
+      <div id="currentProfilePinSettingsBox" class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[13.5px] font-bold text-[var(--text-main)] truncate">🔒 目前帳本隱私密碼鎖（共用防偷看）</span>
+          <span id="currentPinStatusBadge" class="text-[12px] font-semibold px-2 py-0.5 rounded-full shrink-0"></span>
+        </div>
+        <p class="text-[12.5px] text-[var(--text-muted)] leading-relaxed">
+          設定密碼後，當你切換到別的帳本（如訪客／朋友帳本），別人沒有密碼就無法切回你的私人帳本查看紀錄！
+        </p>
+        <div class="flex items-center gap-2">
+          <input id="profilePinInput" type="password" inputmode="numeric" maxlength="8" placeholder="輸入 4~8 位數字密碼（留空可解除密碼）"
+            class="flex-1 min-w-0 px-3 py-2 text-[13.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+          <button onclick="saveCurrentProfilePin()" class="shrink-0 px-3.5 py-2 rounded-xl text-[13px] font-semibold bg-[var(--accent)] text-white">儲存密碼</button>
+        </div>
+      </div>
+
+      <!-- 3. 新增獨立帳本 / 載入範本專區 (範本預設移到這裡！) -->
+      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
+        <div class="text-[13.5px] font-bold text-[var(--text-main)]">➕ 建立新帳本（給別人用／公費帳／預覽範本）</div>
+        <div class="flex gap-2">
+          <input id="newProfileIcon" type="text" value="🙂" class="w-12 px-2 py-2 text-[14px] text-center rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+          <input id="newProfileName" type="text" placeholder="帳本名稱（例：老公的帳本、日本公費、朋友試用）"
+            class="flex-1 min-w-0 px-3 py-2 text-[13.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[12.5px] font-medium text-[var(--text-muted)] block">選擇新帳本初始內容（範本預設都在這，不影響你的主帳本）：</label>
+          <div class="grid grid-cols-1 gap-2" id="newProfileTemplateOptions">
+            <button type="button" onclick="selectNewProfileTemplate('blank')" id="tplOpt-blank"
+              class="p-3 rounded-xl text-left text-[13px] border transition-all">
+              <div class="font-semibold">📄 全新空白帳本（推薦給別人從零開始）</div>
+              <div class="text-[12px] opacity-80 mt-0.5">0 筆帳單、僅保留 1 張空白示範卡供對方自行輸入</div>
+            </button>
+            <button type="button" onclick="selectNewProfileTemplate('cards_only')" id="tplOpt-cards_only"
+              class="p-3 rounded-xl text-left text-[13px] border transition-all">
+              <div class="font-semibold">💳 台灣熱門 6 卡攻略範本（0 筆帳單）</div>
+              <div class="text-[12px] opacity-80 mt-0.5">預載 CUBE / GoGo / DAWAY / 中信 / 星展 / 富邦回饋攻略，無範例帳單</div>
+            </button>
+            <button type="button" onclick="selectNewProfileTemplate('full_demo')" id="tplOpt-full_demo"
+              class="p-3 rounded-xl text-left text-[13px] border transition-all">
+              <div class="font-semibold">🧪 完整展示範本（含跨月範例帳單與圓餅圖）</div>
+              <div class="text-[12px] opacity-80 mt-0.5">內建多筆當月與前兩月範例消費，方便直接預覽圓餅圖與趨勢效果</div>
+            </button>
+          </div>
+        </div>
+        <button onclick="createNewProfile()" class="w-full py-2.5 rounded-xl text-[13.5px] font-semibold bg-[var(--accent)] text-white">
+          + 建立並切換至此新帳本
+        </button>
+      </div>
+
+      <!-- 4. 傳網址給朋友的隱私說明 -->
+      <div class="p-3.5 rounded-2xl bg-[var(--accent-soft)] text-[12.5px] text-[var(--text-secondary)] leading-relaxed">
+        💡 <strong class="text-[var(--accent-text)]">傳網址給朋友在「對方的手機／電腦」使用：</strong><br/>
+        本工具無雲端共用資料庫，所有卡片與記帳皆 100% 儲存在「各自手機的瀏覽器本機」。你直接把連結傳給朋友，對方在自己手機打開是完全獨立的空間，<strong>絕對看不到你的任何帳單與紀錄</strong>！
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 7: 隱私密碼解鎖視窗 -->
+  <div id="pinUnlockModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="surface-card max-w-xs w-full p-6 space-y-4 text-center">
+      <div class="text-3xl">🔒</div>
+      <div>
+        <h3 id="pinUnlockTitle" class="text-[16px] font-bold text-[var(--text-main)] truncate">輸入帳本密碼</h3>
+        <p class="text-[12.5px] text-[var(--text-muted)] mt-1">此帳本受隱私密碼保護，解鎖後才可查看</p>
+      </div>
+      <input id="pinUnlockInput" type="password" inputmode="numeric" placeholder="請輸入密碼"
+        onkeydown="if(event.key==='Enter') confirmPinUnlock()"
+        class="w-full px-4 py-2.5 text-center text-[18px] font-bold tracking-widest rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] focus:outline-none focus:border-[var(--accent)]" />
+      <p id="pinUnlockError" class="hidden text-[12.5px] font-semibold text-[var(--danger)]">密碼不正確，請重試</p>
+      <div class="flex gap-2">
+        <button onclick="closePinUnlockModal()" class="flex-1 py-2.5 rounded-xl text-[13px] font-medium bg-[var(--bg-pill)] text-[var(--text-secondary)]">切換其他帳本</button>
+        <button onclick="confirmPinUnlock()" class="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[var(--accent)] text-white">解鎖進入</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     if ('serviceWorker' in navigator) {
       let swRefreshing = false;
@@ -590,11 +737,12 @@
         }
       });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=4').then(reg => reg.update()).catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=5').then(reg => reg.update()).catch(() => {});
       });
     }
 
     const STORAGE_KEY = 'LAZY_CARD_TRACKER_V2';
+    const PROFILE_REGISTRY_KEY = 'LAZY_CARD_PROFILES_V1';
     const CHART_COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#06B6D4', '#64748B'];
     const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
@@ -987,22 +1135,113 @@
       ];
     }
 
+    // ==========================================================
+    // 👤 多帳本 / 使用者隔離系統（每個帳本獨立儲存 + 支援 4 位數隱私密碼鎖 + 獨立範本中心）
+    // ==========================================================
+    function getLedgerStorageKey(profileId) {
+      return profileId === 'profile-main' ? STORAGE_KEY : `LAZY_CARD_LEDGER_${profileId}`;
+    }
+
+    function loadProfileRegistry() {
+      try {
+        const raw = localStorage.getItem(PROFILE_REGISTRY_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.profiles) && parsed.profiles.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+
+      // 初始化預設兩個獨立帳本：1.「我的帳本」(乾淨無範例帳單)  2.「範例體驗帳本」(將所有預設範本移到這裡，不污染主畫面)
+      const demoKey = getLedgerStorageKey('profile-demo');
+      if (!localStorage.getItem(demoKey)) {
+        const demoLedger = {
+          pinQuickEntryTop: false,
+          scenes: JSON.parse(JSON.stringify(DEFAULT_SCENES)),
+          keywordRules: JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES)),
+          payMethods: JSON.parse(JSON.stringify(DEFAULT_PAY_METHODS)),
+          cards: JSON.parse(JSON.stringify(DEFAULT_CARDS)),
+          transactions: buildInitialSampleTransactions()
+        };
+        try { localStorage.setItem(demoKey, JSON.stringify(demoLedger)); } catch (e) {}
+      }
+
+      const initReg = {
+        activeProfileId: 'profile-main',
+        profiles: [
+          { id: 'profile-main', icon: '👤', name: '我的帳本', pin: '' },
+          { id: 'profile-demo', icon: '🧪', name: '範例體驗帳本', pin: '' }
+        ]
+      };
+      try { localStorage.setItem(PROFILE_REGISTRY_KEY, JSON.stringify(initReg)); } catch (e) {}
+      return initReg;
+    }
+
+    function saveProfileRegistry() {
+      try {
+        localStorage.setItem(PROFILE_REGISTRY_KEY, JSON.stringify(profileRegistry));
+      } catch (e) {}
+    }
+
+    function buildBlankStarterCard() {
+      return [
+        {
+          id: 'custom-card-1',
+          name: '主力信用卡',
+          statementDay: 1,
+          dueDay: 15,
+          monthlySpendCap: 0,
+          requireMonthlyTask: false,
+          monthlyTaskDesc: '',
+          monthlyTaskDone: {},
+          paidMonths: {},
+          overdueNote: '可點「編輯」輸入結帳日與各分類回饋%',
+          supportedPayments: ['linepay', 'applepay', 'card'],
+          sceneRules: {
+            dining:  { rate: 3.0, switchTier: '一般/指定權益', recPay: 'Apple Pay / 實體卡', note: '' },
+            cvs:     { rate: 3.0, switchTier: '行動支付', recPay: 'LINE Pay', note: '' },
+            cosmed:  { rate: 3.0, switchTier: '一般/指定權益', recPay: '實體卡', note: '' },
+            ktv:     { rate: 1.0, switchTier: '一般消費', recPay: '實體卡', note: '' },
+            mrt:     { rate: 1.0, switchTier: '一般消費', recPay: '感應支付', note: '' },
+            abroad:  { rate: 3.0, switchTier: '海外消費', recPay: '實體卡 / Apple Pay', note: '' },
+            general: { rate: 1.0, switchTier: '一般消費', recPay: '實體卡', note: '' }
+          }
+        }
+      ];
+    }
+
+    let profileRegistry = loadProfileRegistry();
+    let unlockedProfileIds = new Set();
+    let pendingUnlockProfileId = null;
+    let newProfileTemplateChoice = 'blank';
+
+    function getActiveProfileMeta() {
+      return profileRegistry.profiles.find(p => p.id === profileRegistry.activeProfileId) || profileRegistry.profiles[0];
+    }
+
+    function isProfileLocked(profileId) {
+      const p = profileRegistry.profiles.find(item => item.id === profileId);
+      return Boolean(p && p.pin && !unlockedProfileIds.has(p.id));
+    }
+
     let appData = loadData();
-    let currentView = 'dashboard'; // 'dashboard' | 'analytics' | 'cards'
-    let selectedTopScene = 'dining';
-    let selectedRecordScene = 'dining';
-    let selectedPayMethod = 'applepay';
-    let selectedCardId = 'cathay-cube';
-    let selectedExpenseDate = getLocalDateStr(0); // 支援自由選擇記帳日期！
-    let activeQuickChipId = null; // 追蹤被點選的「快查」膠囊，讓它變藍色高亮！
+    let currentView = 'dashboard';
+    let selectedTopScene = (appData.scenes[2] && appData.scenes[2].id) || appData.scenes[0].id;
+    let selectedRecordScene = selectedTopScene;
+    let selectedPayMethod = (appData.payMethods[1] && appData.payMethods[1].id) || appData.payMethods[0].id;
+    let selectedCardId = appData.cards[0].id;
+    let selectedExpenseDate = getLocalDateStr(0);
+    let activeQuickChipId = null;
     let storeLinePayFilter = 'any';
-    let donutDimension = 'scene'; // 'scene' | 'card' | 'pay'
-    let activeSliceFilter = null; // { dimension, key, label }
+    let donutDimension = 'scene';
+    let activeSliceFilter = null;
     let toastTimer = null;
 
-    function loadData() {
+    function loadData(profileId = profileRegistry.activeProfileId) {
+      const key = getLedgerStorageKey(profileId);
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(key);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed.cards && parsed.scenes && parsed.payMethods) {
@@ -1014,34 +1253,36 @@
               });
               parsed.keywordRules = merged;
             }
-            // 若舊快取只有當月範例、尚未注入前幾個月歷史範例，且使用者還沒清空過範例，補上前兩月範例方便體驗
-            const hasOnlyDemoOrEmpty = (parsed.transactions || []).some(t => String(t.id).startsWith('demo-'));
-            if (hasOnlyDemoOrEmpty && !parsed._seededV4History) {
-              const existingTxIds = new Set((parsed.transactions || []).map(t => t.id));
-              buildInitialSampleTransactions().forEach(sample => {
-                if (sample.id.startsWith('demo-prev') && !existingTxIds.has(sample.id)) {
-                  parsed.transactions.push(sample);
-                }
-              });
-              parsed._seededV4History = true;
+            // 自動把使用者「我的帳本」裡舊版的 demo-* 預設範例紀錄全數移走，只保留真實記帳！
+            if (profileId === 'profile-main' && !parsed._cleanedDemoV5) {
+              parsed.transactions = (parsed.transactions || []).filter(t => !String(t.id).startsWith('demo-'));
+              parsed._cleanedDemoV5 = true;
+              try { localStorage.setItem(key, JSON.stringify(parsed)); } catch (e) {}
             }
+            if (typeof parsed.pinQuickEntryTop !== 'boolean') parsed.pinQuickEntryTop = false;
             return parsed;
           }
         }
       } catch (e) {}
-      return {
-        _seededV4History: true,
+
+      // 全新主帳本：保留 6 張卡攻略，但預設 0 筆範例帳單，版面乾乾淨淨！
+      const cleanInit = {
+        _cleanedDemoV5: true,
+        pinQuickEntryTop: false,
         scenes: JSON.parse(JSON.stringify(DEFAULT_SCENES)),
         keywordRules: JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES)),
         payMethods: JSON.parse(JSON.stringify(DEFAULT_PAY_METHODS)),
         cards: JSON.parse(JSON.stringify(DEFAULT_CARDS)),
-        transactions: buildInitialSampleTransactions()
+        transactions: []
       };
+      try { localStorage.setItem(key, JSON.stringify(cleanInit)); } catch (e) {}
+      return cleanInit;
     }
 
     function saveData() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        const key = getLedgerStorageKey(profileRegistry.activeProfileId);
+        localStorage.setItem(key, JSON.stringify(appData));
       } catch (e) {}
     }
 
@@ -1051,7 +1292,80 @@
       el.innerHTML = msg;
       el.classList.remove('hidden');
       if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
+      toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
+    }
+
+    // ==========================================================
+    // 📌 置頂釘選快捷列 & 區塊置頂切換
+    // ==========================================================
+    function quickJumpTo(target) {
+      if (isProfileLocked(profileRegistry.activeProfileId)) {
+        openPinUnlockModal(profileRegistry.activeProfileId);
+        return;
+      }
+      if (currentView !== 'dashboard') {
+        switchView('dashboard', true);
+      }
+      setTimeout(() => {
+        if (target === 'record') {
+          const el = document.getElementById('quickRecordCard');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => {
+            const amt = document.getElementById('expenseAmount');
+            if (amt) amt.focus();
+          }, 280);
+        } else if (target === 'finder') {
+          const el = document.getElementById('smartFinderCard');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (target === 'donut') {
+          const el = document.getElementById('desktopDonutMount');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 40);
+    }
+
+    function togglePinQuickEntry() {
+      appData.pinQuickEntryTop = !appData.pinQuickEntryTop;
+      saveData();
+      renderPinOrderState();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast(appData.pinQuickEntryTop ? '📌 已將「快速記一筆」釘選在最上方！' : '📍 已恢復「刷卡查詢」在最上方');
+    }
+
+    function renderPinOrderState() {
+      const pinned = Boolean(appData.pinQuickEntryTop);
+      const finderEl = document.getElementById('smartFinderCard');
+      const recordEl = document.getElementById('quickRecordCard');
+      const headerPinBtn = document.getElementById('headerPinQuickBtn');
+      const cardPinBtn = document.getElementById('cardPinQuickBtn');
+
+      if (finderEl && recordEl) {
+        if (pinned) {
+          recordEl.classList.remove('order-2');
+          recordEl.classList.add('order-1');
+          finderEl.classList.remove('order-1');
+          finderEl.classList.add('order-2');
+        } else {
+          finderEl.classList.remove('order-2');
+          finderEl.classList.add('order-1');
+          recordEl.classList.remove('order-1');
+          recordEl.classList.add('order-2');
+        }
+      }
+
+      if (headerPinBtn) {
+        headerPinBtn.className = pinned
+          ? 'shrink-0 px-2.5 sm:px-3 py-1 rounded-full text-[12px] font-semibold bg-[var(--accent)] text-white shadow-xs transition-all'
+          : 'shrink-0 px-2.5 sm:px-3 py-1 rounded-full text-[12px] font-medium bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-all';
+        headerPinBtn.innerHTML = pinned ? '📌 已釘選置頂' : '📌 釘選置頂';
+      }
+
+      if (cardPinBtn) {
+        cardPinBtn.className = pinned
+          ? 'shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-semibold bg-[var(--accent)] text-white shadow-xs transition-all'
+          : 'shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-medium bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-all';
+        cardPinBtn.textContent = pinned ? '✓ 已釘選最上方' : '📌 釘選置頂';
+      }
     }
 
     function getCardMonthlySpend(cardId, targetMonth = CURRENT_MONTH) {
@@ -1069,12 +1383,12 @@
     }
 
     // ==========================================================
-    // 🗓️ 歷史帳單月份切換器 (可自由切換過去 12 個月或任何有帳務的月份)
+    // 🗓️ 歷史帳單月份切換器（極簡無突兀「本月」標籤）
     // ==========================================================
     function getAvailableMonthsList() {
       const set = new Set();
-      for (let i = 1; i >= -11; i--) {
-        if (i <= 0) set.add(shiftMonthStr(REAL_CURRENT_MONTH, i));
+      for (let i = 0; i >= -11; i--) {
+        set.add(shiftMonthStr(REAL_CURRENT_MONTH, i));
       }
       (appData.transactions || []).forEach(t => {
         if (t.date && t.date.length >= 7) set.add(t.date.slice(0, 7));
@@ -1105,11 +1419,26 @@
     function renderHeaderMonthControl() {
       const sel = document.getElementById('headerMonthSelect');
       const backBtn = document.getElementById('backToCurrentMonthBtn');
+      const profileLabel = document.getElementById('activeProfileLabel');
+      const quickLockBtn = document.getElementById('quickLockBtn');
+      const curProfile = getActiveProfileMeta();
+
+      if (profileLabel && curProfile) {
+        profileLabel.textContent = `${curProfile.icon || '👤'} ${curProfile.name}${curProfile.pin ? ' 🔒' : ''}`;
+      }
+      if (quickLockBtn) {
+        if (curProfile && curProfile.pin && !isProfileLocked(curProfile.id)) {
+          quickLockBtn.classList.remove('hidden');
+        } else {
+          quickLockBtn.classList.add('hidden');
+        }
+      }
+
       const months = getAvailableMonthsList();
       if (sel) {
         sel.innerHTML = months.map(ym => {
-          const tag = ym === REAL_CURRENT_MONTH ? ' (本月)' : '';
-          return `<option value="${ym}" ${ym === CURRENT_MONTH ? 'selected' : ''}>${formatMonthTitle(ym)}${tag}</option>`;
+          const [y, m] = ym.split('-');
+          return `<option value="${ym}" ${ym === CURRENT_MONTH ? 'selected' : ''}>${y}/${m}</option>`;
         }).join('');
       }
       if (backBtn) {
@@ -1121,8 +1450,11 @@
       }
     }
 
-    // 切換主視圖 (電腦頂部導覽與手機底部導覽選中皆呈現鮮明藍色！)
-    function switchView(view) {
+    function switchView(view, skipScrollTop = false) {
+      if (isProfileLocked(profileRegistry.activeProfileId)) {
+        openPinUnlockModal(profileRegistry.activeProfileId);
+        return;
+      }
       currentView = view;
       ['dashboard', 'analytics', 'cards'].forEach(v => {
         const viewEl = document.getElementById(`view-${v}`);
@@ -1131,21 +1463,30 @@
 
         if (v === view) {
           viewEl.classList.remove('hidden');
-          if (deskBtn) deskBtn.className = 'px-4 py-1.5 rounded-lg text-[13.5px] font-semibold bg-[var(--accent)] text-white shadow-xs transition-all';
+          if (deskBtn) deskBtn.className = 'px-3.5 py-1.5 rounded-lg text-[13px] font-semibold bg-[var(--accent)] text-white shadow-xs transition-all';
           if (mobBtn) mobBtn.className = 'flex flex-col items-center justify-center py-1 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] font-bold transition-colors';
         } else {
           viewEl.classList.add('hidden');
-          if (deskBtn) deskBtn.className = 'px-4 py-1.5 rounded-lg text-[13.5px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all';
+          if (deskBtn) deskBtn.className = 'px-3.5 py-1.5 rounded-lg text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all';
           if (mobBtn) mobBtn.className = 'flex flex-col items-center justify-center py-1 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors';
         }
       });
 
       renderAll();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (!skipScrollTop) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
 
     function renderAll() {
+      const mainContainer = document.getElementById('appMainContainer');
       renderHeaderMonthControl();
+      if (isProfileLocked(profileRegistry.activeProfileId)) {
+        if (mainContainer) mainContainer.classList.add('hidden');
+        return;
+      }
+      if (mainContainer) mainContainer.classList.remove('hidden');
+      renderPinOrderState();
       renderDesktopKpiStrip();
       renderQuickSearchChips();
       renderTopSceneAdvisor();
@@ -1157,7 +1498,7 @@
     }
 
     // ==========================================================
-    // 電腦版頂部 3 格 KPI 指標卡 (隨所選月份即時切換)
+    // 電腦版頂部 3 格 KPI 指標卡
     // ==========================================================
     function renderDesktopKpiStrip() {
       const monthTxs = appData.transactions.filter(t => (t.date || '').startsWith(CURRENT_MONTH));
@@ -1165,14 +1506,14 @@
       const cashSpend = monthTxs.filter(t => t.cardId === 'CASH').reduce((s, t) => s + Number(t.amount || 0), 0);
       const totalSpend = cardSpend + cashSpend;
       const totalReward = monthTxs.reduce((s, t) => s + Number(t.reward || 0), 0);
-      const monthLabel = CURRENT_MONTH === REAL_CURRENT_MONTH ? '本月' : formatMonthTitle(CURRENT_MONTH);
+      const monthLabel = formatMonthTitle(CURRENT_MONTH);
 
       const pendingTasks = appData.cards.filter(c => c.requireMonthlyTask && !(c.monthlyTaskDone && c.monthlyTaskDone[CURRENT_MONTH])).length;
 
       document.getElementById('desktopKpiStrip').innerHTML = `
         <div class="surface-card px-6 py-4 flex items-center justify-between">
           <div>
-            <div class="text-[13px] font-medium text-[var(--text-muted)]">${monthLabel}總支出（含刷卡與現金）</div>
+            <div class="text-[13px] font-medium text-[var(--text-muted)]">${monthLabel} 總支出</div>
             <div class="text-[26px] font-extrabold num-tabular text-[var(--text-main)] mt-1">NT$ ${totalSpend.toLocaleString()}</div>
           </div>
           <div class="text-right text-[12.5px] text-[var(--text-muted)] space-y-0.5 num-tabular">
@@ -1183,7 +1524,7 @@
 
         <div class="surface-card px-6 py-4 flex items-center justify-between">
           <div>
-            <div class="text-[13px] font-medium text-[var(--text-muted)]">${monthLabel}預估累積回饋</div>
+            <div class="text-[13px] font-medium text-[var(--text-muted)]">${monthLabel} 預估回饋</div>
             <div class="text-[26px] font-extrabold num-tabular text-[var(--success)] mt-1">+ ${totalReward.toLocaleString()} <span class="text-[14px] font-semibold">點/元</span></div>
           </div>
           <span class="px-3 py-1 rounded-full text-[12.5px] font-semibold bg-[var(--success-soft)] text-[var(--success)]">自動試算</span>
@@ -1191,7 +1532,7 @@
 
         <div class="surface-card px-6 py-4 flex items-center justify-between cursor-pointer hover:border-[var(--accent)] transition-colors" onclick="switchView('cards')">
           <div>
-            <div class="text-[13px] font-medium text-[var(--text-muted)]">卡包與每月領券狀態</div>
+            <div class="text-[13px] font-medium text-[var(--text-muted)]">卡包與領券狀態</div>
             <div class="text-[18px] font-bold text-[var(--text-main)] mt-1.5">
               管理 ${appData.cards.length} 張卡 ${pendingTasks > 0 ? `<span class="text-[13px] font-semibold text-[var(--warn)] ml-1">・${pendingTasks} 張待領券</span>` : `<span class="text-[13px] font-semibold text-[var(--success)] ml-1">・全數已領妥</span>`}
             </div>
@@ -1202,7 +1543,7 @@
     }
 
     // ==========================================================
-    // 📊 互動式 SVG 甜甜圈圓餅圖 (內建月份切換器 + 藍色維度按鈕)
+    // 📊 互動式 SVG 甜甜圈圓餅圖（去除上方突兀月份框，極簡優雅！）
     // ==========================================================
     function setDonutDimension(dim) {
       donutDimension = dim;
@@ -1233,9 +1574,7 @@
       const monthTxs = appData.transactions.filter(t => (t.date || '').startsWith(CURRENT_MONTH));
       const totalSpend = monthTxs.reduce((s, t) => s + Number(t.amount || 0), 0);
       const totalReward = monthTxs.reduce((s, t) => s + Number(t.reward || 0), 0);
-      const isCurrentM = CURRENT_MONTH === REAL_CURRENT_MONTH;
 
-      // 彙總分組數據
       const map = {};
       monthTxs.forEach(tx => {
         let key = '';
@@ -1302,21 +1641,20 @@
         <circle cx="96" cy="96" r="${radius}" fill="transparent" stroke="var(--border-hairline)" stroke-width="18" />
       `;
 
-      const centerTitle = activeSliceFilter
-        ? activeSliceFilter.label
-        : `${formatMonthTitle(CURRENT_MONTH)}`;
+      const [yrStr, moStr] = CURRENT_MONTH.split('-');
+      const centerTitle = activeSliceFilter ? activeSliceFilter.label : `${yrStr}/${moStr} 總支出`;
       const centerAmount = activeSliceFilter
         ? (items.find(i => i.key === activeSliceFilter.key)?.amount || 0)
         : totalSpend;
 
       return `
-        <section class="surface-card p-5 sm:p-6 space-y-4">
+        <section class="surface-card p-5 sm:p-6 space-y-5">
           <div class="flex items-center justify-between gap-2 flex-wrap">
             <div>
-              <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Donut Chart</span>
-              <h3 class="text-[17px] font-bold text-[var(--text-main)] mt-0.5">📊 圓餅圖支出比例</h3>
+              <span class="text-[12px] font-semibold uppercase tracking-wider text-[var(--accent-text)]">Analytics</span>
+              <h3 class="text-[17px] font-bold text-[var(--text-main)] mt-0.5">📊 支出比例分析</h3>
             </div>
-            <!-- 維度切換器 (選中變藍色！) -->
+            <!-- 維度切換器 (選中變藍色) -->
             <div class="inline-flex bg-[var(--bg-pill)] p-1 rounded-xl gap-1">
               <button onclick="setDonutDimension('scene')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'scene' ? 'bg-[var(--accent)] text-white shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">依類別</button>
               <button onclick="setDonutDimension('card')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-all ${donutDimension === 'card' ? 'bg-[var(--accent)] text-white shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}">依卡片</button>
@@ -1324,33 +1662,17 @@
             </div>
           </div>
 
-          <!-- 圓餅圖內建歷史月份快速切換列 -->
-          <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]">
-            <button onclick="stepViewMonth(-1)" class="text-[12.5px] font-semibold text-[var(--text-secondary)] hover:text-[var(--accent)] px-2 py-0.5">
-              ◀ 上個月
-            </button>
-            <div class="flex items-center gap-2">
-              <span class="text-[13.5px] font-bold text-[var(--text-main)] num-tabular">${formatMonthTitle(CURRENT_MONTH)}</span>
-              ${isCurrentM
-                ? `<span class="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">本月</span>`
-                : `<button onclick="resetToRealCurrentMonth()" class="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-[var(--accent)] text-white">回本月</button>`}
-            </div>
-            <button onclick="stepViewMonth(1)" class="text-[12.5px] font-semibold text-[var(--text-secondary)] hover:text-[var(--accent)] px-2 py-0.5">
-              下個月 ▶
-            </button>
-          </div>
-
-          <!-- 圓餅圖視覺核心 -->
-          <div class="flex flex-col items-center justify-center py-1">
+          <!-- 圓餅圖視覺核心（極簡純粹，不放突兀橫條） -->
+          <div class="flex flex-col items-center justify-center py-2">
             <div class="relative w-48 h-48 flex items-center justify-center">
               <svg viewBox="0 0 192 192" class="w-48 h-48 -rotate-90">
                 <circle cx="96" cy="96" r="${radius}" fill="transparent" stroke="var(--bg-pill)" stroke-width="20" />
                 ${svgSegments}
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pointer-events-none">
-                <span class="text-[12px] font-medium text-[var(--text-muted)] truncate max-w-[115px]">${centerTitle}</span>
+                <span class="text-[12px] font-medium text-[var(--text-muted)] truncate max-w-[115px] num-tabular">${centerTitle}</span>
                 <span class="text-[22px] font-extrabold num-tabular text-[var(--text-main)] mt-0.5">$${centerAmount.toLocaleString()}</span>
-                <span class="text-[12px] font-semibold text-[var(--success)] mt-0.5 num-tabular">回饋 +$${totalReward.toLocaleString()}</span>
+                ${totalReward > 0 ? `<span class="text-[12px] font-semibold text-[var(--success)] mt-0.5 num-tabular">回饋 +$${totalReward.toLocaleString()}</span>` : ''}
               </div>
             </div>
           </div>
@@ -1358,7 +1680,7 @@
           <!-- 圖例與百分比進度排行 -->
           <div class="space-y-2.5 pt-1">
             ${items.length === 0 ? `
-              <p class="text-center text-[13.5px] text-[var(--text-muted)] py-4">${formatMonthTitle(CURRENT_MONTH)} 尚無消費紀錄，可點「◀ 上個月」查看歷史帳單或新增一筆！</p>
+              <p class="text-[13.5px] text-[var(--text-muted)] text-center py-4">${yrStr}/${moStr} 尚無消費紀錄，記一筆即自動繪製圓餅圖</p>
             ` : items.map((item, idx) => {
               const pct = totalSpend > 0 ? ((item.amount / totalSpend) * 100).toFixed(1) : '0.0';
               const color = CHART_COLORS[idx % CHART_COLORS.length];
@@ -1366,13 +1688,13 @@
               return `
                 <div onclick="clickDonutSlice('${donutDimension}', '${item.key}', '${item.label}')"
                   class="group p-2.5 -mx-2 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-[var(--accent-soft)] border-[var(--accent)]' : 'border-transparent hover:bg-[var(--bg-subtle)]'}">
-                  <div class="flex items-center justify-between text-[13.5px]">
+                  <div class="flex items-center justify-between text-[13.5px] gap-2">
                     <div class="flex items-center gap-2.5 min-w-0">
                       <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${color}"></span>
                       <span class="font-semibold text-[var(--text-main)] truncate">${item.icon} ${item.label}</span>
-                      <span class="text-[12px] text-[var(--text-muted)] num-tabular">${pct}% (${item.count}筆)</span>
+                      <span class="text-[12px] text-[var(--text-muted)] num-tabular shrink-0">${pct}%</span>
                     </div>
-                    <span class="font-bold num-tabular text-[var(--text-main)]">$${item.amount.toLocaleString()}</span>
+                    <span class="font-bold num-tabular text-[var(--text-main)] shrink-0">$${item.amount.toLocaleString()}</span>
                   </div>
                   <div class="w-full h-1.5 rounded-full bg-[var(--bg-pill)] overflow-hidden mt-2">
                     <div class="h-full rounded-full transition-all duration-500" style="width: ${pct}%; background-color: ${color}"></div>
@@ -1504,14 +1826,17 @@
         renderQuickSearchChips();
       }
 
+      const inputEl = document.getElementById('smartStoreInput');
       if (!q) {
         clearBtn.classList.add('hidden');
+        if (inputEl) { inputEl.classList.remove('pr-14'); inputEl.classList.add('pr-4'); }
         diagBox.classList.add('hidden');
         renderTopSceneAdvisor();
         return;
       }
 
       clearBtn.classList.remove('hidden');
+      if (inputEl) { inputEl.classList.remove('pr-4'); inputEl.classList.add('pr-14'); }
 
       let matched = null;
       for (const rule of (appData.keywordRules || [])) {
@@ -2105,14 +2430,6 @@
       renderAll();
     }
 
-    function clearDemoTransactions() {
-      appData.transactions = appData.transactions.filter(t => !String(t.id).startsWith('demo-'));
-      appData._seededV4History = true;
-      saveData();
-      renderAll();
-      showToast('🧹 已清空預設範例紀錄，可開始記錄你的真實帳務！');
-    }
-
     // 編輯單筆消費紀錄 Modal
     function openTxEditModal(txId) {
       const tx = appData.transactions.find(t => t.id === txId);
@@ -2255,7 +2572,7 @@
                     }" style="height: ${heightPct}%"></div>
                   </div>
                   <span class="text-[13px] font-bold ${isSelected ? 'text-[var(--accent-text)]' : 'text-[var(--text-secondary)]'}">
-                    ${shortM}${item.ym === REAL_CURRENT_MONTH ? '*' : ''}
+                    ${shortM}
                   </span>
                 </button>
               `;
@@ -2279,13 +2596,6 @@
 
       const fullTxTitle = document.getElementById('fullTxTitle');
       if (fullTxTitle) fullTxTitle.textContent = `🧾 ${formatMonthTitle(CURRENT_MONTH)} 帳單明細（依日期分組）`;
-
-      const hasDemo = appData.transactions.some(t => String(t.id).startsWith('demo-'));
-      const clearDemoBtn = document.getElementById('clearDemoBtn');
-      if (clearDemoBtn) {
-        if (hasDemo) clearDemoBtn.classList.remove('hidden');
-        else clearDemoBtn.classList.add('hidden');
-      }
 
       document.getElementById('perCardSpendSummary').innerHTML = appData.cards.map(c => {
         const spent = getCardMonthlySpend(c.id, CURRENT_MONTH);
@@ -2727,16 +3037,20 @@
     }
 
     function exportBackupJSON() {
+      if (isProfileLocked(profileRegistry.activeProfileId)) return;
+      const cur = getActiveProfileMeta();
+      const safeName = (cur ? cur.name : 'ledger').replace(/[^\w\u4e00-\u9fa5-]+/g, '_');
       const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `card-lazy-tracker-backup-${CURRENT_MONTH}.json`;
+      a.download = `card-lazy-tracker-${safeName}-${CURRENT_MONTH}.json`;
       a.click();
       URL.revokeObjectURL(url);
     }
 
     function importBackupJSON(event) {
+      if (isProfileLocked(profileRegistry.activeProfileId)) return;
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
@@ -2747,6 +3061,7 @@
             appData = imported;
             saveData();
             renderAll();
+            showToast('✅ 已匯入備份至此帳本');
           }
         } catch (err) {}
       };
@@ -2754,20 +3069,366 @@
     }
 
     function resetToDefaultData() {
-      localStorage.removeItem(STORAGE_KEY);
+      if (isProfileLocked(profileRegistry.activeProfileId)) return;
+      const pid = profileRegistry.activeProfileId;
+      const key = getLedgerStorageKey(pid);
+      localStorage.removeItem(key);
+      if (pid === 'profile-demo') {
+        const demoLedger = {
+          pinQuickEntryTop: false,
+          scenes: JSON.parse(JSON.stringify(DEFAULT_SCENES)),
+          keywordRules: JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES)),
+          payMethods: JSON.parse(JSON.stringify(DEFAULT_PAY_METHODS)),
+          cards: JSON.parse(JSON.stringify(DEFAULT_CARDS)),
+          transactions: buildInitialSampleTransactions()
+        };
+        try { localStorage.setItem(key, JSON.stringify(demoLedger)); } catch (e) {}
+      }
       CURRENT_MONTH = REAL_CURRENT_MONTH;
       selectedExpenseDate = getLocalDateStr(0);
       activeQuickChipId = null;
       activeSliceFilter = null;
-      appData = loadData();
+      appData = loadData(pid);
       renderAll();
       switchView('dashboard');
-      showToast('🔄 已恢復為預設範本資料');
+      showToast('🔄 已重設目前帳本');
+    }
+
+    // ==========================================================
+    // 👤 多帳本切換・隱私密碼鎖・範本中心 Modal 邏輯
+    // ==========================================================
+    function getLedgerQuickSummary(profileId) {
+      const p = profileRegistry.profiles.find(item => item.id === profileId);
+      if (p && p.pin && !unlockedProfileIds.has(p.id)) {
+        return '🔒 已設密碼保護（內容已隱藏）';
+      }
+      try {
+        const raw = localStorage.getItem(getLedgerStorageKey(profileId));
+        if (!raw) return '0 筆消費紀錄';
+        const parsed = JSON.parse(raw);
+        const cardCnt = Array.isArray(parsed.cards) ? parsed.cards.length : 0;
+        const txCnt = Array.isArray(parsed.transactions) ? parsed.transactions.length : 0;
+        return `${cardCnt} 張卡片 ・ 累計 ${txCnt} 筆紀錄`;
+      } catch (e) {
+        return '獨立本機空間';
+      }
+    }
+
+    function lockCurrentProfileNow() {
+      const cur = getActiveProfileMeta();
+      if (!cur || !cur.pin) return;
+      unlockedProfileIds.delete(cur.id);
+      document.getElementById('profileModal').classList.add('hidden');
+      renderAll();
+      openPinUnlockModal(cur.id);
+    }
+
+    function openProfileModal() {
+      renderProfileModalContent();
+      document.getElementById('profileModal').classList.remove('hidden');
+    }
+
+    function closeProfileModal() {
+      document.getElementById('profileModal').classList.add('hidden');
+      if (isProfileLocked(profileRegistry.activeProfileId)) {
+        openPinUnlockModal(profileRegistry.activeProfileId);
+      }
+    }
+
+    function selectNewProfileTemplate(tpl) {
+      newProfileTemplateChoice = tpl;
+      ['blank', 'cards_only', 'full_demo'].forEach(opt => {
+        const btn = document.getElementById(`tplOpt-${opt}`);
+        if (!btn) return;
+        if (opt === tpl) {
+          btn.className = 'p-3 rounded-xl text-left text-[13px] border-2 bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent-text)] shadow-xs transition-all';
+        } else {
+          btn.className = 'p-3 rounded-xl text-left text-[13px] border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-main)] hover:border-[var(--accent)] transition-all';
+        }
+      });
+    }
+
+    function renderProfileModalContent() {
+      const listEl = document.getElementById('profileListContainer');
+      const cur = getActiveProfileMeta();
+      const curLocked = cur ? isProfileLocked(cur.id) : false;
+
+      if (listEl) {
+        listEl.innerHTML = profileRegistry.profiles.map(p => {
+          const isCurrent = p.id === profileRegistry.activeProfileId;
+          const locked = Boolean(p.pin && !unlockedProfileIds.has(p.id));
+          const canDelete = profileRegistry.profiles.length > 1 && p.id !== 'profile-main' && !locked;
+
+          return `
+            <div onclick="requestSwitchProfile('${p.id}')"
+              class="p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between gap-2.5 ${
+                isCurrent
+                  ? 'bg-[var(--accent-soft)] border-[var(--accent)] shadow-xs'
+                  : 'bg-[var(--bg-subtle)] border-transparent hover:border-[var(--border-hairline)]'
+              }">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)] flex items-center justify-center text-[18px] shrink-0">
+                  ${p.icon || '👤'}
+                </div>
+                <div class="min-w-0">
+                  <div class="text-[14px] font-bold text-[var(--text-main)] flex items-center gap-1.5 min-w-0">
+                    <span class="truncate">${p.name}</span>
+                    ${p.pin ? `<span class="text-[12px] shrink-0">${locked ? '🔒' : '🔓'}</span>` : ''}
+                  </div>
+                  <div class="text-[12px] text-[var(--text-muted)] truncate mt-0.5">${getLedgerQuickSummary(p.id)}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                ${isCurrent
+                  ? `<span class="px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--accent)] text-white">${locked ? '點此解鎖' : '使用中'}</span>`
+                  : `<span class="px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--bg-pill)] text-[var(--text-secondary)]">切換</span>`
+                }
+                ${canDelete
+                  ? `<button type="button" onclick="deleteProfile('${p.id}', event)" class="px-2 py-1 rounded-lg text-[12px] text-[var(--text-muted)] hover:text-[var(--danger)]" title="刪除此帳本">✕</button>`
+                  : ''
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const pinSettingsBox = document.getElementById('currentProfilePinSettingsBox');
+      const badgeEl = document.getElementById('currentPinStatusBadge');
+      const pinInput = document.getElementById('profilePinInput');
+
+      if (pinSettingsBox) {
+        if (curLocked) {
+          pinSettingsBox.classList.add('hidden');
+        } else {
+          pinSettingsBox.classList.remove('hidden');
+          if (badgeEl && cur) {
+            if (cur.pin) {
+              badgeEl.className = 'text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--success-soft)] text-[var(--success)] shrink-0';
+              badgeEl.textContent = '🔒 已啟用密碼保護';
+            } else {
+              badgeEl.className = 'text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--bg-pill)] text-[var(--text-muted)] shrink-0';
+              badgeEl.textContent = '未設密碼';
+            }
+          }
+          if (pinInput) pinInput.value = '';
+        }
+      }
+
+      selectNewProfileTemplate(newProfileTemplateChoice);
+    }
+
+    function requestSwitchProfile(targetId) {
+      const target = profileRegistry.profiles.find(p => p.id === targetId);
+      if (!target) return;
+
+      if (target.pin && !unlockedProfileIds.has(target.id)) {
+        document.getElementById('profileModal').classList.add('hidden');
+        openPinUnlockModal(target.id);
+        return;
+      }
+
+      if (target.id === profileRegistry.activeProfileId) {
+        closeProfileModal();
+        return;
+      }
+
+      activateProfile(target.id);
+      document.getElementById('profileModal').classList.add('hidden');
+    }
+
+    function activateProfile(targetId) {
+      const prevId = profileRegistry.activeProfileId;
+      if (prevId && prevId !== targetId) {
+        // 離開原本設有密碼的帳本時自動重新上鎖，防止共用手機時他人切回來偷看！
+        unlockedProfileIds.delete(prevId);
+      }
+
+      profileRegistry.activeProfileId = targetId;
+      saveProfileRegistry();
+
+      appData = loadData(targetId);
+      CURRENT_MONTH = REAL_CURRENT_MONTH;
+      selectedExpenseDate = getLocalDateStr(0);
+      selectedTopScene = (appData.scenes[2] && appData.scenes[2].id) || (appData.scenes[0] && appData.scenes[0].id) || 'dining';
+      selectedRecordScene = selectedTopScene;
+      selectedPayMethod = (appData.payMethods[1] && appData.payMethods[1].id) || (appData.payMethods[0] && appData.payMethods[0].id) || 'card';
+      selectedCardId = (appData.cards[0] && appData.cards[0].id) || '';
+      activeQuickChipId = null;
+      activeSliceFilter = null;
+
+      renderAll();
+      const cur = getActiveProfileMeta();
+      showToast(`👤 已切換至「${cur ? cur.name : '帳本'}」`);
+    }
+
+    function deleteProfile(profileId, event) {
+      if (event) event.stopPropagation();
+      if (profileId === 'profile-main' || profileRegistry.profiles.length <= 1) return;
+      if (isProfileLocked(profileId)) {
+        showToast('🔒 請先解鎖該帳本才能刪除');
+        return;
+      }
+
+      localStorage.removeItem(getLedgerStorageKey(profileId));
+      unlockedProfileIds.delete(profileId);
+      profileRegistry.profiles = profileRegistry.profiles.filter(p => p.id !== profileId);
+
+      if (profileRegistry.activeProfileId === profileId) {
+        const nextProfile = profileRegistry.profiles[0];
+        profileRegistry.activeProfileId = nextProfile.id;
+        saveProfileRegistry();
+        if (!isProfileLocked(nextProfile.id)) {
+          appData = loadData(nextProfile.id);
+        }
+      } else {
+        saveProfileRegistry();
+      }
+
+      renderProfileModalContent();
+      renderAll();
+      showToast('🗑️ 已刪除此帳本');
+    }
+
+    function saveCurrentProfilePin() {
+      const cur = getActiveProfileMeta();
+      if (!cur || isProfileLocked(cur.id)) return;
+
+      const pinInput = document.getElementById('profilePinInput');
+      const val = (pinInput ? pinInput.value : '').trim();
+
+      if (!val) {
+        cur.pin = '';
+        unlockedProfileIds.delete(cur.id);
+        saveProfileRegistry();
+        renderProfileModalContent();
+        renderHeaderMonthControl();
+        showToast('🔓 已解除目前帳本的密碼保護');
+        return;
+      }
+
+      if (val.length < 4) {
+        showToast('⚠️ 請輸入至少 4 位數密碼（留空儲存可解除密碼）');
+        return;
+      }
+
+      cur.pin = val;
+      unlockedProfileIds.add(cur.id);
+      saveProfileRegistry();
+      if (pinInput) pinInput.value = '';
+      renderProfileModalContent();
+      renderHeaderMonthControl();
+      showToast('🔒 密碼已設定！切換其他帳本或點上方「鎖上」即生效');
+    }
+
+    function createNewProfile() {
+      const iconEl = document.getElementById('newProfileIcon');
+      const nameEl = document.getElementById('newProfileName');
+      const icon = (iconEl ? iconEl.value.trim() : '') || '🙂';
+      const name = (nameEl ? nameEl.value.trim() : '') || `獨立帳本 ${profileRegistry.profiles.length + 1}`;
+      const newId = 'profile-' + Date.now();
+
+      let initLedger;
+      if (newProfileTemplateChoice === 'blank') {
+        initLedger = {
+          pinQuickEntryTop: false,
+          scenes: JSON.parse(JSON.stringify(DEFAULT_SCENES)),
+          keywordRules: [],
+          payMethods: [
+            { id: 'linepay', icon: '💚', name: 'LINE Pay', defaultCardId: 'custom-card-1' },
+            { id: 'applepay', icon: '🍎', name: 'Apple Pay', defaultCardId: 'custom-card-1' },
+            { id: 'card', icon: '💳', name: '實體刷卡', defaultCardId: 'custom-card-1' },
+            { id: 'cash', icon: '💵', name: '現金', defaultCardId: 'CASH' }
+          ],
+          cards: buildBlankStarterCard(),
+          transactions: []
+        };
+      } else if (newProfileTemplateChoice === 'cards_only') {
+        initLedger = {
+          pinQuickEntryTop: false,
+          scenes: JSON.parse(JSON.stringify(DEFAULT_SCENES)),
+          keywordRules: JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES)),
+          payMethods: JSON.parse(JSON.stringify(DEFAULT_PAY_METHODS)),
+          cards: JSON.parse(JSON.stringify(DEFAULT_CARDS)),
+          transactions: []
+        };
+      } else {
+        initLedger = {
+          pinQuickEntryTop: false,
+          scenes: JSON.parse(JSON.stringify(DEFAULT_SCENES)),
+          keywordRules: JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES)),
+          payMethods: JSON.parse(JSON.stringify(DEFAULT_PAY_METHODS)),
+          cards: JSON.parse(JSON.stringify(DEFAULT_CARDS)),
+          transactions: buildInitialSampleTransactions()
+        };
+      }
+
+      try {
+        localStorage.setItem(getLedgerStorageKey(newId), JSON.stringify(initLedger));
+      } catch (e) {}
+
+      profileRegistry.profiles.push({ id: newId, icon, name, pin: '' });
+      saveProfileRegistry();
+
+      if (nameEl) nameEl.value = '';
+      activateProfile(newId);
+      document.getElementById('profileModal').classList.add('hidden');
+    }
+
+    function openPinUnlockModal(profileId) {
+      const target = profileRegistry.profiles.find(p => p.id === profileId);
+      if (!target) return;
+      pendingUnlockProfileId = profileId;
+      const titleEl = document.getElementById('pinUnlockTitle');
+      const inputEl = document.getElementById('pinUnlockInput');
+      const errEl = document.getElementById('pinUnlockError');
+
+      if (titleEl) titleEl.textContent = `解鎖「${target.name}」`;
+      if (inputEl) inputEl.value = '';
+      if (errEl) errEl.classList.add('hidden');
+
+      document.getElementById('pinUnlockModal').classList.remove('hidden');
+      setTimeout(() => { if (inputEl) inputEl.focus(); }, 80);
+    }
+
+    function closePinUnlockModal() {
+      document.getElementById('pinUnlockModal').classList.add('hidden');
+      pendingUnlockProfileId = null;
+      if (isProfileLocked(profileRegistry.activeProfileId)) {
+        openProfileModal();
+      }
+    }
+
+    function confirmPinUnlock() {
+      const target = profileRegistry.profiles.find(p => p.id === pendingUnlockProfileId);
+      if (!target) return;
+      const inputEl = document.getElementById('pinUnlockInput');
+      const errEl = document.getElementById('pinUnlockError');
+      const val = inputEl ? inputEl.value : '';
+
+      if (val === target.pin) {
+        unlockedProfileIds.add(target.id);
+        document.getElementById('pinUnlockModal').classList.add('hidden');
+        pendingUnlockProfileId = null;
+        activateProfile(target.id);
+        showToast(`🔓 已解鎖「${target.name}」`);
+      } else {
+        if (errEl) errEl.classList.remove('hidden');
+        if (inputEl) {
+          inputEl.select();
+          inputEl.focus();
+        }
+      }
     }
 
     // 啟動初始化
     setStoreLinePayFilter('any');
-    switchView('dashboard');
+    if (isProfileLocked(profileRegistry.activeProfileId)) {
+      renderAll();
+      openPinUnlockModal(profileRegistry.activeProfileId);
+    } else {
+      switchView('dashboard');
+    }
   </script>
 </body>
 </html>

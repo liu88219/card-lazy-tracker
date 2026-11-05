@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lazy-card-tracker-v4';
+const CACHE_NAME = 'lazy-card-tracker-v5';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', event => {
