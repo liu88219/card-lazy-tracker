@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="robots" content="noindex, nofollow" />
   <meta name="description" content="零個資風險・結合台灣信用卡權益切換提醒與圓餅圖分析的極簡記帳 App" />
   <title>卡神記帳 — 信用卡攻略 × 極簡記帳</title>
   <link rel="manifest" href="./manifest.json" />
@@ -12,6 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./qr.js?v=8"></script>
   <style>
     :root {
       --bg-canvas: #F4F5F9;
@@ -96,6 +98,14 @@
       overflow: hidden;
       white-space: nowrap;
     }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
 
     /* 手機版底部安全距離 */
     .pb-safe {
@@ -150,120 +160,133 @@
   </div>
 
   <!-- ========================================================= -->
-  <!-- 置頂極簡導覽列：左上角 4 大功能選中即變清晰藍色・單頁專注不眼花 -->
+  <!-- 置頂極簡導覽列：支援手機桌面捷徑一鍵重整、雲端同步/QR、4 大藍底清晰分頁 -->
   <!-- ========================================================= -->
   <header class="sticky top-0 z-30 backdrop-blur-md bg-[var(--bg-surface)]/95 border-b border-[var(--border-hairline)]">
     <div class="max-w-5xl mx-auto px-3.5 sm:px-6 pt-2.5 pb-2.5 space-y-2">
-      <!-- 第一列：帳本切換、月份選擇、連結權限鎖 -->
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-7 h-7 rounded-lg bg-[var(--accent)] text-white flex items-center justify-center text-sm shadow-xs shrink-0">
+      <!-- 第一列：帳本切換、月份選擇、桌面重整、雲端同步/QR、連結權限鎖 -->
+      <div class="flex items-center justify-between gap-1.5 sm:gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <div class="hidden sm:flex w-7 h-7 rounded-lg bg-[var(--accent)] text-white items-center justify-center text-sm shadow-xs shrink-0">
             💳
           </div>
-          <span class="text-[15px] font-bold tracking-tight text-[var(--text-main)] hidden sm:inline">卡神記帳</span>
+          <span class="text-[15px] font-bold tracking-tight text-[var(--text-main)] hidden md:inline">卡神記帳</span>
           <button onclick="openProfileModal()" id="activeProfileBtn"
-            class="px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] border border-[var(--border-hairline)] text-[12.5px] font-semibold text-[var(--text-main)] hover:border-[var(--accent)] transition-colors flex items-center gap-1 max-w-[140px] sm:max-w-[180px] min-w-0">
+            class="px-2 sm:px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] border border-[var(--border-hairline)] text-[12px] sm:text-[12.5px] font-semibold text-[var(--text-main)] hover:border-[var(--accent)] transition-colors flex items-center gap-1 max-w-[136px] sm:max-w-[175px] min-w-0">
             <span id="activeProfileLabel" class="truncate">👤 我的帳本</span>
             <span class="text-[12px] text-[var(--text-muted)] shrink-0">▾</span>
           </button>
           <button onclick="lockCurrentProfileNow()" id="quickLockBtn" title="立即鎖定此帳本"
             class="hidden px-2 py-1 rounded-lg bg-[var(--bg-pill)] text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[var(--accent)] shrink-0">
-            🔒 鎖上
+            🔒
           </button>
         </div>
 
-        <div class="flex items-center gap-1.5 shrink-0">
-          <button id="backToCurrentMonthBtn" onclick="resetToRealCurrentMonth()" class="hidden text-[12px] font-semibold px-2 py-1 rounded-lg bg-[var(--accent-soft)] text-[var(--accent-text)] transition-all">
+        <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          <button id="backToCurrentMonthBtn" onclick="resetToRealCurrentMonth()" class="hidden text-[11.5px] font-semibold px-2 py-1 rounded-lg bg-[var(--accent-soft)] text-[var(--accent-text)] transition-all">
             回當月
           </button>
           <div class="inline-flex items-center bg-[var(--bg-pill)] rounded-lg px-1 py-0.5">
-            <button onclick="stepViewMonth(-1)" class="px-1.5 py-0.5 rounded-md text-[13px] font-bold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors" title="上個月">‹</button>
-            <select id="headerMonthSelect" onchange="setViewMonth(this.value)" class="bg-transparent text-[12.5px] font-semibold text-[var(--text-main)] px-0.5 py-0.5 focus:outline-none num-tabular cursor-pointer"></select>
-            <button onclick="stepViewMonth(1)" class="px-1.5 py-0.5 rounded-md text-[13px] font-bold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors" title="下個月">›</button>
+            <button onclick="stepViewMonth(-1)" class="px-1 sm:px-1.5 py-0.5 rounded-md text-[13px] font-bold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors" title="上個月">‹</button>
+            <select id="headerMonthSelect" onchange="setViewMonth(this.value)" class="bg-transparent text-[12px] sm:text-[12.5px] font-semibold text-[var(--text-main)] px-0.5 py-0.5 focus:outline-none num-tabular cursor-pointer"></select>
+            <button onclick="stepViewMonth(1)" class="px-1 sm:px-1.5 py-0.5 rounded-md text-[13px] font-bold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors" title="下個月">›</button>
           </div>
+          <button onclick="forceRefreshAndSync()" id="headerRefreshBtn" title="重新整理最新版本並同步雲端（放置桌面捷徑專用）"
+            class="px-2 sm:px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] border border-[var(--border-hairline)] text-[12px] font-semibold text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent-text)] transition-colors shrink-0 inline-flex items-center gap-1">
+            <span id="refreshBtnIcon">🔄</span><span class="hidden sm:inline">重整</span>
+          </button>
+          <button onclick="openCloudSyncModal()" id="headerCloudBtn" title="手機 QR Code 掃描 & 雲端同步"
+            class="px-2 sm:px-2.5 py-1 rounded-lg bg-[var(--accent-soft)] border border-[var(--accent)]/25 text-[12px] font-semibold text-[var(--accent-text)] hover:bg-[var(--accent)] hover:text-white transition-colors shrink-0 inline-flex items-center gap-1">
+            <span>☁️</span><span class="hidden sm:inline">同步/QR</span>
+          </button>
           <button onclick="openAccessControlModal()" title="連結隱私與收回觀看權限設定"
-            class="px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] border border-[var(--border-hairline)] text-[12px] font-semibold text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent-text)] transition-colors shrink-0">
-            🔐 權限
+            class="px-2 sm:px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] border border-[var(--border-hairline)] text-[12px] font-semibold text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent-text)] transition-colors shrink-0 inline-flex items-center gap-1">
+            <span>🔐</span><span class="hidden sm:inline">權限</span>
           </button>
         </div>
       </div>
 
       <!-- 第二列：左上角主功能切換列（點選哪一個，哪一個就明確變成實心藍色！） -->
       <div class="flex items-center justify-between gap-2">
-        <div class="inline-flex items-center bg-[var(--bg-pill)] p-1 rounded-xl gap-1 overflow-x-auto no-scrollbar max-w-full">
+        <div class="grid grid-cols-4 sm:inline-flex items-center bg-[var(--bg-pill)] p-1 rounded-xl gap-1 w-full sm:w-auto">
           <button onclick="switchView('finder')" id="tabBtn-finder"
-            class="px-3 sm:px-3.5 py-1.5 rounded-lg text-[12.5px] sm:text-[13px] transition-all shrink-0">
-            📍 查刷哪張
+            class="px-1 sm:px-3.5 py-1.5 rounded-lg text-[12px] sm:text-[13px] text-center transition-all truncate">
+            <span class="sm:hidden">📍 查哪張</span><span class="hidden sm:inline">📍 查刷哪張</span>
           </button>
           <button onclick="switchView('record')" id="tabBtn-record"
-            class="px-3 sm:px-3.5 py-1.5 rounded-lg text-[12.5px] sm:text-[13px] transition-all shrink-0">
-            ⚡ 馬上記帳
+            class="px-1 sm:px-3.5 py-1.5 rounded-lg text-[12px] sm:text-[13px] text-center transition-all truncate">
+            <span class="sm:hidden">⚡ 秒記帳</span><span class="hidden sm:inline">⚡ 馬上記帳</span>
           </button>
           <button onclick="switchView('analytics')" id="tabBtn-analytics"
-            class="px-3 sm:px-3.5 py-1.5 rounded-lg text-[12.5px] sm:text-[13px] transition-all shrink-0">
+            class="px-1 sm:px-3.5 py-1.5 rounded-lg text-[12px] sm:text-[13px] text-center transition-all truncate">
             📊 圓餅圖
           </button>
           <button onclick="switchView('cards')" id="tabBtn-cards"
-            class="px-3 sm:px-3.5 py-1.5 rounded-lg text-[12.5px] sm:text-[13px] transition-all shrink-0">
+            class="px-1 sm:px-3.5 py-1.5 rounded-lg text-[12px] sm:text-[13px] text-center transition-all truncate">
             💳 卡包
           </button>
         </div>
 
-        <button onclick="toggleDefaultStartTab()" id="headerPinQuickBtn" title="將目前分頁設為打開網址時的預設首頁"
-          class="hidden sm:inline-flex shrink-0 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition-all">
-          📌 設為預設首頁
-        </button>
+        <div class="hidden sm:flex items-center gap-2 shrink-0">
+          <span id="headerCloudSyncStatus" onclick="openCloudSyncModal()" class="hidden cursor-pointer text-[11.5px] font-semibold px-2.5 py-1 rounded-lg bg-[var(--success-soft)] text-[var(--success)]"></span>
+          <button onclick="toggleDefaultStartTab()" id="headerPinQuickBtn" title="將目前分頁設為打開網址時的預設首頁"
+            class="shrink-0 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition-all">
+            📌 設為預設首頁
+          </button>
+        </div>
       </div>
     </div>
   </header>
 
   <!-- 記帳成功提示 Toast -->
-  <div id="saveToast" class="hidden fixed top-28 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[var(--accent)] text-white text-[13.5px] font-semibold shadow-lg flex items-center gap-2.5 max-w-[90vw] truncate"></div>
+  <div id="saveToast" class="hidden fixed top-28 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[var(--accent)] text-white text-[13.5px] font-semibold shadow-lg flex items-center gap-2.5 max-w-[92vw] truncate"></div>
 
   <!-- ========================================================= -->
-  <!-- 主內容容器：一次專注一個核心畫面，留白舒適不眼花撩亂 -->
+  <!-- 主內容容器：電腦版雙欄黃金比例並列・手機版單欄舒適留白 -->
   <!-- ========================================================= -->
-  <main id="appMainContainer" class="max-w-5xl mx-auto px-4 sm:px-6 pt-5 sm:pt-7">
+  <main id="appMainContainer" class="max-w-5xl mx-auto px-3.5 sm:px-6 pt-4 sm:pt-6">
 
-    <!-- 自動扣款提醒 & 銀行權益到期提醒（僅在自己設定的卡片需要提醒時才顯示） -->
-    <div id="systemAlertsMount" class="max-w-2xl mx-auto space-y-2.5 mb-5 empty:hidden"></div>
+    <!-- 自動扣款提醒（僅在該期實際有待繳帳單 > $0 時才出現！）& 銀行權益到期提醒 -->
+    <div id="systemAlertsMount" class="space-y-2.5 mb-5 empty:hidden"></div>
 
     <!-- 新訪客空白引導橫幅（外人打開連結只會看到通用空白卡，0 個人資訊外露！） -->
-    <div id="starterWelcomeBanner" class="hidden max-w-2xl mx-auto mb-5"></div>
+    <div id="starterWelcomeBanner" class="hidden mb-5"></div>
 
     <!-- ======================================================= -->
-    <!-- TAB 1: 📍 查刷哪張（清爽單欄專注排版） -->
+    <!-- TAB 1: 📍 查刷哪張（電腦版：左選店名/分類 + 右即時推薦並列；手機版：直覺上下流暢排版） -->
     <!-- ======================================================= -->
-    <div id="view-finder" class="max-w-2xl mx-auto space-y-5">
-      <section id="smartFinderCard" class="surface-card p-5 sm:p-7 space-y-6">
+    <div id="view-finder" class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+      <section id="smartFinderCard" class="lg:col-span-7 surface-card p-4 sm:p-6 space-y-5">
         <div class="flex items-center justify-between gap-2">
-          <h2 class="text-[17px] sm:text-[19px] font-bold text-[var(--text-main)] truncate">📍 我現在在哪？刷哪張最好？</h2>
+          <h2 class="text-[17px] sm:text-[19px] font-bold text-[var(--text-main)] truncate">
+            <span class="sm:hidden">📍 現在刷哪張最好？</span><span class="hidden sm:inline">📍 我現在在哪？刷哪張最好？</span>
+          </h2>
           <button onclick="openPromoMonitorModal()" class="shrink-0 text-[12px] sm:text-[12.5px] font-medium px-2.5 sm:px-3 py-1.5 rounded-xl bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors">
             🔔 權益檢查
           </button>
         </div>
 
-        <!-- 搜尋框 + 單行滑動快查膠囊（整齊不換行堆疊） -->
+        <!-- 搜尋框 + 13 個指定快查膠囊（自動整齊排開，點選立即變藍色！） -->
         <div class="space-y-3">
           <div class="relative flex items-center">
             <span class="absolute left-3.5 text-[var(--text-muted)] text-sm pointer-events-none">🔍</span>
             <input id="smartStoreInput" type="text"
-              placeholder="輸入店名自動判斷（例：全聯、家樂福、蝦皮、餐廳...）"
+              placeholder="輸入店名自動判斷（例：全聯、美聯社、寶雅、餐廳...）"
               oninput="handleSmartSearchInput(true)"
-              class="w-full min-w-0 pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[14.5px] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors" />
+              class="w-full min-w-0 pl-10 pr-4 py-2.5 sm:py-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[14.5px] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors" />
             <button id="clearSearchBtn" onclick="clearSmartSearch()" class="hidden absolute right-2.5 text-[12px] font-medium px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)]">
               清除
             </button>
           </div>
 
-          <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap no-scrollbar py-0.5" id="quickSearchChipsRow"></div>
+          <div class="flex flex-wrap items-center gap-1.5 pt-0.5" id="quickSearchChipsRow"></div>
         </div>
 
-        <!-- 關鍵字避坑診斷提示 -->
-        <div id="smartKeywordDiagnosis" class="hidden"></div>
+        <!-- 手機版：點選快查後立即在分類上方顯示避坑提示，免往下滑 -->
+        <div id="smartKeywordDiagnosisMobile" class="lg:hidden hidden"></div>
 
-        <!-- 整齊 3x3 消費分類方格（消除參差不齊膠囊造成的眼花感） -->
-        <div class="space-y-3">
+        <!-- 整齊 3x3 消費分類方格 -->
+        <div class="space-y-2.5">
           <div class="flex items-center justify-between gap-2 flex-wrap">
             <span class="text-[13px] font-semibold text-[var(--text-secondary)]">選擇消費場景</span>
             <div class="inline-flex bg-[var(--bg-pill)] p-0.5 rounded-lg gap-0.5">
@@ -272,34 +295,37 @@
               <button onclick="setStoreLinePayFilter('has_lp')" id="lpFilter-has_lp" class="px-2.5 py-1 rounded-md text-[12px] font-medium transition-all">有 LINE Pay</button>
             </div>
           </div>
-          <div id="topSceneButtons" class="grid grid-cols-3 gap-2.5"></div>
+          <div id="topSceneButtons" class="grid grid-cols-3 gap-2 sm:gap-2.5"></div>
         </div>
 
-        <!-- 推薦卡片結果區 -->
-        <div id="sceneRecommendationBox" class="pt-1 space-y-3"></div>
-
-        <!-- 次要自訂功能收合在底部，不干擾主視覺 -->
+        <!-- 次要自訂功能收合在底部 -->
         <div class="pt-3 border-t border-[var(--border-hairline)] flex items-center justify-between text-[12.5px] text-[var(--text-muted)]">
           <button onclick="openKeywordRuleModal()" class="hover:text-[var(--text-main)] transition-colors">⚙️ 自訂愛店關鍵字</button>
           <button onclick="openSceneModal()" class="hover:text-[var(--text-main)] transition-colors">✏️ 編輯消費分類</button>
         </div>
       </section>
+
+      <!-- 右欄（電腦版黏著置頂並列顯示；手機版緊接在下方） -->
+      <aside class="lg:col-span-5 lg:sticky lg:top-28 space-y-4 min-w-0">
+        <div id="smartKeywordDiagnosis" class="hidden lg:block"></div>
+        <div id="sceneRecommendationBox" class="surface-card p-5 sm:p-6 space-y-3.5"></div>
+      </aside>
     </div>
 
     <!-- ======================================================= -->
-    <!-- TAB 2: ⚡ 馬上記帳（純淨專注記帳畫面） -->
+    <!-- TAB 2: ⚡ 馬上記帳（電腦版：左記帳表單 + 右即時試算與近期明細並列；手機版：單欄極速輸入） -->
     <!-- ======================================================= -->
-    <div id="view-record" class="hidden max-w-2xl mx-auto space-y-5">
-      <section id="quickRecordCard" class="surface-card p-5 sm:p-7 space-y-6">
+    <div id="view-record" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+      <section id="quickRecordCard" class="lg:col-span-7 surface-card p-4 sm:p-6 space-y-5">
         <div class="flex items-center justify-between gap-2">
-          <h2 class="text-[19px] font-bold text-[var(--text-main)] truncate">⚡ 快速記一筆</h2>
+          <h2 class="text-[18px] sm:text-[19px] font-bold text-[var(--text-main)] truncate">⚡ 快速記一筆</h2>
           <button onclick="toggleDefaultStartTab()" id="cardPinQuickBtn"
             class="shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-medium transition-all">
             📌 設為預設首頁
           </button>
         </div>
 
-        <!-- 1. 金額與備註輸入框（放最上方，點進來直接輸入數字！） -->
+        <!-- 1. 金額與備註輸入框 -->
         <div class="bg-[var(--bg-subtle)] rounded-2xl p-4 sm:p-5 border border-[var(--border-hairline)] space-y-3">
           <div class="flex items-baseline justify-between gap-3">
             <span class="text-[13.5px] font-semibold text-[var(--text-secondary)] shrink-0">消費金額</span>
@@ -327,25 +353,25 @@
         </div>
 
         <!-- 3. 整齊 3x3 消費類別方格 -->
-        <div class="space-y-2.5">
+        <div class="space-y-2">
           <div class="flex items-center justify-between gap-2">
             <label class="text-[13px] font-semibold text-[var(--text-secondary)]">消費類別</label>
             <button onclick="openSceneModal()" class="text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--accent-text)]">編輯分類</button>
           </div>
-          <div id="recordScenePills" class="grid grid-cols-3 gap-2.5"></div>
+          <div id="recordScenePills" class="grid grid-cols-3 gap-2 sm:gap-2.5"></div>
         </div>
 
         <!-- 4. 支付工具 -->
-        <div class="space-y-2.5">
+        <div class="space-y-2">
           <div class="flex items-center justify-between gap-2">
             <label class="text-[13px] font-semibold text-[var(--text-secondary)]">支付方式</label>
             <button onclick="openPayMethodManageModal()" class="text-[12px] font-medium text-[var(--text-muted)] hover:text-[var(--accent-text)]">管理支付</button>
           </div>
-          <div id="payMethodButtons" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
+          <div id="payMethodButtons" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5"></div>
         </div>
 
         <!-- 5. 扣款信用卡 -->
-        <div id="cardSelectorSection" class="space-y-2.5">
+        <div id="cardSelectorSection" class="space-y-2">
           <div class="flex items-center justify-between flex-wrap gap-2">
             <label id="cardSelectorLabel" class="text-[13px] font-semibold text-[var(--text-secondary)] truncate">扣款信用卡</label>
             <div class="flex items-center gap-3 text-[12px] shrink-0">
@@ -356,8 +382,8 @@
           <div id="recordCardPills" class="flex flex-wrap gap-2"></div>
         </div>
 
-        <!-- 動態權益提醒與預估回饋 -->
-        <div id="smartAdvisoryPanel" class="min-w-0"></div>
+        <!-- 手機版：動態權益提醒緊貼在儲存按鈕上方 -->
+        <div id="smartAdvisoryPanel" class="lg:hidden min-w-0"></div>
 
         <!-- 確認儲存主按鈕 -->
         <button onclick="submitExpense()"
@@ -366,8 +392,14 @@
         </button>
       </section>
 
-      <!-- 當月最近 3 筆預覽（無紀錄時自動隱藏，保持版面乾淨） -->
-      <div id="desktopRecentMount" class="empty:hidden"></div>
+      <!-- 右欄（電腦版即時顯示刷卡試算提醒 + 當月最近記帳明細；手機版僅在有紀錄時顯示最近明細） -->
+      <aside class="lg:col-span-5 lg:sticky lg:top-28 space-y-5 min-w-0">
+        <div class="hidden lg:block surface-card p-5 sm:p-6 space-y-3">
+          <div class="text-[15px] font-bold text-[var(--text-main)]">🎯 即時刷卡權益與回饋試算</div>
+          <div id="smartAdvisoryPanelDesktop" class="min-w-0"></div>
+        </div>
+        <div id="desktopRecentMount" class="empty:hidden"></div>
+      </aside>
     </div>
 
     <!-- ======================================================= -->
@@ -420,8 +452,11 @@
               所有紀錄僅存於你自己的手機／電腦瀏覽器中，外人點開網址只會看到空白通用模板。若想隨時限制或收回他人的連結使用權，可點「連結觀看權限設定」。
             </p>
             <div class="flex flex-wrap gap-2.5 pt-1">
-              <button onclick="openAccessControlModal()" class="text-[13px] font-semibold px-4 py-2 rounded-xl bg-[var(--accent)] text-white hover:opacity-90">
-                🔐 連結觀看權限與收回設定
+              <button onclick="openCloudSyncModal()" class="text-[13px] font-semibold px-4 py-2 rounded-xl bg-[var(--accent)] text-white hover:opacity-90">
+                ☁️ 雲端同步 & 手機 QR Code
+              </button>
+              <button onclick="openAccessControlModal()" class="text-[13px] font-semibold px-4 py-2 rounded-xl bg-[var(--accent-soft)] text-[var(--accent-text)] hover:opacity-90">
+                🔐 連結觀看權限與收回
               </button>
               <button onclick="openProfileModal()" class="text-[13px] font-semibold px-4 py-2 rounded-xl bg-[var(--bg-pill)] text-[var(--text-main)] hover:opacity-85">
                 👤 帳本切換 / 隱私鎖
@@ -449,6 +484,9 @@
           <p class="text-[13px] text-[var(--text-muted)] mt-0.5">卡片設定僅儲存在你個人裝置瀏覽器，不會公開在網址上</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="openDebitFailGuideModal()" class="text-[13px] font-semibold px-3.5 py-2 rounded-xl bg-[var(--warn-soft)] text-[var(--warn)] border border-[var(--warn)]/30 hover:opacity-90">
+            🆘 扣款失敗補救表
+          </button>
           <button onclick="openPromoMonitorModal()" class="text-[13px] font-semibold px-3.5 py-2 rounded-xl bg-[var(--bg-pill)] text-[var(--text-main)] border border-[var(--border-hairline)] hover:border-[var(--accent)]">
             🔔 權益換季檢查
           </button>
@@ -569,7 +607,7 @@
         </div>
         <div>
           <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">帳單週期顯示文字 (選填)</label>
-          <input id="editCardBillingLabel" type="text" placeholder="例：每月17號結帳・隔月5號自動扣款" class="w-full px-3 py-2 text-[13px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
+          <input id="editCardBillingLabel" type="text" placeholder="例：每月10號結帳・25號扣款" class="w-full px-3 py-2 text-[13px] rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)]" />
         </div>
         <div>
           <label class="text-[12.5px] text-[var(--text-muted)] block mb-1">本期權益公告到期日</label>
@@ -814,13 +852,24 @@
         </p>
       </div>
 
-      <!-- 2. 綁定此裝置為擁有者本機 -->
-      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] flex items-center justify-between gap-3">
-        <div class="min-w-0">
-          <div class="text-[13.5px] font-bold text-[var(--text-main)]">📱 標記這支手機／電腦為「擁有者本人裝置」</div>
-          <p class="text-[12px] text-[var(--text-muted)] mt-0.5">勾選後，就算未來把公開連結「上鎖收回權限」，你自己的這台裝置依然可直接免鎖進入！</p>
+      <!-- 2. 綁定此裝置為擁有者本機（附帶主人安全碼驗證，防止外人誤觸綁定） -->
+      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-2.5">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-[13.5px] font-bold text-[var(--text-main)]">📱 標記這支手機／電腦為「擁有者本人裝置」</div>
+            <p class="text-[12px] text-[var(--text-muted)] mt-0.5 leading-relaxed">
+              原理：網頁不會偷讀手機序號，而是在「目前這個瀏覽器／桌面捷徑」寫入本機主人憑證。若你有把網頁<strong>「分享 ➔ 放置桌面」</strong>，記得從桌面圖示打開後也在這裡點一次綁定！
+            </p>
+          </div>
+          <button onclick="toggleOwnerDeviceTrust()" id="ownerTrustToggleBtn" class="shrink-0 px-3 py-1.5 rounded-xl text-[12.5px] font-semibold"></button>
         </div>
-        <button onclick="toggleOwnerDeviceTrust()" id="ownerTrustToggleBtn" class="shrink-0 px-3 py-1.5 rounded-xl text-[12.5px] font-semibold"></button>
+        <div class="flex items-center gap-2 pt-1">
+          <input id="ownerPinGuardInput" type="password" inputmode="numeric" maxlength="8" placeholder="選填：設定主人綁定驗證碼（防外人亂按綁定）"
+            class="flex-1 min-w-0 px-3 py-1.5 text-[12.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+          <button onclick="saveOwnerPinGuard()" class="shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-semibold bg-[var(--bg-pill)] text-[var(--text-main)] hover:text-[var(--accent)]">
+            設定驗證碼
+          </button>
+        </div>
       </div>
 
       <!-- 3. 隨時收回連結觀看權限的 2 種快速方法 -->
@@ -852,6 +901,119 @@
     </div>
   </div>
 
+  <!-- MODAL 11: 🆘 忘記放錢「自動扣款失敗」各家銀行補扣與補繳處理指南 -->
+  <div id="debitFailGuideModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="surface-card max-w-xl w-full p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <h3 class="text-[17px] font-bold text-[var(--text-main)]">🆘 忘記放錢「自動扣款失敗」各家處理方式</h3>
+          <p class="text-[12.5px] text-[var(--text-muted)] mt-0.5">哪些銀行放錢進去隔天會自動補扣？哪些只扣一次必須馬上自己補繳？</p>
+        </div>
+        <button onclick="closeDebitFailGuideModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] shrink-0">關閉</button>
+      </div>
+
+      <div class="p-3.5 rounded-2xl bg-[var(--warn-soft)] border border-[var(--warn)]/30 text-[12.5px] text-[var(--text-secondary)] leading-relaxed">
+        ⚠️ <strong class="text-[var(--warn)]">最重要前提：</strong>以下「隔天自動二扣」皆限綁定<strong>「該銀行本行台幣帳戶」</strong>（如台新綁 Richart、永豐綁大戶/永豐帳、中信綁中信帳）。若你是拿<strong>「他行帳戶／郵局」</strong>跨行自動扣繳，<strong>所有銀行一律只扣 1 次不補扣</strong>，失敗請直接手動繳費！
+      </div>
+
+      <div id="debitFailGuideList" class="space-y-2.5"></div>
+    </div>
+  </div>
+
+  <!-- MODAL 12: ☁️ 雲端同步 & 📱 電腦產 QR Code 掃描（支援放置桌面重新整理） -->
+  <div id="cloudSyncModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="surface-card max-w-lg w-full p-5 sm:p-6 space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <h3 class="text-[17px] font-bold text-[var(--text-main)]">☁️ 雲端同步 & 📱 手機掃描 QR Code</h3>
+          <p class="text-[12.5px] text-[var(--text-muted)] mt-0.5">電腦與手機桌面捷徑雙向同步・一鍵強制重整最新版本</p>
+        </div>
+        <button onclick="closeCloudSyncModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] shrink-0">關閉</button>
+      </div>
+
+      <!-- 1. 放置桌面 App 重新整理專區 -->
+      <div class="p-3.5 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent)]/25 flex items-center justify-between gap-3 flex-wrap">
+        <div class="min-w-0 flex-1">
+          <div class="text-[13.5px] font-bold text-[var(--accent-text)]">📲 手機「放置桌面」開啟不會重整？</div>
+          <p class="text-[12px] text-[var(--text-secondary)] mt-0.5 leading-relaxed">
+            放到主畫面後系統會隱藏瀏覽器重整列。隨時點右上角或下方<strong>「🔄 強制重整＆同步」</strong>即可抓最新版並同步雲端帳單！
+          </p>
+        </div>
+        <button onclick="forceRefreshAndSync()" class="shrink-0 px-3.5 py-2 rounded-xl text-[12.5px] font-semibold bg-[var(--accent)] text-white shadow-xs">
+          🔄 強制重整＆同步
+        </button>
+      </div>
+
+      <!-- 2. 電腦產出手機掃描 QR Code（100% 本機離線繪製，零資料外流） -->
+      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <span class="text-[13.5px] font-bold text-[var(--text-main)]">📱 手機相機掃描 QR Code</span>
+          <div class="inline-flex bg-[var(--bg-pill)] p-0.5 rounded-lg gap-0.5 text-[12px]">
+            <button type="button" onclick="switchQrMode('url')" id="qrModeBtn-url" class="px-2.5 py-1 rounded-md font-semibold transition-all">開啟網址/配對</button>
+            <button type="button" onclick="switchQrMode('cards')" id="qrModeBtn-cards" class="px-2.5 py-1 rounded-md font-medium transition-all">秒傳我的卡包週期</button>
+          </div>
+        </div>
+
+        <div id="qrSvgMount" class="py-1 flex flex-col items-center justify-center"></div>
+        <p id="qrModeHintText" class="text-[12px] text-[var(--text-muted)] text-center leading-relaxed"></p>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="copyPairingCodeForHomeScreen()" class="py-2 px-3 rounded-xl text-[12px] font-semibold bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--text-main)] hover:border-[var(--accent)]">
+            📋 複製配對碼（給桌面捷徑）
+          </button>
+          <button type="button" onclick="pastePairingCodeFromClipboard()" class="py-2 px-3 rounded-xl text-[12px] font-semibold bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--accent-text)] hover:border-[var(--accent)]">
+            📥 在手機桌面捷徑貼上配對碼
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. 私人 Google 雲端同步設定（0 費用、資料存在你自己的 Google 帳號！） -->
+      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="text-[13.5px] font-bold text-[var(--text-main)]">☁️ 私人雲端即時同步（電腦 ⇄ 手機桌面）</div>
+          <span id="cloudModalStatusBadge" class="text-[11.5px] font-semibold px-2 py-0.5 rounded-full bg-[var(--bg-pill)] text-[var(--text-muted)]">未設定</span>
+        </div>
+        <p class="text-[12px] text-[var(--text-muted)] leading-relaxed">
+          貼上你專屬的 Google Apps Script 網址與自訂通行密碼後，電腦記帳或改卡片、手機桌面點一下 🔄 就會自動同步最新紀錄（網址只存在你本機，不會公開在程式碼裡）！
+        </p>
+
+        <div class="space-y-2">
+          <input id="cloudScriptUrlInput" type="text" placeholder="貼上你的 Google Apps Script 網址 (https://script.google.com/macros/s/.../exec)"
+            class="w-full px-3 py-2 text-[12.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+          <div class="flex gap-2">
+            <input id="cloudSyncSecretInput" type="password" placeholder="自訂雲端同步密碼（例：mykey888）"
+              class="flex-1 min-w-0 px-3 py-2 text-[12.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
+            <button type="button" onclick="saveCloudSyncSettings()" class="shrink-0 px-3.5 py-2 rounded-xl text-[12.5px] font-semibold bg-[var(--accent)] text-white">
+              儲存設定
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button type="button" onclick="pushToCloudSync(true)" class="py-2.5 px-3 rounded-xl text-[12.5px] font-semibold bg-[var(--accent)] text-white shadow-xs hover:opacity-95">
+            ⬆️ 上傳此機資料到雲端
+          </button>
+          <button type="button" onclick="pullFromCloudSync(true)" class="py-2.5 px-3 rounded-xl text-[12.5px] font-semibold bg-[var(--success-soft)] text-[var(--success)] border border-[var(--success)]/30 hover:opacity-95">
+            ⬇️ 從雲端拉取最新資料
+          </button>
+        </div>
+
+        <!-- 1 分鐘免費架設教學收合 -->
+        <details class="rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)] px-3.5 py-2.5 text-[12px]">
+          <summary class="cursor-pointer font-semibold text-[var(--accent-text)]">✨ 第一次設定？點此 1 分鐘免費建立私人 Google 雲端同步庫</summary>
+          <div class="mt-2.5 space-y-2 text-[var(--text-secondary)] leading-relaxed">
+            <div>1. 在電腦打開 <a href="https://script.new" target="_blank" rel="noopener noreferrer" class="underline font-semibold text-[var(--accent-text)]">script.new</a>（建立你個人的 Google Apps Script）。</div>
+            <div>2. 清空預設內容，點下方按鈕複製專屬同步程式碼貼上並按儲存（💾）：</div>
+            <button type="button" onclick="copyGoogleAppsScriptCode()" class="w-full py-2 rounded-lg font-semibold bg-[var(--accent-soft)] text-[var(--accent-text)] hover:opacity-90">
+              📋 一鍵複製 18 行私人雲端同步程式碼
+            </button>
+            <div>3. 點右上角<strong>「部署 ➔ 新增部署作業」</strong> ➔ 左上齒輪選<strong>「網頁應用程式」</strong> ➔ 執行身分選「我」、誰可以存取選<strong>「所有人」</strong>（程式內已用你的同步密碼上鎖保護！）➔ 部署後複製網址貼回上方即可！</div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
   <script>
     if ('serviceWorker' in navigator) {
       let swRefreshing = false;
@@ -862,12 +1024,22 @@
         }
       });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=7').then(reg => reg.update()).catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=8').then(reg => {
+          reg.update();
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+              reg.update().catch(() => {});
+              autoPullOnForegroundIfEnabled();
+            }
+          });
+        }).catch(() => {});
       });
     }
 
     const STORAGE_KEY = 'LAZY_CARD_TRACKER_V2';
     const PROFILE_REGISTRY_KEY = 'LAZY_CARD_PROFILES_V1';
+    const CLOUD_SYNC_CFG_KEY = 'LAZY_CARD_CLOUD_SYNC_V1';
+    const OWNER_PIN_GUARD_KEY = 'LAZY_CARD_OWNER_PIN_V1';
     const CHART_COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#06B6D4', '#64748B'];
     const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
@@ -908,16 +1080,79 @@
     const PREV_MONTH_2 = shiftMonthStr(REAL_CURRENT_MONTH, -2);
     let CURRENT_MONTH = REAL_CURRENT_MONTH; // 目前畫面檢視的帳單月份（可自由切換前幾個月！）
 
+    // 指定 13 個常用快查膠囊（點選即變實心藍色並帶出專屬避坑攻略）
     const QUICK_SEARCH_CHIPS = [
-      { id: 'pxmart', label: '🛒 全聯', query: '全聯' },
-      { id: 'carrefour', label: '🛒 家樂福', query: '家樂福' },
-      { id: 'costco', label: '🛒 好市多', query: '好市多' },
-      { id: 'poya', label: '🛍️ 寶雅/小北', query: '寶雅' },
-      { id: 'ec', label: '📦 蝦皮/momo', query: '蝦皮' },
-      { id: 'ktv', label: '🎤 唱歌/KTV', query: '唱歌 KTV' },
-      { id: 'dining', label: '🍲 一般餐廳', query: '一般餐廳' },
-      { id: '711', label: '🏪 7-11', query: '7-11' },
-      { id: 'fami', label: '🏪 全家', query: '全家' }
+      { id: '711', label: '711', query: '711' },
+      { id: 'fami', label: '全家', query: '全家' },
+      { id: 'pxmart', label: '全聯', query: '全聯' },
+      { id: 'simplemart', label: '美聯社', query: '美聯社' },
+      { id: 'cosmed', label: '康是美', query: '康是美' },
+      { id: 'watsons', label: '屈臣氏', query: '屈臣氏' },
+      { id: 'amart', label: '愛買', query: '愛買' },
+      { id: 'abroad', label: '出國', query: '出國' },
+      { id: 'dining', label: '一般餐廳', query: '一般餐廳' },
+      { id: 'dept', label: '百貨公司', query: '百貨公司' },
+      { id: 'shopee', label: '蝦皮', query: '蝦皮' },
+      { id: 'ktv', label: '唱歌', query: '唱歌' },
+      { id: 'poya', label: '寶雅', query: '寶雅' }
+    ];
+
+    // 各家銀行「忘記放錢導致自動扣款失敗」官方規則與補救指南
+    const BANK_DEBIT_FAIL_GUIDE = [
+      {
+        bankKey: 'dbs',
+        matchIds: ['dbs-eco'],
+        matchNames: ['星展'],
+        bankName: '星展銀行（星展 eco）',
+        badgeType: 'danger',
+        shortTag: '❌ 不會補扣！只扣一次，需自己手動補繳',
+        detail: '官方僅於繳款截止日執行 1 次扣款，餘額不足失敗「絕對不會隔天再扣」！把錢存進帳戶也沒用，請立刻打開【星展 digibank App / 網銀 / ATM】自行轉帳繳清（若僅遲 1 天可致電 02-6612-9889 請客服協助備註減免違約金）。'
+      },
+      {
+        bankKey: 'cathay',
+        matchIds: ['cathay-cube'],
+        matchNames: ['國泰', 'cube'],
+        bankName: '國泰世華（國泰 CUBE）',
+        badgeType: 'warn',
+        shortTag: '⚠️ 先扣光帳上餘額・不足差額請直接開 CUBE App 手動補繳',
+        detail: '扣款日凌晨會先把帳戶現有餘額扣到底（扣到剩 $0），不足的差額通常「不保證隔天自動二扣」！請不要乾等，直接打開【CUBE App ➔ 信用卡 ➔ 繳費 ➔ 自訂金額】把沒扣夠的差額手動補繳即可即時銷帳。'
+      },
+      {
+        bankKey: 'sinopac',
+        matchIds: ['sinopac-daway'],
+        matchNames: ['永豐', 'daway'],
+        bankName: '永豐銀行（永豐 DAWAY）',
+        badgeType: 'success',
+        shortTag: '✅ 綁永豐本行帳戶：隔一營業日自動二扣（存足差額即可）',
+        detail: '綁「永豐本行帳戶」者，當天先扣現有餘額，不足差額會在「次一營業日」自動進行第 2 次補扣！發現當天趕快把差額補進永豐帳戶即可；若連二次補扣都錯過（或綁他行帳戶），請用【大咖 DACARD App】手動補繳。'
+      },
+      {
+        bankKey: 'ctbc',
+        matchIds: ['ctbc-linepay'],
+        matchNames: ['中信', '中國信託'],
+        bankName: '中國信託（中信 LINE Pay）',
+        badgeType: 'success',
+        shortTag: '✅ 綁中信本行帳戶：次一營業日起自動補扣（最多補扣 2 次）',
+        detail: '綁「中信本行帳戶」者，截止日晚間（約 20:00 後）扣款不足時，自「次一營業日起」會自動補扣（最多 2 次）！收到失敗簡訊立刻把錢補進中信帳戶即可；若超過 2 個營業日或綁他行帳戶，請開【Home Bank App】手動繳費。'
+      },
+      {
+        bankKey: 'taishin',
+        matchIds: ['taishin-gogo'],
+        matchNames: ['台新', 'gogo', 'richart'],
+        bankName: '台新銀行（台新 @GoGo / Richart）',
+        badgeType: 'success',
+        shortTag: '✅ 綁台新/Richart 本行帳戶：第 2～3 個營業日自動二扣',
+        detail: '綁「台新／Richart 帳戶」者，截止日先扣現有餘額，不足差額會在「截止日後第 2 個營業日（部分批次為第 3 個營業日）」自動二次扣款！趕快把差額補進 Richart 等二扣即可（⚠️ 接近二扣日請勿又手動轉帳全額，以免重複扣款變溢繳）。'
+      },
+      {
+        bankKey: 'fubon',
+        matchIds: ['fubon-j'],
+        matchNames: ['富邦'],
+        bankName: '台北富邦（富邦 J 卡）',
+        badgeType: 'success',
+        shortTag: '✅ 綁富邦本行帳戶：次一營業日起逐日補扣至足額',
+        detail: '綁「富邦本行帳戶」者，約定條款載明若餘額不足，自截止日次一營業日起會逐日扣取至足額為止！趕快把錢補進富邦帳戶即可（扣檔期間勿重複手動繳以免溢繳；若綁他行帳戶請開【Fubon+ App】手動繳款）。'
+      }
     ];
 
     const DEFAULT_SCENES = [
@@ -934,12 +1169,74 @@
 
     const DEFAULT_KEYWORD_RULES = [
       {
+        id: 'kw-cvs-711',
+        keywords: ['711', '7-11', '統一超商'],
+        sceneId: 'cvs',
+        linePayMode: 'has_lp',
+        title: '🏪 7-11 超商避坑與最高回饋刷法',
+        tip: '⚠️ 7-11 的 LINE Pay 有限定合作銀行（永豐 DAWAY 在 7-11 不能刷 LINE Pay）！\n✅ 首選刷【台新 @GoGo】綁台新 Pay / LINE Pay（切 Pay著刷最高 3.8%），或實體卡/Apple Pay 刷【國泰 CUBE】切【集精選 2%】！',
+        cardOverrides: {
+          'sinopac-daway': { rate: 0, switchTier: '7-11 不支援永豐 LINE Pay', recPay: '不適用 (限中信/台新/富邦/國泰)', note: '7-11 的 LINE Pay 不支援永豐卡，請改刷台新 @GoGo 或國泰 CUBE' }
+        }
+      },
+      {
+        id: 'kw-cvs-fami',
+        keywords: ['全家', 'familymart', '萊爾富', 'ok超商', '超商', '便利商店'],
+        sceneId: 'cvs',
+        linePayMode: 'has_lp',
+        title: '🏪 全家超商推薦刷法',
+        tip: '✅ 全家超商支援【永豐 DAWAY】綁 LINE Pay 免切權益，或【台新 @GoGo】綁台新 Pay / LINE Pay（切 Pay著刷最高 3.8%）；實體卡感應亦可切【國泰 CUBE 集精選 2%】！'
+      },
+      {
         id: 'kw-pxmart',
         keywords: ['全聯', 'pxpay', 'px pay', '全聯福利中心', '福利中心'],
         sceneId: 'mart',
         linePayMode: 'no_lp',
         title: '🛒 全聯福利中心（⚠️ 多數銀行排除 0% 地雷！）',
-        tip: '台新、星展、富邦、永豐、中信刷全聯一般皆「0% 無回饋」！\n✅ 你手上的卡唯一有回饋：刷【國泰 CUBE】店內實體卡或綁 PX Pay 切換【集精選】享 2%（若綁全支付則切【全支付】方案）。'
+        tip: '台新、星展、富邦、永豐、中信刷全聯一般皆「0% 無回饋」！\n✅ 唯一有回饋：刷【國泰 CUBE】店內實體卡或綁 PX Pay 切換【集精選】享 2%（若綁全支付則切【全支付】方案）。',
+        cardOverrides: {
+          'cathay-cube':   { rate: 2.0, switchTier: '集精選 (全聯唯一有回饋)', recPay: '實體卡 / PX Pay / Apple Pay', note: '全聯店內刷卡或綁 PX Pay 切【集精選】享 2% 無上限' },
+          'taishin-gogo':  { rate: 0, switchTier: '全聯排除 (0%無回饋)', recPay: '不建議刷', note: '台新將全聯列為非一般消費排除項目' },
+          'sinopac-daway': { rate: 0, switchTier: '全聯排除 (0%無回饋)', recPay: '不支援', note: '全聯不支援 LINE Pay 且排除一般回饋' },
+          'dbs-eco':       { rate: 0, switchTier: '全聯排除 (0%無回饋)', recPay: '不建議刷', note: '星展將全聯列為排除項目' },
+          'ctbc-linepay':  { rate: 0, switchTier: '全聯排除 (0%無回饋)', recPay: '不建議刷', note: '中信將全聯列為排除項目' },
+          'fubon-j':       { rate: 0, switchTier: '全聯排除 (0%無回饋)', recPay: '不建議刷', note: '富邦將全聯列為排除項目' }
+        }
+      },
+      {
+        id: 'kw-simplemart',
+        keywords: ['美聯社', '美廉社', 'simple mart', 'simplemart'],
+        sceneId: 'general',
+        linePayMode: 'any',
+        title: '🛒 美聯社（美廉社）避坑提醒（非 CUBE 集精選！）',
+        tip: '⚠️ 美聯社（美廉社）不在國泰 CUBE【集精選】名單內，直接刷 CUBE 只有 0.3%！\n✅ 門市可刷 LINE Pay / 台新 Pay ➔ 首選【永豐 DAWAY】或【台新 @GoGo (切 Pay著刷)】！\n✅ 若僅刷實體卡 / Apple Pay ➔ 刷【星展 eco 1.2% 無上限】保底最高！'
+      },
+      {
+        id: 'kw-cosmed',
+        keywords: ['康是美', 'cosmed'],
+        sceneId: 'cosmed',
+        linePayMode: 'no_lp',
+        title: '💄 康是美最佳刷法',
+        tip: '✅ 用 Apple Pay 或實體卡刷【國泰 CUBE】切【樂饗購 3% 無上限】（⚠️ 切記勿透過 LINE Pay 付款以免變 0.3%）；若想刷行動支付可用【台新 @GoGo】切天天刷/Pay著刷！'
+      },
+      {
+        id: 'kw-watsons',
+        keywords: ['屈臣氏', 'watsons', '松本清', '日藥本舖', '唐吉訶德', 'donki', '藥妝'],
+        sceneId: 'cosmed',
+        linePayMode: 'no_lp',
+        title: '💄 屈臣氏 / 藥妝店最佳刷法',
+        tip: '✅ 用 Apple Pay 或實體卡刷【國泰 CUBE】切【樂饗購 3% 無上限】（勿綁 LINE Pay）；若結帳選擇 LINE Pay 則改刷【永豐 DAWAY】或【台新 @GoGo】！'
+      },
+      {
+        id: 'kw-amart',
+        keywords: ['愛買', 'a.mart', 'amart'],
+        sceneId: 'mart',
+        linePayMode: 'no_lp',
+        title: '🛒 愛買量販店最佳刷法',
+        tip: '✅ 愛買屬於國泰 CUBE 指定量販！直接用實體卡 / Apple Pay 刷【國泰 CUBE】切【集精選】享 2% 無上限（注意愛買不在台新天天刷名單內，刷 CUBE 最穩）。',
+        cardOverrides: {
+          'taishin-gogo': { rate: 0.3, switchTier: '非天天刷指定量販 (僅0.3%)', recPay: '建議改刷國泰 CUBE', note: '台新天天刷量販僅含家樂福/大買家/唐吉訶德，不含愛買' }
+        }
       },
       {
         id: 'kw-carrefour',
@@ -955,23 +1252,23 @@
         sceneId: 'mart',
         linePayMode: 'no_lp',
         title: '🚨 好市多 Costco 賣場限定卡提醒',
-        tip: '好市多實體賣場與線上購物目前「僅限刷台北富邦 Costco 聯名卡」（國泰舊聯名卡已停用，一般 CUBE 卡與其他 5 張卡皆無法在好市多刷卡結帳），需付現或使用富邦 Costco 卡！'
+        tip: '好市多實體賣場與線上購物目前「僅限刷台北富邦 Costco 聯名卡」（一般 CUBE 卡與其他卡皆無法在好市多刷卡結帳），需付現或使用富邦 Costco 卡！'
       },
       {
         id: 'kw-hypermarket-others',
-        keywords: ['大潤發', '大全聯', '愛買', '大買家', '美廉社', '楓康', '喜美', '裕毛屋', '量販', '量販店'],
-        sceneId: 'mart',
+        keywords: ['大潤發', '大全聯', '大買家', '楓康', '喜美', '裕毛屋', '量販', '量販店'],
+        sceneId: 'general',
         linePayMode: 'any',
-        title: '🛒 愛買 / 大潤發(大全聯) / 美廉社 / 量販超市',
-        tip: '• 愛買：刷【國泰 CUBE】切【集精選】享 2%，或大買家切【台新天天刷】3.3%。\n• 大潤發(大全聯) / 美廉社（非 CUBE 集精選名單）：若現場可刷 LINE Pay 選【台新/永豐】；僅能刷實體卡請選【星展 eco (1.2% 無腦保底 / 優選量販 2%)】，別刷 CUBE (會變 0.3%)！'
+        title: '🛒 大潤發(大全聯) / 其他量販超市',
+        tip: '• 大買家可切【台新天天刷 3.3%】。\n• 大潤發(大全聯) 非 CUBE 集精選名單：現場可刷 LINE Pay 選【永豐/台新】；僅刷實體卡請選【星展 eco 1.2% 無上限】保底！'
       },
       {
         id: 'kw-life-store',
         keywords: ['寶雅', 'poya', '小北', '小北百貨', '大創', 'daiso', '光南', '四季百貨', '佳瑪', '金興發', '勝佳', '墊腳石'],
-        sceneId: 'mart',
+        sceneId: 'general',
         linePayMode: 'any',
-        title: '🛍️ 寶雅 / 小北百貨 / 大創 / 生活百貨避坑',
-        tip: '⚠️ 寶雅、小北百貨「不在」國泰 CUBE 常態樂饗購/集精選名單內（直接刷 CUBE 僅 0.3%）！\n✅ 現場支援 LINE Pay ➔ 刷【台新 @GoGo / 永豐 DAWAY】；僅刷實體卡 / Apple Pay ➔ 刷【星展 eco 1.2% 無上限】保底最高！'
+        title: '🛍️ 寶雅 / 小北百貨 / 生活百貨避坑提醒',
+        tip: '⚠️ 寶雅、小北百貨「不在」國泰 CUBE 常態樂饗購/集精選名單內（直接刷 CUBE 僅 0.3%）！\n✅ 現場刷 LINE Pay ➔ 選【永豐 DAWAY / 台新 @GoGo】；純刷實體卡 / Apple Pay ➔ 刷【星展 eco 1.2% 無上限】保底最高！'
       },
       {
         id: 'kw-home-ikea',
@@ -1011,23 +1308,27 @@
         sceneId: 'ktv',
         linePayMode: 'no_lp',
         title: '🎤 唱歌 / KTV（錢櫃、好樂迪）避坑提醒',
-        tip: '錢櫃、好樂迪「不屬於」國泰 CUBE 常態【樂饗購】（除非當月壽星切慶生月 10% 或有領限時 KTV 券，否則僅 0.3%）。若可刷 LINE Pay (如享溫馨) 用永豐/台新；僅能刷卡時請刷【星展 eco 1.2%】保底最高！'
+        tip: '⚠️ 錢櫃、好樂迪「不屬於」國泰 CUBE 常態【樂饗購】（無壽星慶生月 10% 時刷 CUBE 僅 0.3%）！\n✅ 錢櫃 / 好樂迪首選【台新 @GoGo】切【好饗刷 3.3%】，或免切權益無腦刷【星展 eco 1.2%】保底；若去享溫馨等可刷 LINE Pay 門市則可用【永豐 DAWAY】！'
       },
       {
         id: 'kw-general-dining',
         keywords: ['一般餐廳', '餐廳', '吃飯', '聚餐', '火鍋', '燒肉', '居酒屋', '早午餐', '海底撈', '壽司郎', '藏壽司', '王品', '鼎泰豐', '麥當勞', '肯德基', '必勝客', '摩斯', '爭鮮'],
         sceneId: 'dining',
         linePayMode: 'any',
-        title: '🍽️ 國內餐廳 / 速食店（麥當勞、火鍋、聚餐）',
-        tip: '• 僅能刷卡 / Apple Pay：無腦刷【國泰 CUBE】切【樂饗購】享 3% 無上限（國內餐飲 MCC 皆認列，含麥當勞）。\n• 支援 LINE Pay / 台新 Pay：亦可用【台新 @GoGo】或【永豐 DAWAY】！'
+        title: '🍽️ 一般餐廳 / 國內聚餐速食（麥當勞、火鍋、燒肉）',
+        tip: '• 僅能刷卡 / Apple Pay：無腦刷【國泰 CUBE】切【樂饗購】享 3% 無上限（國內餐飲 MCC 皆認列），或【台新 @GoGo】切【好饗刷 3.3%】。\n• 支援 LINE Pay / 台新 Pay：亦可用【永豐 DAWAY】或【台新 @GoGo】！'
       },
       {
         id: 'kw-dept-dining',
-        keywords: ['百貨餐廳', '百貨公司', '百貨', '新光三越', 'sogo', '遠百', '大遠百', '微風', '101', '誠品', '巨城', '漢神', 'lalaport', '三井', 'outlet', '華泰名品城', '美食街'],
+        keywords: ['百貨公司', '百貨餐廳', '百貨', '新光三越', 'sogo', '遠百', '大遠百', '微風', '101', '誠品', '巨城', '漢神', 'lalaport', '三井', 'outlet', '華泰名品城', '美食街'],
         sceneId: 'dining',
         linePayMode: 'no_lp',
-        title: '🏬 百貨公司 / Outlet / 百貨美食街',
-        tip: '國泰 CUBE 的【樂饗購 (3% 無上限)】同時涵蓋國內餐飲與各大主力百貨 / Outlet，不怕專櫃掛在百貨名下，用 Apple Pay 或實體卡刷 CUBE 最穩！'
+        title: '🏬 百貨公司 / Outlet / 百貨專櫃與美食街',
+        tip: '• 大額首選無上限：刷【國泰 CUBE】切【樂饗購 3% 無上限】（同時涵蓋各大百貨專櫃與百貨內餐廳，不怕掛百貨帳單）！\n• 小額衝高回饋：新光三越/SOGO/遠百/微風/101/三井與華泰 Outlet 刷【台新 @GoGo】切【大筆刷】享最高 3.3%！',
+        cardOverrides: {
+          'cathay-cube':  { rate: 3.0, switchTier: '樂饗購 (百貨/專櫃/餐廳無上限)', recPay: 'Apple Pay / 實體卡', note: '新光三越/SOGO/遠百/微風/101/巨城/漢神/LaLaport/華泰等 3% 無上限' },
+          'taishin-gogo': { rate: 3.3, switchTier: '大筆刷 (指定百貨/Outlet)', recPay: '實體卡 / Apple Pay', note: '新光三越/SOGO/遠百/微風/101/華泰/三井 Outlet 切【大筆刷】最高 3.3%' }
+        }
       },
       {
         id: 'kw-hotel-dining',
@@ -1044,30 +1345,6 @@
         linePayMode: 'has_lp',
         title: '🧋 手搖飲 / 咖啡廳 / 街邊小店',
         tip: '支援 LINE Pay 直接用【永豐 DAWAY】或【台新 @GoGo】；星巴克、路易莎等刷卡店可刷【國泰 CUBE (切樂饗購 3%)】。'
-      },
-      {
-        id: 'kw-cosmed-drug',
-        keywords: ['康是美', '屈臣氏', '松本清', '日藥本舖', '唐吉訶德', 'donki', '藥妝'],
-        sceneId: 'cosmed',
-        linePayMode: 'any',
-        title: '💄 康是美 / 屈臣氏 / 藥妝店',
-        tip: '康是美、屈臣氏用 Apple Pay 或實體卡刷【國泰 CUBE (切樂饗購 3% 無上限)】（切記勿綁 LINE Pay）；若用 LINE Pay 結帳則選台新或永豐。'
-      },
-      {
-        id: 'kw-cvs-711',
-        keywords: ['7-11', '711', '統一超商'],
-        sceneId: 'cvs',
-        linePayMode: 'has_lp',
-        title: '🏪 7-11 超商避坑提醒',
-        tip: '7-11 的 LINE Pay 有限定合作銀行（永豐非合作卡），請改用【台新 @GoGo】綁台新 Pay / LINE Pay（切 Pay著刷），或【國泰 CUBE】切【集精選 2%】！'
-      },
-      {
-        id: 'kw-cvs-fami',
-        keywords: ['全家', 'familymart', '萊爾富', 'ok超商', '超商', '便利商店'],
-        sceneId: 'cvs',
-        linePayMode: 'has_lp',
-        title: '🏪 全家 / 萊爾富超商推薦',
-        tip: '全家超商可刷【台新 @GoGo】綁台新 Pay / LINE Pay（切 Pay著刷最高 3.8%）或【永豐 DAWAY】綁 LINE Pay，實體感應亦可切【國泰 CUBE 集精選 2%】！'
       },
       {
         id: 'kw-gas-parking',
@@ -1087,11 +1364,11 @@
       },
       {
         id: 'kw-travel-booking',
-        keywords: ['agoda', 'booking', 'hotels.com', 'airbnb', 'trip.com', 'klook', 'kkday', '長榮', '華航', '星宇', '虎航', '樂桃', '機票', '訂房', '日本', '韓國', '泰國'],
+        keywords: ['出國', '海外', '國外', 'agoda', 'booking', 'hotels.com', 'airbnb', 'trip.com', 'klook', 'kkday', '長榮', '華航', '星宇', '虎航', '樂桃', '機票', '訂房', '日本', '韓國', '泰國'],
         sceneId: 'abroad',
         linePayMode: 'no_lp',
-        title: '✈️ 機票 / 訂房網 (Agoda、Klook) / 出國旅遊',
-        tip: '• 日韓泰當地實體消費：首選【富邦 J 卡 (登錄最高 6%)】或【星展 eco (免登錄 5%，上限 $15,000)】。\n• 買機票、Agoda/Booking/Klook 訂房行程、大額無上限：刷【國泰 CUBE 切趣旅行 3%】或【台新切玩旅刷 3.3%】！'
+        title: '✈️ 出國旅遊 / 海外實體 / 機票訂房網 (Agoda、Klook)',
+        tip: '• 日韓泰當地實體消費：首選【富邦 J 卡 (登錄最高 6% / 免登 3%)】或【星展 eco (免登錄 5%，每期上限 $15,000)】。\n• 歐美海外實體：首選【星展 eco 5%】或【國泰 CUBE 切趣旅行 3% 無上限】。\n• 買機票、Agoda/Booking/Klook 訂房或大額刷卡：刷【國泰 CUBE 切趣旅行 3%】或【台新切玩旅刷 3.3%】！'
       },
       {
         id: 'kw-taxi-uber',
@@ -1397,6 +1674,7 @@
     let selectedCardId = appData.cards[0].id;
     let selectedExpenseDate = getLocalDateStr(0);
     let activeQuickChipId = null;
+    let activeMatchedKeywordRule = null;
     let storeLinePayFilter = 'any';
     let donutDimension = 'scene';
     let activeSliceFilter = null;
@@ -1420,6 +1698,17 @@
               }
             });
 
+            // 自動升級 v8 最新 13 大快查專屬關鍵字規則（保留使用者自己新增的自訂規則！）
+            if (!parsed._migratedV8KeywordsR2) {
+              const userCustomRules = (parsed.keywordRules || []).filter(r => /^kw-\d+$/.test(String(r.id)));
+              parsed.keywordRules = [
+                ...userCustomRules,
+                ...JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES))
+              ];
+              parsed._migratedV8KeywordsR2 = true;
+              needsResave = true;
+            }
+
             if (profileId === 'profile-main' && !parsed._cleanedDemoV5) {
               parsed.transactions = (parsed.transactions || []).filter(t => !String(t.id).startsWith('demo-'));
               parsed._cleanedDemoV5 = true;
@@ -1440,6 +1729,7 @@
       const blankInit = {
         _cleanedDemoV5: true,
         _migratedV7Privacy: true,
+        _migratedV8KeywordsR2: true,
         defaultStartTab: 'finder',
         scenes: JSON.parse(JSON.stringify(DEFAULT_SCENES)),
         keywordRules: JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES)),
@@ -1451,10 +1741,15 @@
       return blankInit;
     }
 
-    function saveData() {
+    let autoPushTimer = null;
+    function saveData(skipCloudAutoPush = false) {
       try {
+        appData._updatedAt = Date.now();
         const key = getLedgerStorageKey(profileRegistry.activeProfileId);
         localStorage.setItem(key, JSON.stringify(appData));
+        if (!skipCloudAutoPush && typeof scheduleAutoCloudPush === 'function') {
+          scheduleAutoCloudPush();
+        }
       } catch (e) {}
     }
 
@@ -1464,7 +1759,7 @@
       el.innerHTML = msg;
       el.classList.remove('hidden');
       if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
+      toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
     }
 
     // ==========================================================
@@ -1493,8 +1788,8 @@
         if (currentView === 'finder' || currentView === 'record') {
           headerPinBtn.classList.remove('hidden');
           headerPinBtn.className = isCurrentDefault
-            ? 'hidden sm:inline-flex shrink-0 px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--accent-soft)] text-[var(--accent-text)] transition-all'
-            : 'hidden sm:inline-flex shrink-0 px-2.5 py-1 rounded-lg text-[12px] font-medium bg-[var(--bg-pill)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all';
+            ? 'shrink-0 px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--accent-soft)] text-[var(--accent-text)] transition-all'
+            : 'shrink-0 px-2.5 py-1 rounded-lg text-[12px] font-medium bg-[var(--bg-pill)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all';
           headerPinBtn.textContent = isCurrentDefault ? '✓ 目前為預設首頁' : '📌 設為預設首頁';
         } else {
           headerPinBtn.classList.add('hidden');
@@ -1635,12 +1930,12 @@
         if (v === view) {
           if (viewEl) viewEl.classList.remove('hidden');
           if (tabBtn) {
-            tabBtn.className = 'px-3 sm:px-3.5 py-1.5 rounded-lg text-[12.5px] sm:text-[13px] font-semibold bg-[var(--accent)] text-white shadow-sm transition-all shrink-0';
+            tabBtn.className = 'px-1 sm:px-3.5 py-1.5 rounded-lg text-[12px] sm:text-[13px] text-center font-semibold bg-[var(--accent)] text-white shadow-sm transition-all truncate';
           }
         } else {
           if (viewEl) viewEl.classList.add('hidden');
           if (tabBtn) {
-            tabBtn.className = 'px-3 sm:px-3.5 py-1.5 rounded-lg text-[12.5px] sm:text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-all shrink-0';
+            tabBtn.className = 'px-1 sm:px-3.5 py-1.5 rounded-lg text-[12px] sm:text-[13px] text-center font-medium text-[var(--text-secondary)] hover:text-[var(--text-main)] transition-all truncate';
           }
         }
       });
@@ -1671,40 +1966,106 @@
       return `每月 ${card.statementDay} 號結帳 ・ ${card.dueDay} 號${card.autoDebit ? '自動扣款' : '繳款截止'}`;
     }
 
+    function formatYmdDate(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function buildClampedDate(year, monthZeroBased, dayNum) {
+      const lastDay = new Date(year, monthZeroBased + 1, 0).getDate();
+      return new Date(year, monthZeroBased, Math.min(Math.max(1, Number(dayNum || 1)), lastDay));
+    }
+
+    // 精準計算每張卡「下一次扣款日」與「該期實際應繳消費金額」
+    // 重要：若該期帳單消費金額為 $0（本來就不需要繳費），就絕對不會跳出多餘提醒！
+    function getCardUpcomingDueInfo(card) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const dueDay = Number(card.dueDay || 15);
+      const stmtDay = Number(card.statementDay || dueDay);
+
+      let dueDate = buildClampedDate(today.getFullYear(), today.getMonth(), dueDay);
+      if (dueDate < today) {
+        dueDate = buildClampedDate(today.getFullYear(), today.getMonth() + 1, dueDay);
+      }
+      const daysUntilDue = Math.round((dueDate.getTime() - today.getTime()) / 86400000);
+      const dueMonthKey = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}`;
+      const isPaid = Boolean(card.paidMonths && card.paidMonths[dueMonthKey]);
+
+      // 找出此扣款日對應的結帳區間 (prevStmtDate, stmtDate]
+      let stmtDate;
+      if (stmtDay < dueDate.getDate()) {
+        stmtDate = buildClampedDate(dueDate.getFullYear(), dueDate.getMonth(), stmtDay);
+      } else {
+        stmtDate = buildClampedDate(dueDate.getFullYear(), dueDate.getMonth() - 1, stmtDay);
+      }
+      const prevStmtDate = buildClampedDate(stmtDate.getFullYear(), stmtDate.getMonth() - 1, stmtDay);
+      const prevStmtStr = formatYmdDate(prevStmtDate);
+      const stmtStr = formatYmdDate(stmtDate);
+      const dueStr = formatYmdDate(dueDate);
+
+      // 計算該結帳週期內的刷卡總額；若剛開始記帳（消費記在當月），一併納入未結清之當月刷卡額判斷
+      const cycleSpend = (appData.transactions || [])
+        .filter(t => t.cardId === card.id && t.date > prevStmtStr && t.date <= stmtStr)
+        .reduce((s, t) => s + Number(t.amount || 0), 0);
+
+      const sameDueMonthSpend = (appData.transactions || [])
+        .filter(t => t.cardId === card.id && (t.date || '').startsWith(dueMonthKey) && t.date <= dueStr)
+        .reduce((s, t) => s + Number(t.amount || 0), 0);
+
+      const billSpend = cycleSpend > 0 ? cycleSpend : sameDueMonthSpend;
+      const manualNeedPay = Boolean(card.manualNeedPayMonths && card.manualNeedPayMonths[dueMonthKey]);
+
+      return {
+        dueDate,
+        dueDay: dueDate.getDate(),
+        daysUntilDue,
+        dueMonthKey,
+        isPaid,
+        billSpend,
+        hasBillToPay: !isPaid && (billSpend > 0 || manualNeedPay)
+      };
+    }
+
+    function getBankDebitFailRule(card) {
+      if (!card) return null;
+      const cid = String(card.id || '').toLowerCase();
+      const cname = String(card.name || '').toLowerCase();
+      return BANK_DEBIT_FAIL_GUIDE.find(g =>
+        g.matchIds.includes(cid) || g.matchNames.some(kw => cname.includes(kw))
+      ) || null;
+    }
+
     function renderSystemAlerts() {
       const mount = document.getElementById('systemAlertsMount');
       if (!mount) return;
 
-      const todayDay = new Date().getDate();
       const alertsHTML = [];
 
-      // 1. 自動扣款前 0~4 天帳戶餘額檢查提醒（僅針對使用者已開啟自動扣款或非空白預設卡提醒）
-      const upcomingAutoDebits = appData.cards.filter(card => {
-        if (!card.dueDay || card.id === 'custom-card-1' || !card.autoDebit) return false;
-        const isPaid = card.paidMonths && card.paidMonths[REAL_CURRENT_MONTH];
-        if (isPaid) return false;
-        let diff = card.dueDay - todayDay;
-        if (diff < 0) diff += 30;
-        return diff >= 0 && diff <= 4;
-      });
+      // 1. 自動扣款 / 繳費截止前 0~4 天帳戶餘額提醒（★ 僅顯示「本期真的有消費需繳費 > $0」的卡片！$0 免繳卡片完全不打擾）
+      const upcomingDueList = appData.cards
+        .filter(card => card.dueDay && card.id !== 'custom-card-1')
+        .map(card => ({ card, dueInfo: getCardUpcomingDueInfo(card) }))
+        .filter(({ dueInfo }) => dueInfo.daysUntilDue >= 0 && dueInfo.daysUntilDue <= 4 && dueInfo.hasBillToPay);
 
-      if (upcomingAutoDebits.length > 0) {
-        const itemsText = upcomingAutoDebits.map(c => {
-          let diff = c.dueDay - todayDay;
-          if (diff < 0) diff += 30;
-          const dayWord = diff === 0 ? '今天' : `${diff} 天後 (${c.dueDay}號)`;
-          return `<strong>${c.name}</strong>（${dayWord}${c.autoDebit ? '自動扣款' : '截止'}）`;
+      if (upcomingDueList.length > 0) {
+        const itemsText = upcomingDueList.map(({ card, dueInfo }) => {
+          const dayWord = dueInfo.daysUntilDue === 0 ? '今天' : `${dueInfo.daysUntilDue} 天後 (${dueInfo.dueDay}號)`;
+          const amtText = dueInfo.billSpend > 0 ? `・應繳約 $${dueInfo.billSpend.toLocaleString()}` : '';
+          return `<strong>${card.name}</strong>（${dayWord}${card.autoDebit ? '自動扣款' : '繳款截止'}${amtText}）`;
         }).join('、');
 
         alertsHTML.push(`
-          <div class="p-3.5 rounded-2xl bg-[var(--warn-soft)] border border-[var(--warn)]/30 flex items-center justify-between gap-3 flex-wrap">
-            <div class="text-[13px] text-[var(--warn)] leading-relaxed min-w-0">
-              🏦 <strong>近期扣款提醒：</strong>${itemsText}，請確認扣款銀行帳戶餘額足夠！
+          <div class="p-3.5 sm:p-4 rounded-2xl bg-[var(--warn-soft)] border border-[var(--warn)]/30 flex items-center justify-between gap-3 flex-wrap">
+            <div class="text-[13px] text-[var(--warn)] leading-relaxed min-w-0 flex-1">
+              🏦 <strong>近期繳費／扣款提醒：</strong>${itemsText}，請確認扣款帳戶餘額足夠！（無消費之卡片已自動隱藏）
             </div>
-            <div class="flex items-center gap-1.5 flex-wrap">
-              ${upcomingAutoDebits.map(c => `
-                <button onclick="markCurrentMonthPaid('${c.id}')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs">
-                  ✓ ${c.name} 已確認
+            <div class="flex items-center gap-1.5 flex-wrap shrink-0">
+              <button onclick="openDebitFailGuideModal()" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--bg-surface)] text-[var(--warn)] border border-[var(--warn)]/30 shadow-xs">
+                🆘 扣款失敗補救
+              </button>
+              ${upcomingDueList.map(({ card, dueInfo }) => `
+                <button onclick="markDueMonthPaid('${card.id}', '${dueInfo.dueMonthKey}')" class="px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[var(--accent)] text-white shadow-xs">
+                  ✓ ${card.name} 已確認
                 </button>
               `).join('')}
             </div>
@@ -1736,14 +2097,17 @@
       mount.innerHTML = alertsHTML.join('');
     }
 
-    function markCurrentMonthPaid(cardId) {
+    function markDueMonthPaid(cardId, targetMonth = REAL_CURRENT_MONTH) {
       const card = getCardById(cardId);
       if (!card) return;
       if (!card.paidMonths) card.paidMonths = {};
-      card.paidMonths[REAL_CURRENT_MONTH] = true;
+      card.paidMonths[targetMonth] = true;
       saveData();
       renderAll();
-      showToast(`✓ 已標記「${card.name}」本月扣款已確認`);
+      showToast(`✓ 已標記「${card.name}」本期扣款已確認`);
+    }
+    function markCurrentMonthPaid(cardId) {
+      markDueMonthPaid(cardId, REAL_CURRENT_MONTH);
     }
 
     function renderAll() {
@@ -1997,10 +2361,16 @@
         .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
       if (list.length === 0) {
-        mount.innerHTML = '';
+        mount.innerHTML = `
+          <section class="hidden lg:block surface-card p-5 sm:p-6 text-center space-y-2">
+            <div class="text-[22px]">🧾</div>
+            <div class="text-[14.5px] font-bold text-[var(--text-main)]">${formatMonthTitle(CURRENT_MONTH)} 尚無記帳紀錄</div>
+            <p class="text-[12.5px] text-[var(--text-muted)] leading-relaxed">在左側輸入金額儲存後，最近明細與單日小計會即時顯示於此。</p>
+          </section>
+        `;
         return;
       }
-      const recent = list.slice(0, 3);
+      const recent = list.slice(0, 4);
 
       mount.innerHTML = `
         <section class="surface-card p-5 sm:p-6 space-y-3.5">
@@ -2018,20 +2388,20 @@
     }
 
     // ==========================================================
-    // 📍 置頂刷卡推薦與「快查」藍色選中狀態
+    // 📍 置頂刷卡推薦與「13 個指定快查」藍色選中狀態
     // ==========================================================
     function renderQuickSearchChips() {
       const row = document.getElementById('quickSearchChipsRow');
       if (!row) return;
-      row.innerHTML = `<span class="text-[12px] font-medium text-[var(--text-muted)] shrink-0">快查：</span>` +
+      row.innerHTML = `<span class="text-[12px] font-semibold text-[var(--text-muted)] shrink-0 mr-0.5">快查：</span>` +
         QUICK_SEARCH_CHIPS.map(chip => {
           const isActive = activeQuickChipId === chip.id;
           return `
             <button onclick="selectQuickChip('${chip.id}')"
-              class="shrink-0 text-[12.5px] px-3 py-1 rounded-full transition-all inline-flex items-center gap-1 ${
+              class="shrink-0 text-[12.5px] px-2.5 sm:px-3 py-1 rounded-full transition-all inline-flex items-center gap-1 border ${
                 isActive
-                  ? 'bg-[var(--accent)] text-white font-semibold shadow-xs'
-                  : 'bg-[var(--bg-pill)] text-[var(--text-secondary)] font-medium hover:text-[var(--text-main)]'
+                  ? 'bg-[var(--accent)] text-white border-[var(--accent)] font-semibold shadow-xs'
+                  : 'bg-[var(--bg-pill)] text-[var(--text-secondary)] border-transparent font-medium hover:border-[var(--accent)]/40 hover:text-[var(--text-main)]'
               }">
               ${isActive ? '<span>✓</span>' : ''}
               <span>${chip.label}</span>
@@ -2110,6 +2480,7 @@
     }
 
     function quickClassifyUnknown(sceneId, lpMode) {
+      activeMatchedKeywordRule = null;
       selectedTopScene = sceneId;
       selectedRecordScene = sceneId;
       setStoreLinePayFilter(lpMode);
@@ -2121,19 +2492,22 @@
       const q = rawVal.toLowerCase();
       const clearBtn = document.getElementById('clearSearchBtn');
       const diagBox = document.getElementById('smartKeywordDiagnosis');
+      const diagBoxMob = document.getElementById('smartKeywordDiagnosisMobile');
 
       if (fromManualInput) {
-        const matchedChip = QUICK_SEARCH_CHIPS.find(c => c.query.toLowerCase() === q || c.label.toLowerCase().includes(q));
+        const matchedChip = QUICK_SEARCH_CHIPS.find(c => c.query.toLowerCase() === q || c.label.toLowerCase() === q);
         activeQuickChipId = q && matchedChip ? matchedChip.id : null;
         renderQuickSearchChips();
       }
 
       const inputEl = document.getElementById('smartStoreInput');
       if (!q) {
+        activeMatchedKeywordRule = null;
         clearBtn.classList.add('hidden');
         if (inputEl) { inputEl.classList.remove('pr-14'); inputEl.classList.add('pr-4'); }
-        diagBox.classList.add('hidden');
-        renderTopSceneAdvisor();
+        if (diagBox) { diagBox.innerHTML = ''; diagBox.classList.add('hidden'); }
+        if (diagBoxMob) { diagBoxMob.innerHTML = ''; diagBoxMob.classList.add('hidden'); }
+        setStoreLinePayFilter('any');
         return;
       }
 
@@ -2144,22 +2518,20 @@
       for (const rule of (appData.keywordRules || [])) {
         if (rule.keywords.some(k => {
           const kw = k.toLowerCase();
-          // 避免單字太短誤判：輸入關鍵字包含規則詞，或輸入至少 2 字且被規則詞包含
           return q.includes(kw) || (q.length >= 2 && kw.includes(q));
         })) {
           matched = rule;
           break;
         }
       }
+      activeMatchedKeywordRule = matched;
 
+      let diagHTML = '';
       if (matched) {
         selectedTopScene = matched.sceneId;
         selectedRecordScene = matched.sceneId;
-        if (matched.linePayMode && matched.linePayMode !== 'any') {
-          setStoreLinePayFilter(matched.linePayMode);
-        }
-        diagBox.classList.remove('hidden');
-        diagBox.innerHTML = `
+        setStoreLinePayFilter(matched.linePayMode || 'any');
+        diagHTML = `
           <div class="p-4 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent)]/30 space-y-1.5">
             <div class="text-[14px] font-bold text-[var(--accent-text)]">${matched.title}</div>
             <p class="text-[13px] text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">${matched.tip}</p>
@@ -2169,12 +2541,9 @@
         const inferred = inferUnlistedStoreStrategy(rawVal);
         selectedTopScene = inferred.sceneId;
         selectedRecordScene = inferred.sceneId;
-        if (inferred.linePayMode && inferred.linePayMode !== 'any') {
-          setStoreLinePayFilter(inferred.linePayMode);
-        }
-        diagBox.classList.remove('hidden');
-        diagBox.innerHTML = `
-          <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-2.5">
+        setStoreLinePayFilter(inferred.linePayMode || 'any');
+        diagHTML = `
+          <div class="p-4 rounded-2xl bg-[var(--bg-surface)] lg:surface-card border border-[var(--border-hairline)] space-y-2.5">
             <div class="text-[14px] font-bold text-[var(--text-main)]">${inferred.title}</div>
             <p class="text-[13px] text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">${inferred.tip}</p>
             <div class="flex flex-wrap gap-1.5 pt-1">
@@ -2184,6 +2553,15 @@
             </div>
           </div>
         `;
+      }
+
+      if (diagBox) {
+        diagBox.innerHTML = diagHTML;
+        diagBox.classList.remove('hidden');
+      }
+      if (diagBoxMob) {
+        diagBoxMob.innerHTML = diagHTML;
+        diagBoxMob.classList.remove('hidden');
       }
 
       renderTopSceneAdvisor();
@@ -2214,14 +2592,17 @@
           recPay: '實體卡',
           note: ''
         };
-        const rule = Object.assign({}, rawRule);
-        const isLinePayOnlyCard = (rule.recPay || '').includes('LINE Pay') && !(rule.recPay || '').includes('實體');
+        const kwOverride = activeMatchedKeywordRule && activeMatchedKeywordRule.cardOverrides
+          ? activeMatchedKeywordRule.cardOverrides[card.id]
+          : null;
+        const rule = Object.assign({}, rawRule, kwOverride || {});
+        const isMobilePayOnlyCard = ((rule.recPay || '').includes('LINE Pay') || (rule.recPay || '').includes('台新 Pay')) && !(rule.recPay || '').includes('實體');
 
         let effectiveRate = Number(rule.rate || 0);
         let filterNotice = '';
-        if (storeLinePayFilter === 'no_lp' && isLinePayOnlyCard) {
-          effectiveRate = card.id === 'sinopac-daway' ? 0.5 : 1.0;
-          filterNotice = '（現場無 LINE Pay 時僅一般回饋）';
+        if (!kwOverride && storeLinePayFilter === 'no_lp' && isMobilePayOnlyCard) {
+          effectiveRate = card.id === 'sinopac-daway' ? 0.5 : (card.id === 'taishin-gogo' ? 0.3 : 1.0);
+          filterNotice = '（現場無行動支付時僅一般回饋）';
         }
 
         const spent = getCardMonthlySpend(card.id, REAL_CURRENT_MONTH);
@@ -2238,17 +2619,23 @@
 
       const firstNeedTask = first.card.requireMonthlyTask && !first.taskDone;
       const firstCapPercent = first.cap > 0 ? Math.min(100, Math.round((first.spent / first.cap) * 100)) : 0;
+      const curScObj = getSceneById(selectedTopScene);
 
       recBox.innerHTML = `
-        <div class="p-5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3.5">
+        <div class="flex items-center justify-between gap-2 pb-1">
+          <span class="text-[12.5px] font-semibold text-[var(--text-muted)]">🎯 ${curScObj ? `${curScObj.icon} ${curScObj.name}` : '推薦刷法'} 最佳排行</span>
+          <span class="text-[11.5px] font-medium text-[var(--text-muted)]">${storeLinePayFilter === 'no_lp' ? '僅刷實體/感應' : (storeLinePayFilter === 'has_lp' ? '有 LINE Pay' : '支付不限')}</span>
+        </div>
+
+        <div class="p-4 sm:p-5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3.5">
           <div class="flex items-start justify-between gap-3">
             <div>
               <span class="inline-block text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)] mb-1.5">
                 🥇 首選最高回饋
               </span>
               <div class="flex items-baseline gap-2.5 flex-wrap">
-                <h4 class="text-[20px] font-bold text-[var(--text-main)]">${first.card.name}</h4>
-                <span class="text-[26px] font-extrabold num-tabular text-[var(--accent)]">${first.effectiveRate}%</span>
+                <h4 class="text-[19px] sm:text-[20px] font-bold text-[var(--text-main)]">${first.card.name}</h4>
+                <span class="text-[25px] sm:text-[26px] font-extrabold num-tabular text-[var(--accent)]">${first.effectiveRate}%</span>
               </div>
             </div>
             <button onclick="applyRecommendationToRecord('${selectedTopScene}', '${first.card.id}', '${first.rule.recPay}')"
@@ -2257,7 +2644,7 @@
             </button>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-[var(--border-hairline)] text-[13.5px]">
+          <div class="grid grid-cols-1 gap-1.5 pt-2.5 border-t border-[var(--border-hairline)] text-[13.5px]">
             <div>
               <span class="text-[var(--text-muted)]">建議支付：</span>
               <strong class="font-semibold text-[var(--text-main)]">${first.rule.recPay}</strong>
@@ -2269,12 +2656,12 @@
           </div>
 
           ${(first.rule.note || first.filterNotice) ? `
-            <p class="text-[13px] text-[var(--text-muted)] leading-relaxed">${first.rule.note} ${first.filterNotice}</p>
+            <p class="text-[12.5px] text-[var(--text-muted)] leading-relaxed">${first.rule.note} ${first.filterNotice}</p>
           ` : ''}
 
           ${first.cap > 0 ? `
             <div class="space-y-1.5 pt-1">
-              <div class="flex items-center justify-between text-[12.5px] text-[var(--text-muted)] num-tabular">
+              <div class="flex items-center justify-between text-[12px] text-[var(--text-muted)] num-tabular">
                 <span>本月加碼額度進度</span>
                 <span>$${first.spent.toLocaleString()} / $${first.cap.toLocaleString()} (${firstCapPercent}%)</span>
               </div>
@@ -2287,10 +2674,10 @@
           ${first.card.requireMonthlyTask ? (
             firstNeedTask ? `
               <div class="p-3 rounded-xl bg-[var(--warn-soft)] flex items-center justify-between gap-3">
-                <span class="text-[13px] text-[var(--warn)] font-medium">🎟️ ${first.card.monthlyTaskDesc}</span>
+                <span class="text-[12.5px] text-[var(--warn)] font-medium">🎟️ ${first.card.monthlyTaskDesc}</span>
                 <button onclick="toggleCardMonthlyTask('${first.card.id}', '${REAL_CURRENT_MONTH}')"
-                  class="shrink-0 text-[12.5px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs">
-                  勾選本月已領
+                  class="shrink-0 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs">
+                  勾選已領
                 </button>
               </div>
             ` : `
@@ -2302,17 +2689,19 @@
           ) : ''}
         </div>
 
-        <div class="divide-y divide-[var(--border-hairline)] px-1">
+        <div class="divide-y divide-[var(--border-hairline)] px-0.5">
           ${runnersUp.map((item, idx) => `
-            <div class="py-2.5 flex items-center justify-between gap-3">
-              <div class="flex items-center gap-2.5 min-w-0 flex-wrap">
-                <span class="text-[12px] font-medium text-[var(--text-muted)] w-11 shrink-0">${idx === 0 ? '次選' : '備用'}</span>
-                <span class="text-[14.5px] font-semibold text-[var(--text-main)]">${item.card.name}</span>
-                <span class="text-[13.5px] font-bold num-tabular text-[var(--accent-text)]">${item.effectiveRate}%</span>
-                <span class="text-[12.5px] text-[var(--text-muted)] truncate">・${item.rule.recPay}（${item.rule.switchTier}）</span>
+            <div class="py-2.5 flex items-center justify-between gap-2.5">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-[11.5px] font-medium text-[var(--text-muted)] shrink-0">${idx === 0 ? '次選' : '備用'}</span>
+                  <span class="text-[14px] font-semibold text-[var(--text-main)]">${item.card.name}</span>
+                  <span class="text-[13.5px] font-bold num-tabular text-[var(--accent-text)]">${item.effectiveRate}%</span>
+                </div>
+                <div class="text-[12px] text-[var(--text-muted)] truncate mt-0.5">${item.rule.recPay}（${item.rule.switchTier}）</div>
               </div>
               <button onclick="applyRecommendationToRecord('${selectedTopScene}', '${item.card.id}', '${item.rule.recPay}')"
-                class="shrink-0 text-[12.5px] font-medium px-3 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
+                class="shrink-0 text-[12px] font-medium px-3 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
                 選用
               </button>
             </div>
@@ -2322,6 +2711,7 @@
     }
 
     function selectTopScene(sceneId) {
+      activeMatchedKeywordRule = null;
       selectedTopScene = sceneId;
       selectedRecordScene = sceneId;
       renderTopSceneAdvisor();
@@ -2446,14 +2836,14 @@
         const subText = isCash ? '免對帳單' : (defCard ? defCard.name : '選擇卡片');
         return `
           <button onclick="selectPayMethod('${pm.id}')"
-            class="p-3 rounded-2xl text-left transition-all border-2 ${
+            class="p-2.5 sm:p-3 rounded-2xl text-left transition-all border-2 ${
               active
                 ? 'bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent-text)] shadow-xs'
                 : 'bg-[var(--bg-subtle)] border-transparent text-[var(--text-main)] hover:bg-[var(--bg-pill)]'
             }">
-            <div class="text-[14px] font-semibold flex items-center justify-between gap-1">
+            <div class="text-[13px] sm:text-[13.5px] font-semibold flex items-center justify-between gap-1">
               <span class="truncate">${pm.icon} ${pm.name}</span>
-              ${active ? '<span class="w-5 h-5 rounded-full bg-[var(--accent)] text-white text-[12px] flex items-center justify-center shrink-0">✓</span>' : ''}
+              ${active ? '<span class="text-[12px] font-extrabold text-[var(--accent)] shrink-0">✓</span>' : ''}
             </div>
             <div class="text-[12px] text-[var(--text-muted)] truncate mt-1">${subText}</div>
           </button>
@@ -2527,7 +2917,13 @@
     }
 
     function updateSmartAdvisory() {
-      const panel = document.getElementById('smartAdvisoryPanel');
+      const panelMob = document.getElementById('smartAdvisoryPanel');
+      const panelDesk = document.getElementById('smartAdvisoryPanelDesktop');
+      const setBothPanels = (html) => {
+        if (panelMob) panelMob.innerHTML = html;
+        if (panelDesk) panelDesk.innerHTML = html;
+      };
+
       const amount = Number(document.getElementById('expenseAmount').value || 0);
       const scene = getSceneById(selectedRecordScene);
       const currentPm = appData.payMethods.find(p => p.id === selectedPayMethod);
@@ -2535,11 +2931,11 @@
       const recordMonth = (selectedExpenseDate || REAL_CURRENT_MONTH).slice(0, 7);
 
       if (isCashPay) {
-        panel.innerHTML = `
+        setBothPanels(`
           <div class="px-4 py-3 rounded-2xl bg-[var(--bg-subtle)] text-[13px] text-[var(--text-muted)]">
             💵 現金支出將計入 ${formatMonthTitle(recordMonth)} 圓餅圖總開銷，不列入信用卡待繳帳單。
           </div>
-        `;
+        `);
         return;
       }
 
@@ -2573,17 +2969,17 @@
         }
       });
 
-      panel.innerHTML = `
+      setBothPanels(`
         <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
           <div class="flex items-center justify-between flex-wrap gap-2">
             <div class="text-[14px] text-[var(--text-secondary)]">
               應切權益：<strong class="font-bold text-[var(--text-main)]">${rule.switchTier}</strong>
-              <span class="ml-2 text-[13px] font-semibold text-[var(--accent-text)] num-tabular">(${rule.rate}%)</span>
+              <span class="ml-1.5 text-[13px] font-semibold text-[var(--accent-text)] num-tabular">(${rule.rate}%)</span>
             </div>
             <div class="num-tabular">
               ${amount > 0
                 ? `<span class="text-[15px] font-bold text-[var(--success)]">預估回饋 +$${estReward}</span>`
-                : `<span class="text-[12.5px] text-[var(--text-muted)]">輸入金額自動試算回饋</span>`}
+                : `<span class="text-[12.5px] text-[var(--text-muted)]">輸入金額自動試算</span>`}
             </div>
           </div>
 
@@ -2623,7 +3019,7 @@
             </div>
           ` : ''}
         </div>
-      `;
+      `);
     }
 
     function submitExpense() {
@@ -2964,7 +3360,6 @@
     // ==========================================================
     function renderCardsView() {
       const container = document.getElementById('cardsContainer');
-      const todayDay = new Date().getDate();
 
       container.innerHTML = appData.cards.map(card => {
         const spent = getCardMonthlySpend(card.id, CURRENT_MONTH);
@@ -2972,21 +3367,29 @@
         const capPercent = cap > 0 ? Math.min(100, Math.round((spent / cap) * 100)) : 0;
         const taskDone = card.monthlyTaskDone && card.monthlyTaskDone[CURRENT_MONTH];
         const isPaid = card.paidMonths && card.paidMonths[CURRENT_MONTH];
-
-        let daysToDue = card.dueDay - todayDay;
-        if (daysToDue < 0) daysToDue += 30;
+        const dueInfo = getCardUpcomingDueInfo(card);
+        const failRule = getBankDebitFailRule(card);
         const promoDaysLeft = card.promoValidUntil ? getDaysUntilDateStr(card.promoValidUntil) : 999;
 
+        let dueBadgeHTML = '';
+        if (CURRENT_MONTH === REAL_CURRENT_MONTH && card.id !== 'custom-card-1' && dueInfo.daysUntilDue <= 5) {
+          if (dueInfo.hasBillToPay) {
+            dueBadgeHTML = `<span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--danger-soft)] text-[var(--danger)]">${dueInfo.daysUntilDue === 0 ? '今天' : dueInfo.daysUntilDue + ' 天後'}${card.autoDebit ? '扣款' : '截止'}</span>`;
+          } else if (!isPaid && dueInfo.billSpend === 0) {
+            dueBadgeHTML = `<span class="text-[11.5px] font-medium px-2 py-0.5 rounded-full bg-[var(--bg-pill)] text-[var(--text-muted)]">本期 $0 免繳</span>`;
+          }
+        }
+
         return `
-          <div class="surface-card p-6 space-y-5 flex flex-col justify-between">
-            <div class="space-y-4">
+          <div class="surface-card p-5 sm:p-6 space-y-4 flex flex-col justify-between">
+            <div class="space-y-3.5">
               <!-- 卡片頂部資訊 -->
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                   <div class="flex items-center gap-2 flex-wrap">
                     <h4 class="text-[18px] font-bold text-[var(--text-main)]">${card.name}</h4>
                     ${card.autoDebit ? `<span class="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">🏦 自動扣款</span>` : ''}
-                    ${CURRENT_MONTH === REAL_CURRENT_MONTH && daysToDue <= 5 && !isPaid ? `<span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--danger-soft)] text-[var(--danger)]">${daysToDue === 0 ? '今天' : daysToDue + ' 天後'}${card.autoDebit ? '扣款' : '截止'}</span>` : ''}
+                    ${dueBadgeHTML}
                   </div>
                   <p class="text-[13px] text-[var(--text-muted)] mt-1 num-tabular">
                     ${formatCardBillingText(card)}
@@ -3000,16 +3403,31 @@
                     </div>
                   ` : ''}
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex items-center gap-1.5 shrink-0">
                   <button onclick="toggleCardPaid('${card.id}')"
-                    class="text-[12.5px] font-semibold px-3 py-1.5 rounded-xl transition-colors ${isPaid ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--bg-pill)] text-[var(--text-secondary)]'}">
-                    ${isPaid ? `✓ ${Number(CURRENT_MONTH.split('-')[1])}月已扣/繳` : (card.autoDebit ? `確認${Number(CURRENT_MONTH.split('-')[1])}月扣款` : `標記${Number(CURRENT_MONTH.split('-')[1])}月已繳`)}
+                    class="text-[12px] font-semibold px-2.5 py-1.5 rounded-xl transition-colors ${isPaid ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--bg-pill)] text-[var(--text-secondary)]'}">
+                    ${isPaid ? `✓ ${Number(CURRENT_MONTH.split('-')[1])}月已扣` : (card.autoDebit ? `確認扣款` : `標記已繳`)}
                   </button>
-                  <button onclick="openEditCardModal('${card.id}')" class="text-[13px] font-medium px-3 py-1.5 rounded-xl border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
+                  <button onclick="openEditCardModal('${card.id}')" class="text-[12.5px] font-medium px-2.5 py-1.5 rounded-xl border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
                     編輯
                   </button>
                 </div>
               </div>
+
+              <!-- 忘記放錢扣款失敗各銀行處理速查條 -->
+              ${failRule ? `
+                <button type="button" onclick="openDebitFailGuideModal()"
+                  class="w-full text-left px-3.5 py-2 rounded-xl text-[12px] font-medium border transition-opacity hover:opacity-90 flex items-center justify-between gap-2 ${
+                    failRule.badgeType === 'danger'
+                      ? 'bg-[var(--danger-soft)] text-[var(--danger)] border-[var(--danger)]/25'
+                      : failRule.badgeType === 'warn'
+                        ? 'bg-[var(--warn-soft)] text-[var(--warn)] border-[var(--warn)]/25'
+                        : 'bg-[var(--success-soft)] text-[var(--success)] border-[var(--success)]/25'
+                  }">
+                  <span class="truncate">扣款失敗：${failRule.shortTag}</span>
+                  <span class="shrink-0 underline">詳情</span>
+                </button>
+              ` : ''}
 
               <!-- 累計消費與上限進度 -->
               <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] space-y-2">
@@ -3928,13 +4346,37 @@
       }
     }
 
+    function saveOwnerPinGuard() {
+      const inp = document.getElementById('ownerPinGuardInput');
+      const val = (inp ? inp.value : '').trim();
+      try {
+        if (!val) {
+          localStorage.removeItem(OWNER_PIN_GUARD_KEY);
+          showToast('🔓 已解除主人綁定驗證碼');
+        } else {
+          localStorage.setItem(OWNER_PIN_GUARD_KEY, val);
+          inp.value = '';
+          showToast('🔒 已設定主人綁定驗證碼！外人無法隨意點選綁定');
+        }
+      } catch (e) {}
+    }
+
     function toggleOwnerDeviceTrust() {
+      let guardPin = '';
+      try { guardPin = localStorage.getItem(OWNER_PIN_GUARD_KEY) || ''; } catch (e) {}
+      if (guardPin) {
+        const typed = (document.getElementById('ownerPinGuardInput')?.value || '').trim() || window.prompt('請輸入你設定的主人綁定驗證碼：') || '';
+        if (typed !== guardPin) {
+          showToast('⚠️ 驗證碼不正確，無法變更本人裝置綁定');
+          return;
+        }
+      }
       const next = !isLocalOwnerTrusted();
       try {
         localStorage.setItem(OWNER_TRUST_KEY, next ? 'true' : 'false');
       } catch (e) {}
       renderOwnerTrustStatus();
-      showToast(next ? '📱 已將此裝置設為「擁有者本人免鎖裝置」' : '已取消此裝置的擁有者免鎖標記');
+      showToast(next ? '📱 已將此瀏覽器／桌面捷徑設為「擁有者本人裝置」' : '已取消此裝置的擁有者免鎖標記');
     }
 
     function renderOwnerTrustStatus() {
@@ -3954,6 +4396,427 @@
 
     function closeAccessControlModal() {
       document.getElementById('accessControlModal').classList.add('hidden');
+    }
+
+    // ==========================================================
+    // 🆘 自動扣款失敗各家銀行補扣與補繳指南 Modal
+    // ==========================================================
+    function openDebitFailGuideModal() {
+      const listEl = document.getElementById('debitFailGuideList');
+      if (listEl) {
+        listEl.innerHTML = BANK_DEBIT_FAIL_GUIDE.map(item => {
+          const inWallet = appData.cards.some(c =>
+            item.matchIds.includes(String(c.id).toLowerCase()) ||
+            item.matchNames.some(kw => String(c.name).toLowerCase().includes(kw))
+          );
+          const badgeCls = item.badgeType === 'danger'
+            ? 'bg-[var(--danger-soft)] text-[var(--danger)]'
+            : item.badgeType === 'warn'
+              ? 'bg-[var(--warn-soft)] text-[var(--warn)]'
+              : 'bg-[var(--success-soft)] text-[var(--success)]';
+
+          return `
+            <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border ${inWallet ? 'border-[var(--accent)]/40' : 'border-[var(--border-hairline)]'} space-y-2">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <div class="flex items-center gap-2">
+                  <span class="text-[14.5px] font-bold text-[var(--text-main)]">${item.bankName}</span>
+                  ${inWallet ? '<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">你的卡包</span>' : ''}
+                </div>
+                <span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full ${badgeCls}">${item.shortTag}</span>
+              </div>
+              <p class="text-[12.5px] text-[var(--text-secondary)] leading-relaxed">${item.detail}</p>
+            </div>
+          `;
+        }).join('');
+      }
+      document.getElementById('debitFailGuideModal').classList.remove('hidden');
+    }
+
+    function closeDebitFailGuideModal() {
+      document.getElementById('debitFailGuideModal').classList.add('hidden');
+    }
+
+    // ==========================================================
+    // ☁️ 私人雲端同步 & 📱 手機 QR Code 配對 & 🔄 放置桌面強制重整
+    // ==========================================================
+    let currentQrMode = 'url';
+    let lastForegroundPullTs = 0;
+
+    function toBase64UrlUtf8(str) {
+      const bytes = new TextEncoder().encode(str);
+      let bin = '';
+      bytes.forEach(b => { bin += String.fromCharCode(b); });
+      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function fromBase64UrlUtf8(b64url) {
+      let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+
+    function loadCloudSyncConfig() {
+      try {
+        const raw = localStorage.getItem(CLOUD_SYNC_CFG_KEY);
+        if (raw) return JSON.parse(raw) || { scriptUrl: '', syncSecret: '' };
+      } catch (e) {}
+      return { scriptUrl: '', syncSecret: '', lastSyncedAt: '' };
+    }
+
+    function saveCloudSyncConfigObj(cfg) {
+      try {
+        localStorage.setItem(CLOUD_SYNC_CFG_KEY, JSON.stringify(cfg));
+      } catch (e) {}
+      renderCloudSyncBadges();
+    }
+
+    function renderCloudSyncBadges() {
+      const cfg = loadCloudSyncConfig();
+      const hasCloud = Boolean(cfg.scriptUrl && cfg.scriptUrl.startsWith('https://'));
+      const headerBadge = document.getElementById('headerCloudSyncStatus');
+      const modalBadge = document.getElementById('cloudModalStatusBadge');
+
+      if (headerBadge) {
+        if (hasCloud) {
+          headerBadge.classList.remove('hidden');
+          headerBadge.textContent = cfg.lastSyncedAt ? `☁️ 已同步 ${cfg.lastSyncedAt}` : '☁️ 雲端已連線';
+        } else {
+          headerBadge.classList.add('hidden');
+        }
+      }
+      if (modalBadge) {
+        modalBadge.className = hasCloud
+          ? 'text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--success-soft)] text-[var(--success)]'
+          : 'text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--bg-pill)] text-[var(--text-muted)]';
+        modalBadge.textContent = hasCloud ? (cfg.lastSyncedAt ? `✓ 上次同步 ${cfg.lastSyncedAt}` : '✓ 已設定雲端網址') : '尚未設定';
+      }
+    }
+
+    function getCanonicalShareBaseUrl() {
+      if (window.location.protocol.startsWith('http') && !window.location.hostname.includes('usercontent')) {
+        return window.location.origin + window.location.pathname;
+      }
+      return 'https://liu88219.github.io/card-lazy-tracker/';
+    }
+
+    function buildCurrentPairingPayloadUrl(mode = currentQrMode) {
+      const base = getCanonicalShareBaseUrl();
+      if (mode === 'cards') {
+        const compactCards = appData.cards.map(c => {
+          const catTpl = BANK_CARD_CATALOG.find(bc => bc.id === c.id);
+          const item = {
+            i: c.id,
+            s: c.statementDay,
+            d: c.dueDay,
+            a: c.autoDebit ? 1 : 0
+          };
+          if (!catTpl || c.name !== catTpl.name) item.n = c.name;
+          if (c.billingLabel && !c.billingLabel.includes('可點「編輯」') && !c.billingLabel.includes('尚未設定')) {
+            item.b = c.billingLabel;
+          }
+          return item;
+        });
+        return `${base}#cardcfg=${toBase64UrlUtf8(JSON.stringify(compactCards))}`;
+      }
+      const cfg = loadCloudSyncConfig();
+      if (cfg.scriptUrl && cfg.scriptUrl.startsWith('https://')) {
+        return `${base}#pair=${toBase64UrlUtf8(JSON.stringify({ u: cfg.scriptUrl, k: cfg.syncSecret || '' }))}`;
+      }
+      return base;
+    }
+
+    function switchQrMode(mode) {
+      currentQrMode = mode;
+      ['url', 'cards'].forEach(m => {
+        const btn = document.getElementById(`qrModeBtn-${m}`);
+        if (!btn) return;
+        btn.className = m === mode
+          ? 'px-2.5 py-1 rounded-md font-semibold bg-[var(--accent)] text-white shadow-xs transition-all'
+          : 'px-2.5 py-1 rounded-md font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all';
+      });
+      renderQrCodeBox();
+    }
+
+    function renderQrCodeBox() {
+      const mount = document.getElementById('qrSvgMount');
+      const hint = document.getElementById('qrModeHintText');
+      if (!mount) return;
+      const targetUrl = buildCurrentPairingPayloadUrl(currentQrMode);
+      const cfg = loadCloudSyncConfig();
+      try {
+        if (typeof window.buildQrSvg === 'function') {
+          mount.innerHTML = window.buildQrSvg(targetUrl, 184);
+        } else {
+          mount.innerHTML = `<div class="p-4 text-[12.5px] text-[var(--text-muted)]">QR 模組載入中</div>`;
+        }
+      } catch (e) {
+        mount.innerHTML = `<div class="p-3 text-[12px] text-[var(--danger)]">內容較長，請點下方「複製配對碼」傳至手機貼上</div>`;
+      }
+      if (hint) {
+        if (currentQrMode === 'cards') {
+          hint.textContent = '手機掃描此 QR（或複製配對碼貼到桌面捷徑）即可秒把電腦上的卡片清單與結帳／扣款日帶入手機！';
+        } else if (cfg.scriptUrl) {
+          hint.textContent = '已自動帶入你的私人雲端同步金鑰！手機掃描或貼上配對碼後，電腦與手機桌面捷徑即可雙向同步。';
+        } else {
+          hint.textContent = '手機相機掃描即可打開網頁。若已將網頁「放置桌面」，設定下方雲端同步後點 🔄 即可跨裝置同步！';
+        }
+      }
+    }
+
+    function openCloudSyncModal() {
+      const cfg = loadCloudSyncConfig();
+      const urlInp = document.getElementById('cloudScriptUrlInput');
+      const secInp = document.getElementById('cloudSyncSecretInput');
+      if (urlInp) urlInp.value = cfg.scriptUrl || '';
+      if (secInp) secInp.value = cfg.syncSecret || '';
+      renderCloudSyncBadges();
+      switchQrMode(currentQrMode);
+      document.getElementById('cloudSyncModal').classList.remove('hidden');
+    }
+
+    function closeCloudSyncModal() {
+      document.getElementById('cloudSyncModal').classList.add('hidden');
+    }
+
+    function saveCloudSyncSettings() {
+      const urlVal = (document.getElementById('cloudScriptUrlInput')?.value || '').trim();
+      const secVal = (document.getElementById('cloudSyncSecretInput')?.value || '').trim();
+      const prev = loadCloudSyncConfig();
+      saveCloudSyncConfigObj({
+        scriptUrl: urlVal,
+        syncSecret: secVal,
+        lastSyncedAt: prev.lastSyncedAt || ''
+      });
+      renderQrCodeBox();
+      showToast(urlVal ? '☁️ 已儲存雲端同步設定！可點「上傳」或「拉取」測試' : '已清除雲端同步網址');
+    }
+
+    function formatShortTimeNow() {
+      const d = new Date();
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    async function pushToCloudSync(manual = false) {
+      const cfg = loadCloudSyncConfig();
+      if (!cfg.scriptUrl || !cfg.scriptUrl.startsWith('https://')) {
+        if (manual) showToast('⚠️ 請先貼上你的 Google Apps Script 網頁應用程式網址');
+        return false;
+      }
+      try {
+        if (manual) showToast('⬆️ 正在加密上傳帳本至你的私人雲端...');
+        const res = await fetch(cfg.scriptUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'push',
+            key: cfg.syncSecret || '',
+            profileId: profileRegistry.activeProfileId,
+            updatedAt: appData._updatedAt || Date.now(),
+            ledger: appData
+          })
+        });
+        const data = await res.json();
+        if (data && data.ok) {
+          cfg.lastSyncedAt = formatShortTimeNow();
+          saveCloudSyncConfigObj(cfg);
+          if (manual) showToast('✅ 已成功同步至你的私人雲端！手機點 🔄 即可拉取');
+          return true;
+        }
+        if (manual) showToast(`⚠️ 雲端回應：${(data && data.error) || '同步密碼不符'}`);
+      } catch (e) {
+        if (manual) showToast('⚠️ 無法連線雲端網址，請確認部署權限設為「所有人」');
+      }
+      return false;
+    }
+
+    async function pullFromCloudSync(manual = false) {
+      const cfg = loadCloudSyncConfig();
+      if (!cfg.scriptUrl || !cfg.scriptUrl.startsWith('https://')) {
+        if (manual) showToast('⚠️ 請先設定私人雲端網址，或先在手機貼上電腦配對碼');
+        return false;
+      }
+      try {
+        if (manual) showToast('⬇️ 正在從私人雲端拉取最新帳單...');
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5500);
+        const res = await fetch(cfg.scriptUrl, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'pull',
+            key: cfg.syncSecret || '',
+            profileId: profileRegistry.activeProfileId
+          })
+        });
+        clearTimeout(timer);
+        const data = await res.json();
+        if (data && data.ok && data.ledger && Array.isArray(data.ledger.cards)) {
+          appData = data.ledger;
+          saveData(true);
+          cfg.lastSyncedAt = formatShortTimeNow();
+          saveCloudSyncConfigObj(cfg);
+          renderAll();
+          if (manual) showToast('✅ 已從雲端同步最新卡片與帳單紀錄！');
+          return true;
+        }
+        if (manual) showToast(data && data.empty ? '💡 雲端目前尚無資料，請先在電腦點「上傳此機資料」' : '⚠️ 雲端同步密碼不正確');
+      } catch (e) {
+        if (manual) showToast('⚠️ 雲端連線逾時或網址有誤');
+      }
+      return false;
+    }
+
+    function scheduleAutoCloudPush() {
+      const cfg = loadCloudSyncConfig();
+      if (!cfg.scriptUrl || !cfg.scriptUrl.startsWith('https://')) return;
+      if (autoPushTimer) clearTimeout(autoPushTimer);
+      autoPushTimer = setTimeout(() => {
+        pushToCloudSync(false);
+      }, 1200);
+    }
+
+    function autoPullOnForegroundIfEnabled() {
+      const now = Date.now();
+      if (now - lastForegroundPullTs < 45000) return;
+      lastForegroundPullTs = now;
+      const cfg = loadCloudSyncConfig();
+      if (cfg.scriptUrl && cfg.scriptUrl.startsWith('https://')) {
+        pullFromCloudSync(false);
+      }
+    }
+
+    // 手機「放置桌面 (加入主畫面)」專用：一鍵同步雲端 + 清除舊快取並重新載入最新版！
+    async function forceRefreshAndSync() {
+      const iconEl = document.getElementById('refreshBtnIcon');
+      if (iconEl) iconEl.classList.add('animate-spin');
+      showToast('🔄 正在同步最新資料並重新整理畫面...');
+
+      try {
+        const cfg = loadCloudSyncConfig();
+        if (cfg.scriptUrl && cfg.scriptUrl.startsWith('https://')) {
+          await pullFromCloudSync(false);
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.update().catch(() => {})));
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+      } catch (e) {}
+
+      const cleanUrl = window.location.pathname + '?t=' + Date.now();
+      window.location.replace(cleanUrl);
+    }
+
+    function copyPairingCodeForHomeScreen() {
+      const fullLink = buildCurrentPairingPayloadUrl(currentQrMode);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullLink).then(() => {
+          showToast('📋 已複製配對連結！傳到手機後在桌面捷徑點「貼上配對碼」即可綁定');
+        }).catch(() => window.prompt('請複製以下配對碼傳至手機：', fullLink));
+      } else {
+        window.prompt('請複製以下配對碼傳至手機：', fullLink);
+      }
+    }
+
+    async function pastePairingCodeFromClipboard() {
+      let text = '';
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          text = (await navigator.clipboard.readText() || '').trim();
+        }
+      } catch (e) {}
+      if (!text || (!text.includes('pair=') && !text.includes('cardcfg='))) {
+        text = (window.prompt('請貼上從電腦複製的配對碼或配對網址：') || '').trim();
+      }
+      if (!text) return;
+      await applyPairingTokenString(text, true);
+    }
+
+    async function applyPairingTokenString(rawStr, fromManualPaste = false) {
+      try {
+        const pairMatch = rawStr.match(/pair=([A-Za-z0-9_-]+)/);
+        if (pairMatch) {
+          const parsed = JSON.parse(fromBase64UrlUtf8(pairMatch[1]));
+          if (parsed && parsed.u) {
+            saveCloudSyncConfigObj({ scriptUrl: parsed.u, syncSecret: parsed.k || '', lastSyncedAt: '' });
+            try { localStorage.setItem(OWNER_TRUST_KEY, 'true'); } catch (e) {}
+            const pulled = await pullFromCloudSync(false);
+            closeCloudSyncModal();
+            renderAll();
+            showToast(pulled ? '🎉 配對成功！已自動同步雲端帳本並綁定此裝置' : '🎉 已完成雲端配對！點「上傳」或「🔄 重整」即可同步');
+            return true;
+          }
+        }
+
+        const cardMatch = rawStr.match(/cardcfg=([A-Za-z0-9_-]+)/);
+        if (cardMatch) {
+          const compactList = JSON.parse(fromBase64UrlUtf8(cardMatch[1]));
+          if (Array.isArray(compactList) && compactList.length > 0) {
+            if (appData.cards.length === 1 && appData.cards[0].id === 'custom-card-1' && appData.transactions.length === 0) {
+              appData.cards = [];
+            }
+            compactList.forEach(item => {
+              let target = appData.cards.find(c => c.id === item.i);
+              if (!target) {
+                const tpl = BANK_CARD_CATALOG.find(bc => bc.id === item.i);
+                target = tpl ? JSON.parse(JSON.stringify(tpl)) : JSON.parse(JSON.stringify(buildBlankStarterCard()[0]));
+                target.id = item.i;
+                target.name = item.n || target.name;
+                appData.cards.push(target);
+              }
+              target.name = item.n || target.name;
+              target.statementDay = Number(item.s || 1);
+              target.dueDay = Number(item.d || 15);
+              target.autoDebit = Boolean(item.a);
+              target.billingLabel = item.b || '';
+            });
+            selectedCardId = appData.cards[0].id;
+            saveData();
+            closeCloudSyncModal();
+            renderAll();
+            showToast(`✅ 已成功將 ${compactList.length} 張卡片與扣款週期同步至此手機！`);
+            return true;
+          }
+        }
+        if (fromManualPaste) showToast('⚠️ 未偵測到有效的配對碼，請重新從電腦點「複製配對碼」');
+      } catch (e) {
+        if (fromManualPaste) showToast('⚠️ 配對碼格式有誤，請重新複製');
+      }
+      return false;
+    }
+
+    function copyGoogleAppsScriptCode() {
+      const gasCode = [
+        "function doPost(e) {",
+        "  var SECRET = ''; // 可留空（由前端傳入之第一組密碼自動綁定），或直接填你的專屬密碼如 'mykey888'",
+        "  var body = JSON.parse(e.postData.contents || '{}');",
+        "  var props = PropertiesService.getUserProperties();",
+        "  var savedKey = SECRET || props.getProperty('SYNC_KEY') || '';",
+        "  if (!savedKey && body.key) { props.setProperty('SYNC_KEY', body.key); savedKey = body.key; }",
+        "  if (savedKey && body.key !== savedKey) {",
+        "    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: '同步密碼不正確' })).setMimeType(ContentService.MimeType.JSON);",
+        "  }",
+        "  var slot = 'LEDGER_' + (body.profileId || 'profile-main');",
+        "  if (body.action === 'push' && body.ledger) {",
+        "    props.setProperty(slot, JSON.stringify(body.ledger));",
+        "    return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);",
+        "  }",
+        "  var raw = props.getProperty(slot);",
+        "  return ContentService.createTextOutput(JSON.stringify({ ok: true, empty: !raw, ledger: raw ? JSON.parse(raw) : null })).setMimeType(ContentService.MimeType.JSON);",
+        "}"
+      ].join('\n');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(gasCode).then(() => {
+          showToast('📋 已複製 17 行雲端同步程式碼！打開 script.new 貼上並部署即可');
+        }).catch(() => {});
+      }
     }
 
     function copyLockLinkAiCommand(mode) {
@@ -4047,7 +4910,7 @@
       }
     }
 
-    // 啟動初始化（自動保護既有裝置擁有者免鎖標記）
+    // 啟動初始化（自動保護既有裝置擁有者免鎖標記 + 處理 QR 掃描配對 Hash）
     try {
       const existingDataRaw = localStorage.getItem(STORAGE_KEY);
       if (existingDataRaw && existingDataRaw.includes('cathay-cube') && localStorage.getItem(OWNER_TRUST_KEY) === null) {
@@ -4055,8 +4918,18 @@
       }
     } catch (e) {}
 
+    renderCloudSyncBadges();
     setStoreLinePayFilter('any');
     initLiveAccessGate();
+
+    if (window.location.hash && (window.location.hash.includes('pair=') || window.location.hash.includes('cardcfg='))) {
+      const hashCopy = window.location.hash;
+      try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
+      applyPairingTokenString(hashCopy, false);
+    } else {
+      autoPullOnForegroundIfEnabled();
+    }
+
     const urlTab = new URLSearchParams(window.location.search).get('tab');
     const initialTab = ['finder', 'record', 'analytics', 'cards'].includes(urlTab) ? urlTab : (appData.defaultStartTab || 'finder');
     if (isProfileLocked(profileRegistry.activeProfileId)) {

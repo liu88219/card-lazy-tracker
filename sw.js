@@ -1,5 +1,5 @@
-const CACHE_NAME = 'lazy-card-tracker-v7';
-const ASSETS = ['./', './index.html', './manifest.json'];
+const CACHE_NAME = 'lazy-card-tracker-v8';
+const ASSETS = ['./', './index.html', './manifest.json', './qr.js'];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -16,10 +16,20 @@ self.addEventListener('activate', event => {
   );
 });
 
+self.addEventListener('message', event => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', event => {
-  // access.json 門禁設定永遠即時連網檢查，不快取舊權限
-  if (event.request.url.includes('access.json')) {
-    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+  // access.json 與外部雲端同步 API 永遠即時連網，不快取
+  if (
+    event.request.method !== 'GET' ||
+    event.request.url.includes('access.json') ||
+    event.request.url.includes('script.google.com') ||
+    event.request.url.includes('script.googleusercontent.com')
+  ) {
     return;
   }
   event.respondWith(
