@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lazy-card-tracker-v6';
+const CACHE_NAME = 'lazy-card-tracker-v7';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', event => {
@@ -16,8 +16,12 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 一律優先向伺服器抓取最新畫面 (no-cache)，僅在離線時退回本機快取
 self.addEventListener('fetch', event => {
+  // access.json 門禁設定永遠即時連網檢查，不快取舊權限
+  if (event.request.url.includes('access.json')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
   event.respondWith(
     fetch(event.request, { cache: 'no-cache' })
       .then(res => {
