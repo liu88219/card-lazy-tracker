@@ -1,5 +1,5 @@
-const CACHE_NAME = 'lazy-card-tracker-v11';
-const ASSETS = ['./', './index.html', './manifest.json', './qr.js'];
+const CACHE_NAME = 'lazy-card-tracker-v12';
+const ASSETS = ['./', './index.html', './manifest.json', './qr.js', './quokka-icon.png'];
 
 self.addEventListener('install', event => {
   self.skipWaiting();

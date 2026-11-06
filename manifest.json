@@ -1,16 +1,17 @@
 {
   "name": "卡神懶人記帳 PWA",
   "short_name": "卡神記帳",
-  "description": "零個資風險・信用卡回饋攻略與極致懶人記帳 PWA",
+  "description": "零個資風險・結合台灣信用卡權益切換提醒與圓餅圖分析的簡約奶油風記帳 App",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#2563eb",
+  "background_color": "#FAF5EC",
+  "theme_color": "#FAF5EC",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2331/2331941.png",
+      "src": "./quokka-icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
