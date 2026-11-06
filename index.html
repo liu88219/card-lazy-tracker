@@ -13,14 +13,14 @@
   <meta name="robots" content="noindex, nofollow" />
   <meta name="description" content="零個資風險・結合台灣信用卡權益切換提醒與圓餅圖分析的簡約奶油風記帳 App" />
   <title>卡神記帳 — 信用卡攻略 × 簡約奶油記帳</title>
-  <link rel="manifest" href="./manifest.json?v=14" />
-  <link rel="icon" type="image/png" href="./favicon.png?v=14" />
-  <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=14" />
+  <link rel="manifest" href="./manifest.json?v=15" />
+  <link rel="icon" type="image/png" href="./favicon.png?v=15" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=15" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Quicksand:wght@600;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="./qr.js?v=14"></script>
+  <script src="./qr.js?v=15"></script>
   <style>
     /* 🧈 Dinotaeng Quokka & BOBO 正宗韓系簡約奶油風格 (霧面燕麥紙感 × 無黑框蠟筆插畫，不受系統深色模式變黑干擾) */
     .quokka-cream {
@@ -130,7 +130,7 @@
   <div id="accessGateOverlay" class="fixed inset-0 z-[100] bg-[var(--bg-canvas)] flex items-center justify-center p-5">
     <div class="surface-card max-w-sm w-full p-6 sm:p-7 space-y-4 text-center">
       <div id="gateIcon" class="w-44 h-24 mx-auto flex items-center justify-center">
-        <img src="./assets/hero-card-tracker.webp?v=14" alt="" class="w-44 h-24 rounded-2xl object-cover border border-[var(--border-hairline)] shadow-sm select-none" />
+        <img src="./assets/hero-card-tracker.webp?v=15" alt="" class="w-44 h-24 rounded-2xl object-cover border border-[var(--border-hairline)] shadow-sm select-none" />
       </div>
       <div class="space-y-1">
         <span class="inline-block text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">Quokka &amp; BoBo 守護中</span>
@@ -200,11 +200,11 @@
       <!-- 第一列：帳本切換、月份選擇、桌面重整、雲端同步/QR、連結權限鎖 -->
       <div class="flex items-center justify-between gap-1 sm:gap-2">
         <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <img src="./icon-192.png?v=14" alt="" title="Quokka 奶油記帳" class="hidden sm:block w-8 h-8 rounded-xl border border-[var(--border-hairline)] object-cover shadow-2xs shrink-0" />
+          <img src="./icon-192.png?v=15" alt="" title="Quokka 奶油記帳" class="hidden sm:block w-8 h-8 rounded-xl border border-[var(--border-hairline)] object-cover shadow-2xs shrink-0" />
           <span class="text-[15px] font-bold tracking-tight text-[var(--text-main)] hidden md:inline">卡神記帳</span>
           <button onclick="openProfileModal()" id="activeProfileBtn"
             class="px-2 sm:px-2.5 py-1 rounded-xl bg-[var(--bg-pill)] border border-[var(--border-hairline)] text-[12px] sm:text-[12.5px] font-semibold text-[var(--text-main)] hover:border-[var(--accent)] transition-colors flex items-center gap-1 max-w-[136px] sm:max-w-[175px] min-w-0">
-            <img src="./favicon.png?v=14" alt="" class="w-[18px] h-[18px] rounded-md object-cover sm:hidden shrink-0" />
+            <img src="./favicon.png?v=15" alt="" class="w-[18px] h-[18px] rounded-md object-cover sm:hidden shrink-0" />
             <span id="activeProfileLabel" class="truncate">我的帳本</span>
             <span class="text-[12px] text-[var(--text-muted)] shrink-0">▾</span>
           </button>
@@ -1214,8 +1214,8 @@
       return Boolean(storagePersistGranted);
     }
     const CHART_COLORS = ['#C48E63', '#688B72', '#E37A70', '#F2CA62', '#6E8BA3', '#9680A3', '#9E8C7A'];
-    const QUOKKA_BOBO_REC_SVG = `<img src="./assets/hero-card-tracker.webp?v=14" alt="" class="w-20 h-11 rounded-xl object-cover border border-[#DDD7C9] shadow-2xs shrink-0 select-none" />`;
-    const BOBO_EMPTY_SVG = `<img src="./assets/gold-marshmallow-tower.webp?v=14" alt="" class="w-28 h-24 rounded-2xl object-cover border border-[#DDD7C9] shadow-2xs mx-auto select-none" />`;
+    const QUOKKA_BOBO_REC_SVG = `<img src="./assets/hero-card-tracker.webp?v=15" alt="" class="w-20 h-11 rounded-xl object-cover border border-[#DDD7C9] shadow-2xs shrink-0 select-none" />`;
+    const BOBO_EMPTY_SVG = `<img src="./assets/gold-marshmallow-tower.webp?v=15" alt="" class="w-28 h-24 rounded-2xl object-cover border border-[#DDD7C9] shadow-2xs mx-auto select-none" />`;
     const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
     // 以使用者本機時區計算 YYYY-MM-DD（避免清晨時區偏差）
