@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lazy-card-tracker-v10';
+const CACHE_NAME = 'lazy-card-tracker-v11';
 const ASSETS = ['./', './index.html', './manifest.json', './qr.js'];
 
 self.addEventListener('install', event => {
@@ -23,10 +23,13 @@ self.addEventListener('message', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // access.json 與外部雲端同步 API 永遠即時連網，不快取
+  // 門禁檔與所有雲端同步/即時推播 API 永遠直接連網，絕不快取舊資料！
   if (
     event.request.method !== 'GET' ||
     event.request.url.includes('access.json') ||
+    event.request.url.includes('textdb.dev') ||
+    event.request.url.includes('textdb.online') ||
+    event.request.url.includes('ntfy.sh') ||
     event.request.url.includes('script.google.com') ||
     event.request.url.includes('script.googleusercontent.com')
   ) {
