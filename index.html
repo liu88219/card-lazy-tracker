@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="./qr.js?v=9"></script>
+  <script src="./qr.js?v=10"></script>
   <style>
     :root {
       --bg-canvas: #F4F5F9;
@@ -207,7 +207,7 @@
           </div>
           <span class="text-[15px] font-bold tracking-tight text-[var(--text-main)] hidden md:inline">卡神記帳</span>
           <button onclick="openProfileModal()" id="activeProfileBtn"
-            class="px-2 sm:px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] border border-[var(--border-hairline)] text-[12px] sm:text-[12.5px] font-semibold text-[var(--text-main)] hover:border-[var(--accent)] transition-colors flex items-center gap-1 max-w-[136px] sm:max-w-[175px] min-w-0">
+            class="px-2 sm:px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] border border-[var(--border-hairline)] text-[12px] sm:text-[12.5px] font-semibold text-[var(--text-main)] hover:border-[var(--accent)] transition-colors flex items-center gap-1 max-w-[116px] sm:max-w-[175px] min-w-0">
             <span id="activeProfileLabel" class="truncate">👤 我的帳本</span>
             <span class="text-[12px] text-[var(--text-muted)] shrink-0">▾</span>
           </button>
@@ -226,11 +226,11 @@
             <select id="headerMonthSelect" onchange="setViewMonth(this.value)" class="bg-transparent text-[12px] sm:text-[12.5px] font-semibold text-[var(--text-main)] px-0.5 py-0.5 focus:outline-none num-tabular cursor-pointer"></select>
             <button onclick="stepViewMonth(1)" class="px-1 sm:px-1.5 py-0.5 rounded-md text-[13px] font-bold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors" title="下個月">›</button>
           </div>
-          <button onclick="forceRefreshAndSync()" id="headerRefreshBtn" title="重新整理最新版本並同步雲端（放置桌面捷徑專用）"
+          <button onclick="handleHeaderSyncButton()" id="headerRefreshBtn" title="雙向同步雲端帳單（電腦 ⇄ 掃QR瀏覽器 ⇄ 桌面捷徑）"
             class="px-2 sm:px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] border border-[var(--border-hairline)] text-[12px] font-semibold text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent-text)] transition-colors shrink-0 inline-flex items-center gap-1">
-            <span id="refreshBtnIcon">🔄</span><span class="hidden sm:inline">重整</span>
+            <span id="refreshBtnIcon">🔄</span><span>同步</span>
           </button>
-          <button onclick="openCloudSyncModal()" id="headerCloudBtn" title="手機 QR Code 掃描 & 雲端同步"
+          <button onclick="openCloudSyncModal(false)" id="headerCloudBtn" title="手機 QR Code 掃描 & 雲端同步設定"
             class="px-2 sm:px-2.5 py-1 rounded-lg bg-[var(--accent-soft)] border border-[var(--accent)]/25 text-[12px] font-semibold text-[var(--accent-text)] hover:bg-[var(--accent)] hover:text-white transition-colors shrink-0 inline-flex items-center gap-1">
             <span>☁️</span><span class="hidden sm:inline">同步/QR</span>
           </button>
@@ -274,7 +274,7 @@
   </header>
 
   <!-- 記帳成功提示 Toast -->
-  <div id="saveToast" class="hidden fixed top-28 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[var(--accent)] text-white text-[13.5px] font-semibold shadow-lg flex items-center gap-2.5 max-w-[92vw] truncate"></div>
+  <div id="saveToast" class="hidden fixed top-28 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[var(--accent)] text-white text-[13px] sm:text-[13.5px] font-semibold shadow-lg text-center leading-snug w-max max-w-[92vw]"></div>
 
   <!-- ========================================================= -->
   <!-- 主內容容器：電腦版雙欄黃金比例並列・手機版單欄舒適留白 -->
@@ -955,61 +955,54 @@
     </div>
   </div>
 
-  <!-- MODAL 12: ☁️ 雲端同步 & 📱 電腦產 QR Code 掃描（支援放置桌面重新整理） -->
+  <!-- MODAL 12: ☁️ 雲端同步 & 📱 電腦產 QR Code 掃描（支援桌面捷徑 ⇄ 瀏覽器 ⇄ 電腦三向合併與防清除保護） -->
   <div id="cloudSyncModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
     <div class="surface-card max-w-lg w-full p-5 sm:p-6 space-y-4 max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between gap-2">
         <div>
-          <h3 class="text-[17px] font-bold text-[var(--text-main)]">☁️ 雲端同步 & 📱 手機掃描 QR Code</h3>
-          <p class="text-[12.5px] text-[var(--text-muted)] mt-0.5">電腦與手機桌面捷徑雙向同步・一鍵強制重整最新版本</p>
+          <h3 class="text-[17px] font-bold text-[var(--text-main)]">☁️ 雙向雲端同步 & 📱 手機 QR 配對</h3>
+          <p class="text-[12.5px] text-[var(--text-muted)] mt-0.5">電腦 ⇄ 掃 QR 瀏覽器 ⇄ 分享到桌面捷徑・三邊雙向合併＋永久防清除</p>
         </div>
         <button onclick="closeCloudSyncModal()" class="text-[13px] px-2.5 py-1 rounded-lg bg-[var(--bg-pill)] text-[var(--text-secondary)] shrink-0">關閉</button>
       </div>
 
-      <!-- 1. 放置桌面 App 重新整理專區 -->
-      <div class="p-3.5 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent)]/25 flex items-center justify-between gap-3 flex-wrap">
-        <div class="min-w-0 flex-1">
-          <div class="text-[13.5px] font-bold text-[var(--accent-text)]">📲 手機「放置桌面」開啟不會重整？</div>
-          <p class="text-[12px] text-[var(--text-secondary)] mt-0.5 leading-relaxed">
-            放到主畫面後系統會隱藏瀏覽器重整列。隨時點右上角或下方<strong>「🔄 強制重整＆同步」</strong>即可抓最新版並同步雲端帳單！
-          </p>
-        </div>
-        <button onclick="forceRefreshAndSync()" class="shrink-0 px-3.5 py-2 rounded-xl text-[12.5px] font-semibold bg-[var(--accent)] text-white shadow-xs">
-          🔄 強制重整＆同步
-        </button>
+      <!-- 尚未綁定雲端時按下「同步」的動態引導提示 -->
+      <div id="cloudMissingBridgeAlert" class="hidden p-3.5 rounded-2xl bg-[var(--warn-soft)] border border-[var(--warn)]/35 space-y-2">
+        <div class="text-[13.5px] font-bold text-[var(--warn)]">⚠️ 為什麼「分享到桌面」與「掃 QR 開的瀏覽器」還沒兩邊互通？</div>
+        <p class="text-[12px] text-[var(--text-secondary)] leading-relaxed">
+          手機系統為了安全，將<strong>「一般瀏覽器分頁」</strong>與<strong>「桌面主畫面捷徑」</strong>完全隔離成兩個獨立房間，彼此無法直接互讀記憶體！<br/>
+          👉 只要完成下方 <strong>① 綁定 1 分鐘免費私人 Google 雲端網址</strong>，再用 <strong>② 複製／貼上配對碼</strong> 傳進桌面捷徑一次，之後不管是電腦、瀏覽器、還是桌面捷徑按 <strong>「🔄 同步」</strong> 就會<strong>自動雙向合併所有帳單</strong>！
+        </p>
       </div>
 
-      <!-- 2. 電腦產出手機掃描 QR Code（100% 本機離線繪製，零資料外流） -->
-      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
-        <div class="flex items-center justify-between gap-2 flex-wrap">
-          <span class="text-[13.5px] font-bold text-[var(--text-main)]">📱 電腦畫面同步到手機 QR</span>
-          <div class="inline-flex bg-[var(--bg-pill)] p-0.5 rounded-lg gap-0.5 text-[12px]">
-            <button type="button" onclick="switchQrMode('fullsync')" id="qrModeBtn-fullsync" class="px-2.5 py-1 rounded-md font-semibold transition-all">📲 免密＋同步電腦畫面</button>
-            <button type="button" onclick="switchQrMode('url')" id="qrModeBtn-url" class="px-2.5 py-1 rounded-md font-medium transition-all">🔗 純網址(須輸密碼)</button>
+      <!-- 1. 桌面捷徑雙向同步 & 強制更新程式專區 -->
+      <div class="p-3.5 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent)]/25 space-y-2.5">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-[13.5px] font-bold text-[var(--accent-text)]">📲 雙向同步帳單 & 桌面捷徑更新版本</div>
+            <p class="text-[12px] text-[var(--text-secondary)] mt-0.5 leading-relaxed">
+              兩邊都有新增記帳也不怕互蓋！「雙向同步」會自動合併兩邊新帳單並保留刪除紀錄；若桌面捷徑畫面沒更新到最新版，點「強制重整程式」。
+            </p>
           </div>
         </div>
-
-        <div id="qrSvgMount" class="py-1 flex flex-col items-center justify-center"></div>
-        <p id="qrModeHintText" class="text-[12px] text-[var(--text-muted)] text-center leading-relaxed"></p>
-
         <div class="grid grid-cols-2 gap-2">
-          <button type="button" onclick="copyPairingCodeForHomeScreen()" class="py-2 px-3 rounded-xl text-[12px] font-semibold bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--text-main)] hover:border-[var(--accent)]">
-            📋 複製配對碼（給桌面捷徑）
+          <button type="button" onclick="syncBidirectionalWithCloud(true)" class="py-2 px-3 rounded-xl text-[12.5px] font-semibold bg-[var(--accent)] text-white shadow-xs hover:opacity-95">
+            🔄 立即雙向同步帳單
           </button>
-          <button type="button" onclick="pastePairingCodeFromClipboard()" class="py-2 px-3 rounded-xl text-[12px] font-semibold bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--accent-text)] hover:border-[var(--accent)]">
-            📥 在手機桌面捷徑貼上配對碼
+          <button type="button" onclick="forceRefreshAndSync()" class="py-2 px-3 rounded-xl text-[12.5px] font-semibold bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--text-main)] hover:border-[var(--accent)]">
+            ⚡ 強制重整最新程式
           </button>
         </div>
       </div>
 
-      <!-- 3. 私人 Google 雲端同步設定（0 費用、資料存在你自己的 Google 帳號！） -->
-      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
-        <div class="flex items-center justify-between gap-2">
-          <div class="text-[13.5px] font-bold text-[var(--text-main)]">☁️ 私人雲端即時同步（電腦 ⇄ 手機桌面）</div>
+      <!-- 2. 私人 Google 雲端同步設定（0 費用、大容量防上限、永久不過期！） -->
+      <div id="cloudConfigSectionBox" class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div class="text-[13.5px] font-bold text-[var(--text-main)]">☁️ 私人雲端同步橋樑（電腦 ⇄ 瀏覽器 ⇄ 桌面）</div>
           <span id="cloudModalStatusBadge" class="text-[11.5px] font-semibold px-2 py-0.5 rounded-full bg-[var(--bg-pill)] text-[var(--text-muted)]">未設定</span>
         </div>
         <p class="text-[12px] text-[var(--text-muted)] leading-relaxed">
-          貼上你專屬的 Google Apps Script 網址與自訂通行密碼後，電腦記帳或改卡片、手機桌面點一下 🔄 就會自動同步最新紀錄（網址只存在你本機，不會公開在程式碼裡）！
+          先在電腦或手機瀏覽器貼上你專屬的 Google Apps Script 網址並儲存，接著產出下方 QR 或點「複製配對碼」貼進桌面捷徑，三邊從此永久雙向同步！
         </p>
 
         <div class="space-y-2">
@@ -1019,32 +1012,82 @@
             <input id="cloudSyncSecretInput" type="password" placeholder="自訂雲端同步密碼（例：mykey888）"
               class="flex-1 min-w-0 px-3 py-2 text-[12.5px] rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)]" />
             <button type="button" onclick="saveCloudSyncSettings()" class="shrink-0 px-3.5 py-2 rounded-xl text-[12.5px] font-semibold bg-[var(--accent)] text-white">
-              儲存設定
+              儲存並同步
             </button>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <button type="button" onclick="pushToCloudSync(true)" class="py-2.5 px-3 rounded-xl text-[12.5px] font-semibold bg-[var(--accent)] text-white shadow-xs hover:opacity-95">
-            ⬆️ 上傳此機資料到雲端
+        <button type="button" onclick="syncBidirectionalWithCloud(true)" class="w-full py-2.5 px-3 rounded-xl text-[13px] font-semibold bg-[var(--accent)] text-white shadow-xs hover:opacity-95">
+          🔄 雙向合併同步（自動合併兩邊新帳單・不互蓋）
+        </button>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="pushToCloudSync(true)" class="py-2 px-2.5 rounded-xl text-[12px] font-medium bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
+            ⬆️ 強制以此機覆蓋雲端
           </button>
-          <button type="button" onclick="pullFromCloudSync(true)" class="py-2.5 px-3 rounded-xl text-[12.5px] font-semibold bg-[var(--success-soft)] text-[var(--success)] border border-[var(--success)]/30 hover:opacity-95">
-            ⬇️ 從雲端拉取最新資料
+          <button type="button" onclick="pullFromCloudSync(true)" class="py-2 px-2.5 rounded-xl text-[12px] font-medium bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
+            ⬇️ 強制以雲端覆蓋此機
           </button>
         </div>
 
         <!-- 1 分鐘免費架設教學收合 -->
-        <details class="rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)] px-3.5 py-2.5 text-[12px]">
-          <summary class="cursor-pointer font-semibold text-[var(--accent-text)]">✨ 第一次設定？點此 1 分鐘免費建立私人 Google 雲端同步庫</summary>
+        <details id="gasSetupGuideDetails" class="rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)] px-3.5 py-2.5 text-[12px]">
+          <summary class="cursor-pointer font-semibold text-[var(--accent-text)]">✨ 第一次設定？點此 1 分鐘免費建立個人 Google 雲端庫（永久不過期）</summary>
           <div class="mt-2.5 space-y-2 text-[var(--text-secondary)] leading-relaxed">
-            <div>1. 在電腦打開 <a href="https://script.new" target="_blank" rel="noopener noreferrer" class="underline font-semibold text-[var(--accent-text)]">script.new</a>（建立你個人的 Google Apps Script）。</div>
-            <div>2. 清空預設內容，點下方按鈕複製專屬同步程式碼貼上並按儲存（💾）：</div>
+            <div>1. 在電腦打開 <a href="https://script.new" target="_blank" rel="noopener noreferrer" class="underline font-semibold text-[var(--accent-text)]">script.new</a>（建立在你自己 Google 帳號下的專屬同步器，免授權雲端硬碟）。</div>
+            <div>2. 把原本幾行預設字全刪掉，點下方按鈕一鍵複製最新大容量同步程式碼，貼上後按儲存（💾）：</div>
             <button type="button" onclick="copyGoogleAppsScriptCode()" class="w-full py-2 rounded-lg font-semibold bg-[var(--accent-soft)] text-[var(--accent-text)] hover:opacity-90">
-              📋 一鍵複製 18 行私人雲端同步程式碼
+              📋 一鍵複製最新分塊大容量雲端程式碼（支援數千筆帳單・永久保存）
             </button>
-            <div>3. 點右上角<strong>「部署 ➔ 新增部署作業」</strong> ➔ 左上齒輪選<strong>「網頁應用程式」</strong> ➔ 執行身分選「我」、誰可以存取選<strong>「所有人」</strong>（程式內已用你的同步密碼上鎖保護！）➔ 部署後複製網址貼回上方即可！</div>
+            <div>3. 點右上角<strong>「部署 ➔ 新增部署作業」</strong> ➔ 左上齒輪選<strong>「網頁應用程式」</strong> ➔ 執行身分選「我」、誰可以存取選<strong>「所有人」</strong>（程式內已用你的同步密碼鎖住保護！）➔ 點部署後複製 <code>https://script.google.com/.../exec</code> 網址貼回上方即可！</div>
           </div>
         </details>
+      </div>
+
+      <!-- 3. 電腦產出手機掃描 QR Code & 瀏覽器 ➔ 桌面捷徑一鍵配對 -->
+      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-3">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <span class="text-[13.5px] font-bold text-[var(--text-main)]">📱 QR 掃描 & 桌面捷徑一鍵連通</span>
+          <div class="inline-flex bg-[var(--bg-pill)] p-0.5 rounded-lg gap-0.5 text-[12px]">
+            <button type="button" onclick="switchQrMode('fullsync')" id="qrModeBtn-fullsync" class="px-2.5 py-1 rounded-md font-semibold transition-all">📲 免密＋連通雲端與卡片</button>
+            <button type="button" onclick="switchQrMode('url')" id="qrModeBtn-url" class="px-2.5 py-1 rounded-md font-medium transition-all">🔗 純網址(須輸密碼)</button>
+          </div>
+        </div>
+
+        <div id="qrSvgMount" class="py-1 flex flex-col items-center justify-center"></div>
+        <p id="qrModeHintText" class="text-[12px] text-[var(--text-muted)] text-center leading-relaxed"></p>
+
+        <div class="p-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[12px] text-[var(--text-secondary)] leading-relaxed">
+          💡 <strong>掃 QR 開啟瀏覽器後，怎麼讓「分享到桌面」也連通同步？</strong><br/>
+          在剛掃開的手機瀏覽器點左下方<strong>「📋 複製配對碼」</strong>，接著從手機主畫面打開桌面捷徑點右下方<strong>「📥 貼上配對碼」</strong>，兩邊即共用同一組雲端同步通道！
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="copyPairingCodeForHomeScreen()" class="py-2.5 px-3 rounded-xl text-[12px] font-semibold bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--text-main)] hover:border-[var(--accent)]">
+            📋 複製配對碼（含雲端設定）
+          </button>
+          <button type="button" onclick="pastePairingCodeFromClipboard()" class="py-2.5 px-3 rounded-xl text-[12px] font-semibold bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent-text)] hover:bg-[var(--accent)] hover:text-white transition-colors">
+            📥 在桌面捷徑貼上配對碼
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. ⏳ 資料會不會久沒用被自動清除？即時環境檢測與 4 重防清保護 -->
+      <div class="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-hairline)] space-y-2.5">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <span class="text-[13.5px] font-bold text-[var(--text-main)]">🛡️ 資料防自動清除檢測 & 本機備份</span>
+          <span id="storagePersistBadge" class="text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--success-soft)] text-[var(--success)]">雙層備份保護中</span>
+        </div>
+        <div id="storageEnvDetailBox" class="text-[12px] text-[var(--text-secondary)] leading-relaxed space-y-1"></div>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button type="button" onclick="exportBackupJSON()" class="py-2 px-3 rounded-xl text-[12px] font-semibold bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--text-main)] hover:border-[var(--accent)]">
+            📥 下載備份檔 (.json)
+          </button>
+          <label class="py-2 px-3 rounded-xl text-[12px] font-semibold bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[var(--text-main)] hover:border-[var(--accent)] text-center cursor-pointer">
+            📤 匯入備份檔還原
+            <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
+          </label>
+        </div>
       </div>
     </div>
   </div>
@@ -1059,22 +1102,105 @@
         }
       });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=9').then(reg => {
+        navigator.serviceWorker.register('./sw.js?v=10').then(reg => {
           reg.update();
           document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
               reg.update().catch(() => {});
-              autoPullOnForegroundIfEnabled();
             }
           });
         }).catch(() => {});
       });
     }
 
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && typeof autoPullOnForegroundIfEnabled === 'function') {
+        autoPullOnForegroundIfEnabled();
+      }
+    });
+    window.addEventListener('pageshow', () => {
+      if (typeof autoPullOnForegroundIfEnabled === 'function') {
+        autoPullOnForegroundIfEnabled();
+      }
+    });
+    window.addEventListener('focus', () => {
+      if (typeof autoPullOnForegroundIfEnabled === 'function') {
+        autoPullOnForegroundIfEnabled();
+      }
+    });
+
     const STORAGE_KEY = 'LAZY_CARD_TRACKER_V2';
     const PROFILE_REGISTRY_KEY = 'LAZY_CARD_PROFILES_V1';
     const CLOUD_SYNC_CFG_KEY = 'LAZY_CARD_CLOUD_SYNC_V1';
     const OWNER_PIN_GUARD_KEY = 'LAZY_CARD_OWNER_PIN_V1';
+    const IDB_MIRROR_NAME = 'LazyCardTrackerDB_v1';
+    const IDB_MIRROR_STORE = 'kv';
+    let idbMirrorConnPromise = null;
+    let storagePersistGranted = null;
+
+    function openMirrorIdb() {
+      if (idbMirrorConnPromise) return idbMirrorConnPromise;
+      idbMirrorConnPromise = new Promise(resolve => {
+        try {
+          if (typeof indexedDB === 'undefined') return resolve(null);
+          const req = indexedDB.open(IDB_MIRROR_NAME, 1);
+          req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(IDB_MIRROR_STORE)) {
+              db.createObjectStore(IDB_MIRROR_STORE);
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+      return idbMirrorConnPromise;
+    }
+
+    async function idbSetMirror(key, val) {
+      const db = await openMirrorIdb();
+      if (!db) return false;
+      return new Promise(resolve => {
+        try {
+          const tx = db.transaction(IDB_MIRROR_STORE, 'readwrite');
+          tx.objectStore(IDB_MIRROR_STORE).put(val, key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        } catch (e) {
+          resolve(false);
+        }
+      });
+    }
+
+    async function idbGetMirror(key) {
+      const db = await openMirrorIdb();
+      if (!db) return null;
+      return new Promise(resolve => {
+        try {
+          const tx = db.transaction(IDB_MIRROR_STORE, 'readonly');
+          const req = tx.objectStore(IDB_MIRROR_STORE).get(key);
+          req.onsuccess = () => resolve(req.result !== undefined ? req.result : null);
+          req.onerror = () => resolve(null);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }
+
+    async function ensurePersistentStorageProtection() {
+      try {
+        if (navigator.storage && navigator.storage.persist) {
+          const already = navigator.storage.persisted ? await navigator.storage.persisted() : false;
+          storagePersistGranted = already ? true : await navigator.storage.persist();
+        }
+      } catch (e) {}
+      if (typeof renderStorageRetentionStatus === 'function') {
+        renderStorageRetentionStatus();
+      }
+      return Boolean(storagePersistGranted);
+    }
     const CHART_COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#06B6D4', '#64748B'];
     const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
@@ -1651,7 +1777,23 @@
     function saveProfileRegistry() {
       try {
         localStorage.setItem(PROFILE_REGISTRY_KEY, JSON.stringify(profileRegistry));
+        idbSetMirror(PROFILE_REGISTRY_KEY, JSON.parse(JSON.stringify(profileRegistry)));
       } catch (e) {}
+    }
+
+    function isBlankStarterLedger(d) {
+      if (!d || !Array.isArray(d.cards) || d.cards.length === 0) return true;
+      const onlyDemoCard = d.cards.length === 1 && d.cards[0] && d.cards[0].id === 'custom-card-1';
+      const noTx = !Array.isArray(d.transactions) || d.transactions.length === 0;
+      return Boolean(onlyDemoCard && noTx && d._isFreshBlank !== false);
+    }
+
+    function markLedgerCustomized(touchSettings = false) {
+      if (!appData) return;
+      appData._isFreshBlank = false;
+      if (touchSettings) {
+        appData._settingsUpdatedAt = Date.now();
+      }
     }
 
     function buildBlankStarterCard() {
@@ -1749,6 +1891,17 @@
               parsed._cleanedDemoV5 = true;
               needsResave = true;
             }
+            if (!Array.isArray(parsed._deletedTxIds)) {
+              parsed._deletedTxIds = [];
+            }
+            if (parsed._isFreshBlank === undefined) {
+              parsed._isFreshBlank = Boolean(
+                parsed.cards.length === 1 &&
+                parsed.cards[0] &&
+                parsed.cards[0].id === 'custom-card-1' &&
+                (!parsed.transactions || parsed.transactions.length === 0)
+              );
+            }
             if (!parsed.defaultStartTab) {
               parsed.defaultStartTab = parsed.pinQuickEntryTop ? 'record' : 'finder';
             }
@@ -1762,6 +1915,9 @@
 
       // 全新訪客（陌生人打開公開連結時）：只給 1 張空白通用示範卡 + 0 筆帳單，100% 不會外露擁有者的卡片或結帳日！
       const blankInit = {
+        _isFreshBlank: true,
+        _settingsUpdatedAt: 0,
+        _deletedTxIds: [],
         _cleanedDemoV5: true,
         _migratedV7Privacy: true,
         _migratedV8KeywordsR2: true,
@@ -1781,7 +1937,11 @@
       try {
         appData._updatedAt = Date.now();
         const key = getLedgerStorageKey(profileRegistry.activeProfileId);
-        localStorage.setItem(key, JSON.stringify(appData));
+        const raw = JSON.stringify(appData);
+        localStorage.setItem(key, raw);
+        if (!isBlankStarterLedger(appData)) {
+          idbSetMirror(key, JSON.parse(raw));
+        }
         if (!skipCloudAutoPush && typeof scheduleAutoCloudPush === 'function') {
           scheduleAutoCloudPush();
         }
@@ -1807,6 +1967,7 @@
       } else {
         appData.defaultStartTab = targetTab;
       }
+      markLedgerCustomized(true);
       saveData();
       renderPinOrderState();
       const labelMap = { finder: '📍 查刷哪張', record: '⚡ 馬上記帳' };
@@ -1853,11 +2014,14 @@
       el.innerHTML = `
         <div class="surface-card p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
           <div class="min-w-0">
-            <div class="text-[14px] font-bold text-[var(--text-main)]">👋 歡迎使用！先挑選你手上的信用卡</div>
-            <p class="text-[12.5px] text-[var(--text-muted)] mt-0.5">資料僅保存在你自己的手機／電腦瀏覽器中，其他人打開連結看不到你的設定。</p>
+            <div class="text-[14px] font-bold text-[var(--text-main)]">👋 歡迎使用！先挑選信用卡或貼上電腦／瀏覽器配對碼</div>
+            <p class="text-[12.5px] text-[var(--text-muted)] mt-0.5">若這是「分享到桌面」捷徑，點「貼上配對碼同步」即可連通電腦與瀏覽器畫面！</p>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button onclick="openBankCatalogPickerModal()" class="px-3.5 py-2 rounded-xl text-[12.5px] font-semibold bg-[var(--accent)] text-white shadow-xs hover:opacity-95">
+          <div class="flex items-center gap-2 flex-wrap shrink-0">
+            <button onclick="pastePairingCodeFromClipboard()" class="px-3.5 py-2 rounded-xl text-[12.5px] font-semibold bg-[var(--accent)] text-white shadow-xs hover:opacity-95">
+              📥 貼上配對碼同步
+            </button>
+            <button onclick="openBankCatalogPickerModal()" class="px-3 py-2 rounded-xl text-[12.5px] font-semibold bg-[var(--accent-soft)] text-[var(--accent-text)] hover:opacity-95">
               ✨ 挑選熱門銀行卡
             </button>
             <button onclick="openEditCardModal(null)" class="px-3 py-2 rounded-xl text-[12.5px] font-medium bg-[var(--bg-pill)] text-[var(--text-secondary)] hover:text-[var(--text-main)]">
@@ -2137,6 +2301,9 @@
       if (!card) return;
       if (!card.paidMonths) card.paidMonths = {};
       card.paidMonths[targetMonth] = true;
+      if (!card._paidToggledAt) card._paidToggledAt = {};
+      card._paidToggledAt[targetMonth] = Date.now();
+      markLedgerCustomized(false);
       saveData();
       renderAll();
       showToast(`✓ 已標記「${card.name}」本期扣款已確認`);
@@ -2777,6 +2944,9 @@
       if (!card) return;
       if (!card.monthlyTaskDone) card.monthlyTaskDone = {};
       card.monthlyTaskDone[targetMonth] = !card.monthlyTaskDone[targetMonth];
+      if (!card._taskToggledAt) card._taskToggledAt = {};
+      card._taskToggledAt[targetMonth] = Date.now();
+      markLedgerCustomized(false);
       saveData();
       renderAll();
     }
@@ -2945,6 +3115,7 @@
       const pm = appData.payMethods.find(p => p.id === selectedPayMethod);
       if (pm && pm.id !== 'cash') {
         pm.defaultCardId = selectedCardId;
+        markLedgerCustomized(true);
         saveData();
         renderRecordSection();
         showToast('⭐ 已設為此支付工具預設卡片');
@@ -3076,7 +3247,7 @@
         : { rate: 0, switchTier: '-' };
 
       const newTx = {
-        id: 'tx-' + Date.now(),
+        id: 'tx-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
         date: txDate,
         sceneId: selectedRecordScene,
         payMethodId: selectedPayMethod,
@@ -3085,10 +3256,13 @@
         reward: isCash ? 0 : Math.round(amount * (rule.rate / 100)),
         rate: isCash ? 0 : rule.rate,
         switchTier: isCash ? '-' : rule.switchTier,
-        note: noteInput.value.trim()
+        note: noteInput.value.trim(),
+        _createdAt: Date.now(),
+        _editedAt: Date.now()
       };
 
       appData.transactions.unshift(newTx);
+      markLedgerCustomized(false);
       // 自動切換至該筆日期所屬月份，讓圓餅圖與明細立刻呈現這筆紀錄
       CURRENT_MONTH = txMonth;
       activeSliceFilter = null;
@@ -3160,7 +3334,15 @@
     }
 
     function deleteTransaction(txId) {
+      if (!Array.isArray(appData._deletedTxIds)) appData._deletedTxIds = [];
+      if (txId && !appData._deletedTxIds.includes(txId)) {
+        appData._deletedTxIds.push(txId);
+        if (appData._deletedTxIds.length > 500) {
+          appData._deletedTxIds = appData._deletedTxIds.slice(-500);
+        }
+      }
       appData.transactions = appData.transactions.filter(t => t.id !== txId);
+      markLedgerCustomized(false);
       saveData();
       renderAll();
     }
@@ -3231,10 +3413,12 @@
         reward: isCash ? 0 : Math.round(newAmount * (rule.rate / 100)),
         rate: isCash ? 0 : rule.rate,
         switchTier: isCash ? '-' : rule.switchTier,
-        note: document.getElementById('editTxNote').value.trim()
+        note: document.getElementById('editTxNote').value.trim(),
+        _editedAt: Date.now()
       };
 
       CURRENT_MONTH = newDate.slice(0, 7);
+      markLedgerCustomized(false);
       saveData();
       closeTxEditModal();
       renderAll();
@@ -3525,6 +3709,9 @@
       if (!card) return;
       if (!card.paidMonths) card.paidMonths = {};
       card.paidMonths[CURRENT_MONTH] = !card.paidMonths[CURRENT_MONTH];
+      if (!card._paidToggledAt) card._paidToggledAt = {};
+      card._paidToggledAt[CURRENT_MONTH] = Date.now();
+      markLedgerCustomized(false);
       saveData();
       renderAll();
     }
@@ -3569,6 +3756,7 @@
       if (!name) return;
       appData.payMethods.push({ id: 'pm-' + Date.now(), icon, name, defaultCardId });
       document.getElementById('newPayName').value = '';
+      markLedgerCustomized(true);
       saveData();
       renderPayMethodManageList();
       renderAll();
@@ -3577,6 +3765,7 @@
       if (appData.payMethods.length <= 1) return;
       appData.payMethods = appData.payMethods.filter(p => p.id !== pmId);
       if (selectedPayMethod === pmId) selectedPayMethod = appData.payMethods[0].id;
+      markLedgerCustomized(true);
       saveData();
       renderPayMethodManageList();
       renderAll();
@@ -3594,6 +3783,7 @@
       });
       const curPm = appData.payMethods.find(p => p.id === selectedPayMethod);
       if (curPm && curPm.defaultCardId !== 'CASH') selectedCardId = curPm.defaultCardId;
+      markLedgerCustomized(true);
       saveData();
       closePayMethodManageModal();
       renderAll();
@@ -3626,6 +3816,7 @@
         c.sceneRules[id] = { rate: 1.0, switchTier: '一般消費', recPay: '實體卡/行動支付', note: '' };
       });
       document.getElementById('newSceneName').value = '';
+      markLedgerCustomized(true);
       saveData();
       renderSceneManageList();
       renderAll();
@@ -3639,6 +3830,7 @@
           s.name = nm.value.trim() || s.name;
         }
       });
+      markLedgerCustomized(true);
       saveData();
       closeSceneModal();
       renderAll();
@@ -3648,6 +3840,7 @@
       appData.scenes = appData.scenes.filter(s => s.id !== sceneId);
       if (selectedTopScene === sceneId) selectedTopScene = appData.scenes[0].id;
       if (selectedRecordScene === sceneId) selectedRecordScene = appData.scenes[0].id;
+      markLedgerCustomized(true);
       saveData();
       renderSceneManageList();
       renderAll();
@@ -3694,11 +3887,13 @@
       });
       document.getElementById('newKwWords').value = '';
       document.getElementById('newKwTip').value = '';
+      markLedgerCustomized(true);
       saveData();
       renderKeywordRuleList();
     }
     function deleteKeywordRule(id) {
       appData.keywordRules = appData.keywordRules.filter(r => r.id !== id);
+      markLedgerCustomized(true);
       saveData();
       renderKeywordRuleList();
     }
@@ -3807,6 +4002,7 @@
       });
 
       selectedCardId = existing.id;
+      markLedgerCustomized(true);
       saveData();
       closeEditCardModal();
       renderAll();
@@ -3817,6 +4013,7 @@
       if (appData.cards.length <= 1) return;
       appData.cards = appData.cards.filter(c => c.id !== id);
       if (selectedCardId === id) selectedCardId = appData.cards[0].id;
+      markLedgerCustomized(true);
       saveData();
       closeEditCardModal();
       renderAll();
@@ -3903,9 +4100,10 @@
           const imported = JSON.parse(e.target.result);
           if (imported.cards && imported.scenes) {
             appData = imported;
+            markLedgerCustomized(true);
             saveData();
             renderAll();
-            showToast('✅ 已匯入備份至此帳本');
+            showToast('✅ 已匯入備份檔並自動儲存至此帳本！');
           }
         } catch (err) {}
       };
@@ -4337,6 +4535,7 @@
       appData.payMethods.forEach(pm => {
         if (pm.defaultCardId === 'custom-card-1') pm.defaultCardId = selectedCardId;
       });
+      markLedgerCustomized(true);
       saveData();
       renderBankCatalogPickerList();
       renderAll();
@@ -4355,6 +4554,7 @@
       });
       appData.payMethods = JSON.parse(JSON.stringify(DEFAULT_PAY_METHODS));
       selectedCardId = appData.cards[0].id;
+      markLedgerCustomized(true);
       saveData();
       closeBankCatalogPickerModal();
       renderAll();
@@ -4447,6 +4647,8 @@
         });
       }
       selectedCardId = appData.cards[0].id;
+      appData._isFreshBlank = false;
+      appData._settingsUpdatedAt = Math.max(Number(appData._settingsUpdatedAt || 0), 1000);
       saveData();
       renderAll();
       return hasOnlyStarter;
@@ -4501,7 +4703,9 @@
       const next = !isLocalOwnerTrusted();
       try {
         localStorage.setItem(OWNER_TRUST_KEY, next ? 'true' : 'false');
+        idbSetMirror(OWNER_TRUST_KEY, next ? 'true' : 'false');
       } catch (e) {}
+      ensurePersistentStorageProtection();
       renderOwnerTrustStatus();
       showToast(next ? '📱 已將此瀏覽器／桌面捷徑設為「擁有者本人裝置」' : '已取消此裝置的擁有者免鎖標記');
     }
@@ -4578,10 +4782,94 @@
     }
 
     // ==========================================================
-    // ☁️ 私人雲端同步 & 📱 手機 QR Code 配對 & 🔄 放置桌面強制重整
+    // ☁️ 雙向私人雲端合併同步 & 📱 手機 QR 配對 & 🛡️ 4 重防自動清除保護
     // ==========================================================
     let currentQrMode = 'fullsync';
     let lastForegroundPullTs = 0;
+    let isCloudSyncInFlight = false;
+
+    function isStandaloneDisplayMode() {
+      try {
+        return Boolean(
+          (window.navigator && window.navigator.standalone === true) ||
+          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        );
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function detectStorageEnvironmentInfo() {
+      const ua = navigator.userAgent || '';
+      const isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isAndroid = /Android/i.test(ua);
+      const standalone = isStandaloneDisplayMode();
+      const cfg = loadCloudSyncConfig();
+      const hasCloud = Boolean(cfg.scriptUrl && cfg.scriptUrl.startsWith('https://'));
+
+      if (standalone) {
+        return {
+          envLabel: '📲 手機「分享到桌面（主畫面 App）」模式',
+          riskTone: 'safe',
+          summary: hasCloud
+            ? '✅ 不受 Safari 7 天未開清除限制 ＋ 已連線私人雲端雙向同步（就算誤刪桌面圖示也能 100% 救回！）'
+            : '✅ 不受 Safari 7 天未開自動清除限制！但因系統將桌面捷徑與瀏覽器分頁隔離，請綁定上方私人雲端（或貼上配對碼），讓兩邊雙向同步並防誤刪圖示。'
+        };
+      }
+      if (isIOS) {
+        return {
+          envLabel: '🌐 iPhone / iPad 一般瀏覽器分頁（掃 QR 開啟模式）',
+          riskTone: hasCloud ? 'protected' : 'warn',
+          summary: hasCloud
+            ? '🛡️ Apple Safari 對一般網頁有「超過 7 天未開啟自動清除快取」限制；但你已綁定私人雲端，萬一被清打開即自動還原所有帳單！'
+            : '⚠️ 注意：Apple Safari 規定一般瀏覽器分頁「連續超過 7 天沒點開」會自動清除本機資料！強烈建議綁定上方 1 分鐘私人雲端（永久不過期）或使用桌面捷徑。'
+        };
+      }
+      if (isAndroid) {
+        return {
+          envLabel: '🌐 Android 手機一般瀏覽器分頁',
+          riskTone: 'safe',
+          summary: hasCloud
+            ? '✅ 不會依天數自動清除 ＋ 已啟用雙層本機備份與私人雲端雙向同步！'
+            : '✅ 一般不會依天數自動清除（除非手動清快取或容量耗盡）；綁定上方私人雲端即可與「桌面捷徑」及電腦雙向同步！'
+        };
+      }
+      return {
+        envLabel: '💻 電腦版瀏覽器',
+        riskTone: 'safe',
+        summary: hasCloud
+          ? '✅ 電腦瀏覽器不會因久未開啟自動清除 ＋ 已連線私人雲端與手機雙向同步！'
+          : '✅ 電腦 Chrome / Edge 不會因久未開啟自動清除（除非手動清除網站資料）；綁定上方私人雲端即可與手機瀏覽器＆桌面捷徑雙向同步！'
+      };
+    }
+
+    function renderStorageRetentionStatus() {
+      const badgeEl = document.getElementById('storagePersistBadge');
+      const boxEl = document.getElementById('storageEnvDetailBox');
+      const cfg = loadCloudSyncConfig();
+      const hasCloud = Boolean(cfg.scriptUrl && cfg.scriptUrl.startsWith('https://'));
+      const info = detectStorageEnvironmentInfo();
+
+      if (badgeEl) {
+        if (hasCloud) {
+          badgeEl.className = 'text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--success-soft)] text-[var(--success)]';
+          badgeEl.textContent = '✓ 雲端永久保存＋雙層本機保護';
+        } else if (storagePersistGranted) {
+          badgeEl.className = 'text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]';
+          badgeEl.textContent = '✓ 系統永久儲存權限＋雙層備份';
+        } else {
+          badgeEl.className = 'text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--bg-pill)] text-[var(--text-secondary)]';
+          badgeEl.textContent = '本機雙層鏡像備份中';
+        }
+      }
+      if (boxEl) {
+        boxEl.innerHTML = `
+          <div><strong class="text-[var(--text-main)]">目前開啟環境：</strong>${info.envLabel}</div>
+          <div>${info.summary}</div>
+          <div class="text-[11.5px] text-[var(--text-muted)] pt-0.5">🔒 本機已自動同時寫入 <code>localStorage</code> 與 <code>IndexedDB</code> 雙資料庫，並自動向瀏覽器申請防系統回收保護。</div>
+        `;
+      }
+    }
 
     function toBase64UrlUtf8(str) {
       const bytes = new TextEncoder().encode(str);
@@ -4602,7 +4890,7 @@
     function loadCloudSyncConfig() {
       try {
         const raw = localStorage.getItem(CLOUD_SYNC_CFG_KEY);
-        if (raw) return JSON.parse(raw) || { scriptUrl: '', syncSecret: '' };
+        if (raw) return JSON.parse(raw) || { scriptUrl: '', syncSecret: '', lastSyncedAt: '' };
       } catch (e) {}
       return { scriptUrl: '', syncSecret: '', lastSyncedAt: '' };
     }
@@ -4610,8 +4898,10 @@
     function saveCloudSyncConfigObj(cfg) {
       try {
         localStorage.setItem(CLOUD_SYNC_CFG_KEY, JSON.stringify(cfg));
+        idbSetMirror(CLOUD_SYNC_CFG_KEY, JSON.parse(JSON.stringify(cfg)));
       } catch (e) {}
       renderCloudSyncBadges();
+      renderStorageRetentionStatus();
     }
 
     function renderCloudSyncBadges() {
@@ -4623,7 +4913,7 @@
       if (headerBadge) {
         if (hasCloud) {
           headerBadge.classList.remove('hidden');
-          headerBadge.textContent = cfg.lastSyncedAt ? `☁️ 已同步 ${cfg.lastSyncedAt}` : '☁️ 雲端已連線';
+          headerBadge.textContent = cfg.lastSyncedAt ? `☁️ 已雙向同步 ${cfg.lastSyncedAt}` : '☁️ 雙向雲端已連線';
         } else {
           headerBadge.classList.add('hidden');
         }
@@ -4631,8 +4921,8 @@
       if (modalBadge) {
         modalBadge.className = hasCloud
           ? 'text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--success-soft)] text-[var(--success)]'
-          : 'text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--bg-pill)] text-[var(--text-muted)]';
-        modalBadge.textContent = hasCloud ? (cfg.lastSyncedAt ? `✓ 上次同步 ${cfg.lastSyncedAt}` : '✓ 已設定雲端網址') : '尚未設定';
+          : 'text-[11.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--warn-soft)] text-[var(--warn)]';
+        modalBadge.textContent = hasCloud ? (cfg.lastSyncedAt ? `✓ 上次同步 ${cfg.lastSyncedAt}` : '✓ 已綁定雲端網址') : '尚未綁定雲端';
       }
     }
 
@@ -4667,7 +4957,16 @@
         (appData.payMethods || []).forEach(pm => { payDefaults[pm.id] = pm.defaultCardId; });
         const txSlice = includeAllTx ? (appData.transactions || []) : (appData.transactions || []).slice(0, 12);
         const compactTx = txSlice.map(t => [
-          t.date, t.sceneId, t.payMethodId, t.cardId, Number(t.amount || 0), Number(t.reward || 0), Number(t.rate || 0), t.switchTier || '', t.note || ''
+          t.date,
+          t.sceneId,
+          t.payMethodId,
+          t.cardId,
+          Number(t.amount || 0),
+          Number(t.reward || 0),
+          Number(t.rate || 0),
+          t.switchTier || '',
+          t.note || '',
+          t.id || ''
         ]);
         const bundle = {
           v: isLocalOwnerTrusted() ? VIP_PAIR_DIGEST : '',
@@ -4700,6 +4999,8 @@
     function renderQrCodeBox() {
       const mount = document.getElementById('qrSvgMount');
       const hint = document.getElementById('qrModeHintText');
+      const cfg = loadCloudSyncConfig();
+      const hasCloud = Boolean(cfg.scriptUrl && cfg.scriptUrl.startsWith('https://'));
       if (!mount) return;
       const targetUrl = buildCurrentPairingPayloadUrl(currentQrMode, false);
       try {
@@ -4713,20 +5014,37 @@
       }
       if (hint) {
         if (currentQrMode === 'fullsync') {
-          hint.textContent = '✨ 手機掃描此 QR（或複製配對碼到桌面捷徑貼上），即可「免輸密碼綁定本人手機」並把電腦上的全部卡片、扣款日與近期帳單一鍵同步到手機！';
+          hint.textContent = hasCloud
+            ? '✨ 此 QR 已內含你的私人雲端網址！手機掃描開啟瀏覽器（再點複製配對碼貼到桌面捷徑），電腦 ⇄ 瀏覽器 ⇄ 桌面三邊即永久自動雙向同步！'
+            : '✨ 手機掃描可免密複製目前卡片與畫面（💡 建議先填上方私人雲端網址再掃描，才能讓桌面捷徑與瀏覽器持續雙向同步！）';
         } else {
           hint.textContent = '此為一般公開網址 QR，其他人掃描開啟時必須輸入通行碼才可進入。';
         }
       }
     }
 
-    function openCloudSyncModal() {
+    function openCloudSyncModal(highlightMissingBridge = false) {
       const cfg = loadCloudSyncConfig();
+      const hasCloud = Boolean(cfg.scriptUrl && cfg.scriptUrl.startsWith('https://'));
       const urlInp = document.getElementById('cloudScriptUrlInput');
       const secInp = document.getElementById('cloudSyncSecretInput');
+      const missingAlert = document.getElementById('cloudMissingBridgeAlert');
+      const guideDetails = document.getElementById('gasSetupGuideDetails');
       if (urlInp) urlInp.value = cfg.scriptUrl || '';
       if (secInp) secInp.value = cfg.syncSecret || '';
+      if (missingAlert) {
+        if (!hasCloud && highlightMissingBridge) {
+          missingAlert.classList.remove('hidden');
+        } else {
+          missingAlert.classList.add('hidden');
+        }
+      }
+      if (guideDetails && !hasCloud && highlightMissingBridge) {
+        guideDetails.open = true;
+      }
+      ensurePersistentStorageProtection();
       renderCloudSyncBadges();
+      renderStorageRetentionStatus();
       switchQrMode(currentQrMode);
       document.getElementById('cloudSyncModal').classList.remove('hidden');
     }
@@ -4735,7 +5053,7 @@
       document.getElementById('cloudSyncModal').classList.add('hidden');
     }
 
-    function saveCloudSyncSettings() {
+    async function saveCloudSyncSettings() {
       const urlVal = (document.getElementById('cloudScriptUrlInput')?.value || '').trim();
       const secVal = (document.getElementById('cloudSyncSecretInput')?.value || '').trim();
       const prev = loadCloudSyncConfig();
@@ -4744,8 +5062,16 @@
         syncSecret: secVal,
         lastSyncedAt: prev.lastSyncedAt || ''
       });
+      const missingAlert = document.getElementById('cloudMissingBridgeAlert');
+      if (missingAlert && urlVal.startsWith('https://')) {
+        missingAlert.classList.add('hidden');
+      }
       renderQrCodeBox();
-      showToast(urlVal ? '☁️ 已儲存雲端同步設定！可點「上傳」或「拉取」測試' : '已清除雲端同步網址');
+      if (urlVal && urlVal.startsWith('https://')) {
+        await syncBidirectionalWithCloud(true);
+      } else {
+        showToast('已清除雲端同步網址');
+      }
     }
 
     function formatShortTimeNow() {
@@ -4753,14 +5079,235 @@
       return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     }
 
+    function getEffectiveSettingsTs(d) {
+      if (!d || isBlankStarterLedger(d)) return 0;
+      if (typeof d._settingsUpdatedAt === 'number' && d._settingsUpdatedAt > 0) return d._settingsUpdatedAt;
+      if (typeof d._updatedAt === 'number' && d._updatedAt > 0) return d._updatedAt;
+      return 5000;
+    }
+
+    function mergeCardMonthFlags(priCard, secCard, mapKey, tsMapKey) {
+      const out = Object.assign({}, (secCard && secCard[mapKey]) || {}, (priCard && priCard[mapKey]) || {});
+      const outTs = Object.assign({}, (secCard && secCard[tsMapKey]) || {}, (priCard && priCard[tsMapKey]) || {});
+      const allMonths = new Set([
+        ...Object.keys((priCard && priCard[mapKey]) || {}),
+        ...Object.keys((secCard && secCard[mapKey]) || {})
+      ]);
+      allMonths.forEach(ym => {
+        const pTs = Number((priCard && priCard[tsMapKey] && priCard[tsMapKey][ym]) || 0);
+        const sTs = Number((secCard && secCard[tsMapKey] && secCard[tsMapKey][ym]) || 0);
+        if (pTs > 0 || sTs > 0) {
+          if (sTs > pTs) {
+            out[ym] = Boolean(secCard[mapKey] && secCard[mapKey][ym]);
+            outTs[ym] = sTs;
+          } else {
+            out[ym] = Boolean(priCard[mapKey] && priCard[mapKey][ym]);
+            outTs[ym] = pTs;
+          }
+        } else {
+          out[ym] = Boolean((priCard && priCard[mapKey] && priCard[mapKey][ym]) || (secCard && secCard[mapKey] && secCard[mapKey][ym]));
+        }
+      });
+      priCard[mapKey] = out;
+      priCard[tsMapKey] = outTs;
+    }
+
+    // 智慧雙向合併引擎：合併「桌面捷徑 ⇄ 掃QR瀏覽器 ⇄ 電腦」新增/修改/刪除的帳單，且絕不讓被清空的空白頁覆蓋雲端！
+    function mergeLedgers(localData, remoteData) {
+      const localBlank = isBlankStarterLedger(localData);
+      const remoteBlank = isBlankStarterLedger(remoteData);
+
+      if (localBlank && !remoteBlank) {
+        const restored = JSON.parse(JSON.stringify(remoteData));
+        restored._isFreshBlank = false;
+        if (!Array.isArray(restored._deletedTxIds)) restored._deletedTxIds = [];
+        return restored;
+      }
+      if (!localBlank && remoteBlank) {
+        const kept = JSON.parse(JSON.stringify(localData));
+        kept._isFreshBlank = false;
+        if (!Array.isArray(kept._deletedTxIds)) kept._deletedTxIds = [];
+        return kept;
+      }
+      if (localBlank && remoteBlank) {
+        return JSON.parse(JSON.stringify(localData));
+      }
+
+      const localSettingsTs = getEffectiveSettingsTs(localData);
+      const remoteSettingsTs = getEffectiveSettingsTs(remoteData);
+      const primary = JSON.parse(JSON.stringify(remoteSettingsTs > localSettingsTs ? remoteData : localData));
+      const secondary = JSON.parse(JSON.stringify(remoteSettingsTs > localSettingsTs ? localData : remoteData));
+
+      if (Array.isArray(primary.cards) && Array.isArray(secondary.cards)) {
+        const secCardMap = new Map(secondary.cards.map(c => [c.id, c]));
+        primary.cards.forEach(pCard => {
+          const sCard = secCardMap.get(pCard.id);
+          if (sCard) {
+            mergeCardMonthFlags(pCard, sCard, 'paidMonths', '_paidToggledAt');
+            mergeCardMonthFlags(pCard, sCard, 'monthlyTaskDone', '_taskToggledAt');
+          }
+        });
+      }
+
+      const deletedSet = new Set([
+        ...((localData && localData._deletedTxIds) || []),
+        ...((remoteData && remoteData._deletedTxIds) || [])
+      ]);
+      const mergedDeletedList = Array.from(deletedSet).slice(-500);
+
+      const byId = new Map();
+      const combinedRaw = [
+        ...((remoteData && remoteData.transactions) || []),
+        ...((localData && localData.transactions) || [])
+      ];
+      combinedRaw.forEach(tx => {
+        if (!tx || !tx.id || deletedSet.has(tx.id)) return;
+        const prev = byId.get(tx.id);
+        if (!prev) {
+          byId.set(tx.id, JSON.parse(JSON.stringify(tx)));
+        } else {
+          const prevEdit = Number(prev._editedAt || prev._createdAt || 0);
+          const curEdit = Number(tx._editedAt || tx._createdAt || 0);
+          if (curEdit >= prevEdit) {
+            byId.set(tx.id, JSON.parse(JSON.stringify(tx)));
+          }
+        }
+      });
+
+      const canonicalSigs = new Set();
+      byId.forEach(tx => {
+        if (!String(tx.id).startsWith('sync-')) {
+          canonicalSigs.add(`${tx.date}|${tx.cardId}|${Number(tx.amount || 0)}|${tx.sceneId || ''}|${tx.note || ''}`);
+        }
+      });
+      const seenSyncSigs = new Set();
+      const mergedTxs = [];
+      byId.forEach(tx => {
+        const sig = `${tx.date}|${tx.cardId}|${Number(tx.amount || 0)}|${tx.sceneId || ''}|${tx.note || ''}`;
+        if (String(tx.id).startsWith('sync-')) {
+          if (canonicalSigs.has(sig) || seenSyncSigs.has(sig)) return;
+          seenSyncSigs.add(sig);
+        }
+        mergedTxs.push(tx);
+      });
+
+      mergedTxs.sort((a, b) => {
+        const cmp = String(b.date || '').localeCompare(String(a.date || ''));
+        if (cmp !== 0) return cmp;
+        return Number(b._createdAt || 0) - Number(a._createdAt || 0);
+      });
+
+      primary.transactions = mergedTxs;
+      primary._deletedTxIds = mergedDeletedList;
+      primary._isFreshBlank = false;
+      primary._settingsUpdatedAt = Math.max(localSettingsTs, remoteSettingsTs, 1000);
+      primary._updatedAt = Date.now();
+      return primary;
+    }
+
+    async function syncBidirectionalWithCloud(manual = false) {
+      const cfg = loadCloudSyncConfig();
+      if (!cfg.scriptUrl || !cfg.scriptUrl.startsWith('https://')) {
+        if (manual) {
+          openCloudSyncModal(true);
+          showToast('⚠️ 尚未綁定私人雲端網址！請完成下方 1 分鐘設定（或貼上配對碼）即可兩邊同步');
+        }
+        return false;
+      }
+      if (isCloudSyncInFlight) return false;
+      isCloudSyncInFlight = true;
+      const iconEl = document.getElementById('refreshBtnIcon');
+      if (iconEl) iconEl.classList.add('animate-spin');
+      if (manual) showToast('🔄 正在雙向合併同步（桌面 ⇄ 瀏覽器 ⇄ 電腦）...');
+
+      try {
+        const pullCtrl = new AbortController();
+        const pullTimer = setTimeout(() => pullCtrl.abort(), 8000);
+        const pullRes = await fetch(cfg.scriptUrl, {
+          method: 'POST',
+          signal: pullCtrl.signal,
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'pull',
+            key: cfg.syncSecret || '',
+            profileId: profileRegistry.activeProfileId
+          })
+        });
+        clearTimeout(pullTimer);
+        const pullData = await pullRes.json();
+
+        if (!pullData || !pullData.ok) {
+          if (manual) showToast(`⚠️ 雲端回應：${(pullData && pullData.error) || '同步密碼不正確'}`);
+          return false;
+        }
+
+        if (pullData.ledger && Array.isArray(pullData.ledger.cards)) {
+          appData = mergeLedgers(appData, pullData.ledger);
+          if (!appData.cards.some(c => c.id === selectedCardId) && appData.cards[0]) {
+            selectedCardId = appData.cards[0].id;
+          }
+          saveData(true);
+          renderAll();
+        } else if (isBlankStarterLedger(appData)) {
+          cfg.lastSyncedAt = formatShortTimeNow();
+          saveCloudSyncConfigObj(cfg);
+          if (manual) showToast('💡 雲端已連線（尚無帳本資料，請先在有設定卡片的裝置按一次同步！）');
+          return true;
+        }
+
+        if (!isBlankStarterLedger(appData)) {
+          const pushCtrl = new AbortController();
+          const pushTimer = setTimeout(() => pushCtrl.abort(), 8500);
+          const pushRes = await fetch(cfg.scriptUrl, {
+            method: 'POST',
+            signal: pushCtrl.signal,
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'push',
+              key: cfg.syncSecret || '',
+              profileId: profileRegistry.activeProfileId,
+              updatedAt: appData._updatedAt || Date.now(),
+              ledger: appData
+            })
+          });
+          clearTimeout(pushTimer);
+          const pushData = await pushRes.json();
+          if (!pushData || !pushData.ok) {
+            if (manual) showToast(`⚠️ 雲端寫入異常：${(pushData && pushData.error) || '建議更新雲端分塊程式碼'}`);
+            return false;
+          }
+        }
+
+        cfg.lastSyncedAt = formatShortTimeNow();
+        saveCloudSyncConfigObj(cfg);
+        renderAll();
+        if (manual) {
+          showToast(`✅ 雙向同步完成！目前共 ${appData.cards.length} 張卡・${(appData.transactions || []).length} 筆帳單已一致`);
+        }
+        return true;
+      } catch (e) {
+        if (manual) showToast('⚠️ 雲端連線逾時或網址有誤，請確認網路與部署權限設為「所有人」');
+        return false;
+      } finally {
+        isCloudSyncInFlight = false;
+        if (iconEl) iconEl.classList.remove('animate-spin');
+      }
+    }
+
     async function pushToCloudSync(manual = false) {
       const cfg = loadCloudSyncConfig();
       if (!cfg.scriptUrl || !cfg.scriptUrl.startsWith('https://')) {
-        if (manual) showToast('⚠️ 請先貼上你的 Google Apps Script 網頁應用程式網址');
+        if (manual) {
+          openCloudSyncModal(true);
+          showToast('⚠️ 請先貼上你的 Google Apps Script 網頁應用程式網址');
+        }
+        return false;
+      }
+      if (!manual && isBlankStarterLedger(appData)) {
         return false;
       }
       try {
-        if (manual) showToast('⬆️ 正在加密上傳帳本至你的私人雲端...');
+        if (manual) showToast('⬆️ 正在上傳此機帳本覆蓋雲端...');
         const res = await fetch(cfg.scriptUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -4776,7 +5323,7 @@
         if (data && data.ok) {
           cfg.lastSyncedAt = formatShortTimeNow();
           saveCloudSyncConfigObj(cfg);
-          if (manual) showToast('✅ 已成功同步至你的私人雲端！手機點 🔄 即可拉取');
+          if (manual) showToast('✅ 已將此機資料完整上傳至雲端！另一邊點「🔄 同步」即可同步');
           return true;
         }
         if (manual) showToast(`⚠️ 雲端回應：${(data && data.error) || '同步密碼不符'}`);
@@ -4789,13 +5336,16 @@
     async function pullFromCloudSync(manual = false) {
       const cfg = loadCloudSyncConfig();
       if (!cfg.scriptUrl || !cfg.scriptUrl.startsWith('https://')) {
-        if (manual) showToast('⚠️ 請先設定私人雲端網址，或先在手機貼上電腦配對碼');
+        if (manual) {
+          openCloudSyncModal(true);
+          showToast('⚠️ 請先設定私人雲端網址，或先貼上配對碼');
+        }
         return false;
       }
       try {
-        if (manual) showToast('⬇️ 正在從私人雲端拉取最新帳單...');
+        if (manual) showToast('⬇️ 正在從私人雲端拉取帳單...');
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5500);
+        const timer = setTimeout(() => controller.abort(), 7000);
         const res = await fetch(cfg.scriptUrl, {
           method: 'POST',
           signal: controller.signal,
@@ -4810,14 +5360,19 @@
         const data = await res.json();
         if (data && data.ok && data.ledger && Array.isArray(data.ledger.cards)) {
           appData = data.ledger;
+          appData._isFreshBlank = false;
+          if (!Array.isArray(appData._deletedTxIds)) appData._deletedTxIds = [];
+          if (!appData.cards.some(c => c.id === selectedCardId) && appData.cards[0]) {
+            selectedCardId = appData.cards[0].id;
+          }
           saveData(true);
           cfg.lastSyncedAt = formatShortTimeNow();
           saveCloudSyncConfigObj(cfg);
           renderAll();
-          if (manual) showToast('✅ 已從雲端同步最新卡片與帳單紀錄！');
+          if (manual) showToast('✅ 已從雲端覆蓋還原最新卡片與帳單紀錄！');
           return true;
         }
-        if (manual) showToast(data && data.empty ? '💡 雲端目前尚無資料，請先在電腦點「上傳此機資料」' : '⚠️ 雲端同步密碼不正確');
+        if (manual) showToast(data && data.empty ? '💡 雲端目前尚無資料，請先在電腦點「雙向合併同步」上傳' : '⚠️ 雲端同步密碼不正確');
       } catch (e) {
         if (manual) showToast('⚠️ 雲端連線逾時或網址有誤');
       }
@@ -4827,32 +5382,50 @@
     function scheduleAutoCloudPush() {
       const cfg = loadCloudSyncConfig();
       if (!cfg.scriptUrl || !cfg.scriptUrl.startsWith('https://')) return;
+      if (isBlankStarterLedger(appData)) return;
       if (autoPushTimer) clearTimeout(autoPushTimer);
       autoPushTimer = setTimeout(() => {
-        pushToCloudSync(false);
-      }, 1200);
+        syncBidirectionalWithCloud(false);
+      }, 900);
     }
 
     function autoPullOnForegroundIfEnabled() {
       const now = Date.now();
-      if (now - lastForegroundPullTs < 45000) return;
+      if (now - lastForegroundPullTs < 8000) return;
       lastForegroundPullTs = now;
       const cfg = loadCloudSyncConfig();
       if (cfg.scriptUrl && cfg.scriptUrl.startsWith('https://')) {
-        pullFromCloudSync(false);
+        syncBidirectionalWithCloud(false);
       }
     }
 
-    // 手機「放置桌面 (加入主畫面)」專用：一鍵同步雲端 + 清除舊快取並重新載入最新版！
+    // 置頂導覽列「🔄 同步」主按鈕：有雲端網址即執行雙向合併同步；尚未綁定則自動打開教學引導視窗！
+    async function handleHeaderSyncButton() {
+      ensurePersistentStorageProtection();
+      const cfg = loadCloudSyncConfig();
+      if (!cfg.scriptUrl || !cfg.scriptUrl.startsWith('https://')) {
+        openCloudSyncModal(true);
+        showToast('💡 尚未綁定私人雲端！完成下方 1 分鐘設定後，桌面與瀏覽器即可雙向同步');
+        return;
+      }
+      await syncBidirectionalWithCloud(true);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations()
+          .then(regs => Promise.all(regs.map(r => r.update().catch(() => {}))))
+          .catch(() => {});
+      }
+    }
+
+    // 手機「放置桌面 (加入主畫面)」強制更新程式快取專用：先完成雙向雲端同步保存紀錄，再清快取重新載入最新版 HTML/JS！
     async function forceRefreshAndSync() {
       const iconEl = document.getElementById('refreshBtnIcon');
       if (iconEl) iconEl.classList.add('animate-spin');
-      showToast('🔄 正在同步最新資料並重新整理畫面...');
+      showToast('⚡ 正在先同步保存帳單，並重新載入最新程式版本...');
 
       try {
         const cfg = loadCloudSyncConfig();
         if (cfg.scriptUrl && cfg.scriptUrl.startsWith('https://')) {
-          await pullFromCloudSync(false);
+          await syncBidirectionalWithCloud(false);
         }
         if ('serviceWorker' in navigator) {
           const regs = await navigator.serviceWorker.getRegistrations();
@@ -4869,13 +5442,17 @@
     }
 
     function copyPairingCodeForHomeScreen() {
+      const cfg = loadCloudSyncConfig();
+      const hasCloud = Boolean(cfg.scriptUrl && cfg.scriptUrl.startsWith('https://'));
       const fullLink = buildCurrentPairingPayloadUrl('fullsync', true);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(fullLink).then(() => {
-          showToast('📋 已複製電腦完整配對碼！傳到手機後點「貼上配對碼」即可免密同步全部畫面');
-        }).catch(() => window.prompt('請複製以下配對碼傳至手機：', fullLink));
+          showToast(hasCloud
+            ? '📋 已複製配對碼（含雲端同步網址）！打開桌面捷徑點「貼上配對碼」即兩邊永久互通！'
+            : '📋 已複製畫面配對碼！建議也綁定雲端網址讓桌面與瀏覽器持續自動雙向同步');
+        }).catch(() => window.prompt('請複製以下配對碼至桌面捷徑貼上：', fullLink));
       } else {
-        window.prompt('請複製以下配對碼傳至手機：', fullLink);
+        window.prompt('請複製以下配對碼至桌面捷徑貼上：', fullLink);
       }
     }
 
@@ -4887,7 +5464,7 @@
         }
       } catch (e) {}
       if (!text || (!text.includes('fullsync=') && !text.includes('pair=') && !text.includes('cardcfg='))) {
-        text = (window.prompt('請貼上從電腦「☁️ 同步/QR ➔ 複製配對碼」複製的完整配對連結：') || '').trim();
+        text = (window.prompt('請貼上從電腦或手機瀏覽器「☁️ 同步/QR ➔ 複製配對碼」複製的完整配對連結：') || '').trim();
       }
       if (!text) return;
       await applyPairingTokenString(text, true);
@@ -4903,6 +5480,8 @@
               try {
                 localStorage.setItem(OWNER_TRUST_KEY, 'true');
                 localStorage.setItem(GATE_AUTH_HASH_KEY, BUILTIN_GATE_CONFIG.passcodeHash);
+                idbSetMirror(OWNER_TRUST_KEY, 'true');
+                idbSetMirror(GATE_AUTH_HASH_KEY, BUILTIN_GATE_CONFIG.passcodeHash);
               } catch (e) {}
               const overlay = document.getElementById('accessGateOverlay');
               if (overlay) overlay.classList.add('hidden');
@@ -4910,7 +5489,7 @@
             if (bundle.u && String(bundle.u).startsWith('https://')) {
               saveCloudSyncConfigObj({ scriptUrl: bundle.u, syncSecret: bundle.k || '', lastSyncedAt: '' });
             }
-            // 移除空白示範卡並同步電腦上的全部卡片設定
+            // 移除空白示範卡並同步全部卡片設定
             appData.cards = appData.cards.filter(c => c.id !== 'custom-card-1');
             bundle.c.forEach(item => {
               let target = appData.cards.find(c => c.id === item.i);
@@ -4942,29 +5521,37 @@
             }
             if (bundle.st) appData.defaultStartTab = bundle.st;
             if (Array.isArray(bundle.tx) && bundle.tx.length > 0) {
+              const deletedSet = new Set(appData._deletedTxIds || []);
+              const existingIds = new Set((appData.transactions || []).map(t => t.id));
               const existingKeys = new Set(
                 (appData.transactions || []).map(t => `${t.date}|${t.cardId}|${t.amount}|${t.note || ''}`)
               );
               bundle.tx.forEach((row, idx) => {
-                const [date, sceneId, payMethodId, cardId, amount, reward, rate, switchTier, note] = row;
+                const [date, sceneId, payMethodId, cardId, amount, reward, rate, switchTier, note, origId] = row;
+                const txId = origId || `sync-${Date.now()}-${idx}`;
                 const sig = `${date}|${cardId}|${amount}|${note || ''}`;
-                if (!existingKeys.has(sig)) {
+                if (!deletedSet.has(txId) && !existingIds.has(txId) && !existingKeys.has(sig)) {
+                  existingIds.add(txId);
                   existingKeys.add(sig);
                   appData.transactions.push({
-                    id: `sync-${Date.now()}-${idx}`,
+                    id: txId,
                     date, sceneId, payMethodId, cardId, amount, reward, rate, switchTier, note
                   });
                 }
               });
             }
             selectedCardId = appData.cards[0].id;
-            saveData();
+            markLedgerCustomized(true);
+            saveData(true);
+            ensurePersistentStorageProtection();
             if (bundle.u && String(bundle.u).startsWith('https://')) {
-              await pullFromCloudSync(false);
+              await syncBidirectionalWithCloud(false);
             }
             closeCloudSyncModal();
             renderAll();
-            showToast('🎉 已免密綁定本人手機，並完整同步電腦上的卡片與畫面！');
+            showToast(bundle.u
+              ? '🎉 已免密連通雲端與全部卡片！現在此處與桌面／瀏覽器按「🔄 同步」將永久雙向互通！'
+              : '🎉 已免密綁定並同步電腦卡片畫面！（若要持續雙向同步帳單，請在 ☁️ 同步/QR 綁定私人雲端）');
             return true;
           }
         }
@@ -4974,11 +5561,15 @@
           const parsed = JSON.parse(fromBase64UrlUtf8(pairMatch[1]));
           if (parsed && parsed.u) {
             saveCloudSyncConfigObj({ scriptUrl: parsed.u, syncSecret: parsed.k || '', lastSyncedAt: '' });
-            try { localStorage.setItem(OWNER_TRUST_KEY, 'true'); } catch (e) {}
-            const pulled = await pullFromCloudSync(false);
+            try {
+              localStorage.setItem(OWNER_TRUST_KEY, 'true');
+              idbSetMirror(OWNER_TRUST_KEY, 'true');
+            } catch (e) {}
+            ensurePersistentStorageProtection();
+            const synced = await syncBidirectionalWithCloud(false);
             closeCloudSyncModal();
             renderAll();
-            showToast(pulled ? '🎉 配對成功！已自動同步雲端帳本並綁定此裝置' : '🎉 已完成雲端配對！點「上傳」或「🔄 重整」即可同步');
+            showToast(synced ? '🎉 配對成功！已自動雙向同步雲端帳本並綁定此裝置' : '🎉 已完成雲端配對！點「🔄 同步」即可雙向合併');
             return true;
           }
         }
@@ -5006,6 +5597,7 @@
               target.billingLabel = item.b || '';
             });
             selectedCardId = appData.cards[0].id;
+            markLedgerCustomized(true);
             saveData();
             closeCloudSyncModal();
             renderAll();
@@ -5013,36 +5605,48 @@
             return true;
           }
         }
-        if (fromManualPaste) showToast('⚠️ 未偵測到有效的配對碼，請重新從電腦點「複製配對碼」');
+        if (fromManualPaste) showToast('⚠️ 未偵測到有效的配對碼，請先在電腦或手機瀏覽器點「📋 複製配對碼」');
       } catch (e) {
         if (fromManualPaste) showToast('⚠️ 配對碼格式有誤，請重新複製');
       }
       return false;
     }
 
+    // 分塊大容量版 Google Apps Script（突破舊版單一屬性 9KB 限制，支援高達 500KB ≈ 3,500+ 筆帳單，免雲端硬碟權限且永久不過期！）
     function copyGoogleAppsScriptCode() {
       const gasCode = [
         "function doPost(e) {",
-        "  var SECRET = ''; // 可留空（由前端傳入之第一組密碼自動綁定），或直接填你的專屬密碼如 'mykey888'",
-        "  var body = JSON.parse(e.postData.contents || '{}');",
-        "  var props = PropertiesService.getUserProperties();",
-        "  var savedKey = SECRET || props.getProperty('SYNC_KEY') || '';",
-        "  if (!savedKey && body.key) { props.setProperty('SYNC_KEY', body.key); savedKey = body.key; }",
-        "  if (savedKey && body.key !== savedKey) {",
-        "    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: '同步密碼不正確' })).setMimeType(ContentService.MimeType.JSON);",
-        "  }",
-        "  var slot = 'LEDGER_' + (body.profileId || 'profile-main');",
-        "  if (body.action === 'push' && body.ledger) {",
-        "    props.setProperty(slot, JSON.stringify(body.ledger));",
-        "    return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);",
-        "  }",
-        "  var raw = props.getProperty(slot);",
-        "  return ContentService.createTextOutput(JSON.stringify({ ok: true, empty: !raw, ledger: raw ? JSON.parse(raw) : null })).setMimeType(ContentService.MimeType.JSON);",
+        "  var SECRET = ''; // 可留空（自動綁定你第一次設定的密碼），或自訂如 'mykey888'",
+        "  var lock = LockService.getScriptLock();",
+        "  lock.tryLock(10000);",
+        "  try {",
+        "    var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');",
+        "    var props = PropertiesService.getScriptProperties();",
+        "    var all = props.getProperties();",
+        "    var savedKey = SECRET || all['SYNC_KEY'] || '';",
+        "    if (!savedKey && body.key) { props.setProperty('SYNC_KEY', body.key); savedKey = body.key; }",
+        "    if (savedKey && body.key !== savedKey) {",
+        "      return ContentService.createTextOutput(JSON.stringify({ ok: false, error: '同步密碼不正確' })).setMimeType(ContentService.MimeType.JSON);",
+        "    }",
+        "    var slot = 'LEDGER_' + (body.profileId || 'profile-main');",
+        "    if (body.action === 'push' && body.ledger) {",
+        "      var raw = JSON.stringify(body.ledger);",
+        "      var size = 2000, count = Math.ceil(raw.length / size), batch = {};",
+        "      batch[slot + '_CNT'] = String(count);",
+        "      for (var i = 0; i < count; i++) batch[slot + '_' + i] = raw.slice(i * size, (i + 1) * size);",
+        "      props.setProperties(batch, false);",
+        "      return ContentService.createTextOutput(JSON.stringify({ ok: true, chunks: count })).setMimeType(ContentService.MimeType.JSON);",
+        "    }",
+        "    var cnt = parseInt(all[slot + '_CNT'] || '0', 10), out = '';",
+        "    if (cnt > 0) { for (var j = 0; j < cnt; j++) out += (all[slot + '_' + j] || ''); }",
+        "    else { out = all[slot] || ''; }",
+        "    return ContentService.createTextOutput(JSON.stringify({ ok: true, empty: !out, ledger: out ? JSON.parse(out) : null })).setMimeType(ContentService.MimeType.JSON);",
+        "  } finally { lock.releaseLock(); }",
         "}"
       ].join('\n');
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(gasCode).then(() => {
-          showToast('📋 已複製 17 行雲端同步程式碼！打開 script.new 貼上並部署即可');
+          showToast('📋 已複製大容量雲端同步程式碼！打開 script.new 貼上並部署為網頁應用程式即可');
         }).catch(() => {});
       }
     }
@@ -5143,6 +5747,8 @@
             try {
               localStorage.setItem(OWNER_TRUST_KEY, 'true');
               localStorage.setItem(GATE_AUTH_HASH_KEY, hash);
+              idbSetMirror(OWNER_TRUST_KEY, 'true');
+              idbSetMirror(GATE_AUTH_HASH_KEY, hash);
             } catch (e) {}
           }
           if (liveAccessConfig.ownerVault) {
@@ -5152,6 +5758,7 @@
             }
           }
         }
+        ensurePersistentStorageProtection();
         document.getElementById('accessGateOverlay').classList.add('hidden');
         if (errEl) errEl.classList.add('hidden');
         if (input) input.value = '';
@@ -5164,6 +5771,10 @@
         } else {
           showToast('🔓 驗證通過，歡迎使用！');
         }
+        const cfg = loadCloudSyncConfig();
+        if (cfg.scriptUrl && cfg.scriptUrl.startsWith('https://')) {
+          syncBidirectionalWithCloud(false);
+        }
       } else {
         if (errEl) errEl.classList.remove('hidden');
       }
@@ -5175,17 +5786,70 @@
       }
     }
 
+    // 啟動雙層防清除鏡像與自動救援（若 localStorage 意外被清而 IndexedDB 尚存，立即無感自癒！）
+    async function initStorageProtectionAndHeal() {
+      ensurePersistentStorageProtection();
+      try {
+        if (!isLocalOwnerTrusted()) {
+          const idbTrusted = await idbGetMirror(OWNER_TRUST_KEY);
+          if (idbTrusted === 'true') {
+            localStorage.setItem(OWNER_TRUST_KEY, 'true');
+            enforceGateConfigOnUI(liveAccessConfig);
+            renderOwnerTrustStatus();
+          }
+        } else {
+          idbSetMirror(OWNER_TRUST_KEY, 'true');
+        }
+
+        let cloudCfg = loadCloudSyncConfig();
+        let restoredCloudCfg = false;
+        if (!cloudCfg.scriptUrl) {
+          const idbCloudCfg = await idbGetMirror(CLOUD_SYNC_CFG_KEY);
+          if (idbCloudCfg && idbCloudCfg.scriptUrl && String(idbCloudCfg.scriptUrl).startsWith('https://')) {
+            saveCloudSyncConfigObj(idbCloudCfg);
+            cloudCfg = idbCloudCfg;
+            restoredCloudCfg = true;
+          }
+        } else {
+          idbSetMirror(CLOUD_SYNC_CFG_KEY, JSON.parse(JSON.stringify(cloudCfg)));
+        }
+
+        const activeKey = getLedgerStorageKey(profileRegistry.activeProfileId);
+        if (isBlankStarterLedger(appData)) {
+          const idbLedger = await idbGetMirror(activeKey);
+          if (idbLedger && !isBlankStarterLedger(idbLedger)) {
+            appData = idbLedger;
+            if (!appData.cards.some(c => c.id === selectedCardId) && appData.cards[0]) {
+              selectedCardId = appData.cards[0].id;
+            }
+            saveData(true);
+            renderAll();
+            showToast('🛡️ 已從本機雙層保護備份自動還原你的卡片與帳單！');
+          }
+        } else {
+          idbSetMirror(activeKey, JSON.parse(JSON.stringify(appData)));
+        }
+
+        if (restoredCloudCfg && cloudCfg.scriptUrl && cloudCfg.scriptUrl.startsWith('https://')) {
+          syncBidirectionalWithCloud(false);
+        }
+      } catch (e) {}
+    }
+
     // 啟動初始化（處理 QR 掃描配對 Hash 與即時門禁檢查）
     renderCloudSyncBadges();
+    renderStorageRetentionStatus();
     setStoreLinePayFilter('any');
 
     if (window.location.hash && (window.location.hash.includes('fullsync=') || window.location.hash.includes('pair=') || window.location.hash.includes('cardcfg='))) {
       const hashCopy = window.location.hash;
       try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
-      applyPairingTokenString(hashCopy, false).then(() => initLiveAccessGate());
+      applyPairingTokenString(hashCopy, false)
+        .then(() => initLiveAccessGate())
+        .then(() => initStorageProtectionAndHeal());
     } else {
       initLiveAccessGate();
-      autoPullOnForegroundIfEnabled();
+      initStorageProtectionAndHeal().then(() => autoPullOnForegroundIfEnabled());
     }
 
     const urlTab = new URLSearchParams(window.location.search).get('tab');
