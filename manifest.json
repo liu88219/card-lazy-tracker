@@ -1,14 +1,14 @@
 {
   "name": "卡神懶人記帳 PWA",
   "short_name": "卡神記帳",
-  "description": "零個資風險・結合台灣信用卡權益切換提醒與圓餅圖分析的簡約奶油風記帳 App",
+  "description": "零個資風險・結合台灣信用卡權益切換提醒與圓餅圖分析的 Dinotaeng 簡約奶油風記帳 App",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#FAF5EC",
-  "theme_color": "#FAF5EC",
+  "background_color": "#ECE8DF",
+  "theme_color": "#ECE8DF",
   "icons": [
     {
-      "src": "./quokka-icon.png",
+      "src": "./quokka-icon.png?v=13",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
