@@ -1,5 +1,16 @@
-const CACHE_NAME = 'lazy-card-tracker-v13';
-const ASSETS = ['./', './index.html', './manifest.json', './qr.js', './quokka-icon.png'];
+const CACHE_NAME = 'lazy-card-tracker-v14';
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './qr.js',
+  './quokka-icon.png',
+  './icon-192.png',
+  './apple-touch-icon.png',
+  './favicon.png',
+  './assets/hero-card-tracker.webp',
+  './assets/gold-marshmallow-tower.webp'
+];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
